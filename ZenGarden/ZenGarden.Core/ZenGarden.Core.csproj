@@ -10,10 +10,4 @@
       <ProjectReference Include="..\ZenGarden.Infrastructure\ZenGarden.Infrastructure.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Interfaces\IRepositories\" />
-      <Folder Include="Interfaces\IServices\" />
-      <Folder Include="Services\" />
-    </ItemGroup>
-
 </Project>
