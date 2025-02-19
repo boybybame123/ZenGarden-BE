@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35728.132 d17.12
+VisualStudioVersion = 17.12.35728.132
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.API", "ZenGarden.API\ZenGarden.API.csproj", "{85CD6E46-512D-465A-BE73-4F30BE5C37D5}"
 EndProject
@@ -12,8 +12,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.Domain", "ZenGarden.Domain\ZenGarden.Domain.csproj", "{E9040E18-5C62-4D54-8D7D-ACFE27AA0227}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.Shared", "ZenGarden.Shared\ZenGarden.Shared.csproj", "{E11D471E-AD51-47DA-BAF4-7794D4FECB01}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.Data", "ZenGarden.Data\ZenGarden.Data.csproj", "{F9508B05-F8F2-4612-B601-51BEDCC71B35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +39,6 @@ Global
 		{E11D471E-AD51-47DA-BAF4-7794D4FECB01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E11D471E-AD51-47DA-BAF4-7794D4FECB01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E11D471E-AD51-47DA-BAF4-7794D4FECB01}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F9508B05-F8F2-4612-B601-51BEDCC71B35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F9508B05-F8F2-4612-B601-51BEDCC71B35}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F9508B05-F8F2-4612-B601-51BEDCC71B35}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F9508B05-F8F2-4612-B601-51BEDCC71B35}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
