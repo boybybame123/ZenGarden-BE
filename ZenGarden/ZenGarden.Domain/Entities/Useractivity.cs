@@ -45,7 +45,7 @@ public partial class Useractivity
 
     public virtual Focusmethod FocusMethod { get; set; }
 
-    public virtual Task Task { get; set; }
+    public virtual Tasks Task { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 }

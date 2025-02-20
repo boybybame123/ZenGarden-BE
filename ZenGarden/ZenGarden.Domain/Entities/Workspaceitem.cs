@@ -23,7 +23,7 @@ public partial class Workspaceitem
 
     public virtual Item Item { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 
     public virtual Workspace Workspace { get; set; }
 }

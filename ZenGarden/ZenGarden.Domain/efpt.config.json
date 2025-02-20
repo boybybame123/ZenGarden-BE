@@ -3,7 +3,7 @@
    "ContextClassName": "zengardenContext",
    "ContextNamespace": null,
    "FilterSchemas": false,
-   "IncludeConnectionString": true,
+   "IncludeConnectionString": false,
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Entities",
@@ -11,13 +11,9 @@
    "ProjectRootNamespace": "ZenGarden.Domain",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 2,
-   "SelectedToBeGenerated": 0,
+   "SelectedToBeGenerated": 2,
    "T4TemplatePath": null,
    "Tables": [
-      {
-         "Name": "__efmigrationshistory",
-         "ObjectType": 0
-      },
       {
          "Name": "bag",
          "ObjectType": 0
@@ -63,7 +59,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "task",
+         "Name": "tasks",
          "ObjectType": 0
       },
       {
@@ -131,7 +127,7 @@
    "UseFluentApiOnly": true,
    "UseHandleBars": false,
    "UseHierarchyId": false,
-   "UseInflector": true,
+   "UseInflector": false,
    "UseInternalAccessModifiersForSprocsAndFunctions": false,
    "UseLegacyPluralizer": false,
    "UseManyToManyEntity": false,

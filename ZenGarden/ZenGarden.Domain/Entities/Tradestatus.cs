@@ -11,5 +11,5 @@ public partial class Tradestatus
 
     public string StatusName { get; set; }
 
-    public virtual ICollection<Tradehistory> Tradehistories { get; set; } = new List<Tradehistory>();
+    public virtual ICollection<Tradehistory> Tradehistory { get; set; } = new List<Tradehistory>();
 }

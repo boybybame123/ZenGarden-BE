@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Transaction
+public partial class Transactions
 {
     public int TransactionId { get; set; }
 
@@ -23,7 +23,7 @@ public partial class Transaction
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 
     public virtual Wallet Wallet { get; set; }
 }

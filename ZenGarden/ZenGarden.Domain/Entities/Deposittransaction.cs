@@ -23,5 +23,5 @@ public partial class Deposittransaction
 
     public DateTime? CompletedAt { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 }

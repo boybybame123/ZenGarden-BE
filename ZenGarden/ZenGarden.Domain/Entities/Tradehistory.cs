@@ -27,9 +27,9 @@ public partial class Tradehistory
 
     public virtual Tradestatus Status { get; set; }
 
-    public virtual User UserA { get; set; }
+    public virtual Users UserA { get; set; }
 
-    public virtual User UserB { get; set; }
+    public virtual Users UserB { get; set; }
 
     public virtual Usertree UserTreeA { get; set; }
 

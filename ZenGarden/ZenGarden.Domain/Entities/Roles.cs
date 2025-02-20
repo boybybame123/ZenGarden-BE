@@ -5,9 +5,11 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Efmigrationshistory
+public partial class Roles
 {
-    public string MigrationId { get; set; }
+    public int RoleId { get; set; }
 
-    public string ProductVersion { get; set; }
+    public string RoleName { get; set; }
+
+    public virtual ICollection<Users> Users { get; set; } = new List<Users>();
 }

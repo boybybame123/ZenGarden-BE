@@ -25,5 +25,5 @@ public partial class Focusmethod
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual ICollection<Useractivity> Useractivities { get; set; } = new List<Useractivity>();
+    public virtual ICollection<Useractivity> Useractivity { get; set; } = new List<Useractivity>();
 }

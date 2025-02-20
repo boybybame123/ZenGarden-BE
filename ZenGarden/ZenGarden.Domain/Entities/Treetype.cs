@@ -17,5 +17,5 @@ public partial class Treetype
 
     public decimal? BasePrice { get; set; }
 
-    public virtual ICollection<Usertree> Usertrees { get; set; } = new List<Usertree>();
+    public virtual ICollection<Usertree> Usertree { get; set; } = new List<Usertree>();
 }

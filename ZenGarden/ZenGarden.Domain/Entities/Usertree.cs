@@ -27,11 +27,11 @@ public partial class Usertree
 
     public virtual Treetype FinalTree { get; set; }
 
-    public virtual ICollection<Tradehistory> TradehistoryUserTreeAs { get; set; } = new List<Tradehistory>();
+    public virtual ICollection<Tradehistory> TradehistoryUserTreeA { get; set; } = new List<Tradehistory>();
 
-    public virtual ICollection<Tradehistory> TradehistoryUserTreeBs { get; set; } = new List<Tradehistory>();
+    public virtual ICollection<Tradehistory> TradehistoryUserTreeB { get; set; } = new List<Tradehistory>();
 
-    public virtual ICollection<Treeprogress> Treeprogresses { get; set; } = new List<Treeprogress>();
+    public virtual ICollection<Treeprogress> Treeprogress { get; set; } = new List<Treeprogress>();
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 }

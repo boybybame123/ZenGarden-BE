@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Task
+public partial class Tasks
 {
     public int TaskId { get; set; }
 
@@ -29,11 +29,11 @@ public partial class Task
 
     public DateTime? CompletedAt { get; set; }
 
-    public virtual ICollection<Dailyrewardclaim> Dailyrewardclaims { get; set; } = new List<Dailyrewardclaim>();
+    public virtual ICollection<Dailyrewardclaim> Dailyrewardclaim { get; set; } = new List<Dailyrewardclaim>();
 
     public virtual Taskstatus Status { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 
-    public virtual ICollection<Useractivity> Useractivities { get; set; } = new List<Useractivity>();
+    public virtual ICollection<Useractivity> Useractivity { get; set; } = new List<Useractivity>();
 }

@@ -4,8 +4,9 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
+using ZenGarden.Domain.Entities;
 
-namespace ZenGarden.Domain.Entities;
+namespace ZenGarden.Infrastructure.Persistence;
 
 public partial class zengardenContext : DbContext
 {
@@ -18,57 +19,55 @@ public partial class zengardenContext : DbContext
     {
     }
 
-    public virtual DbSet<Bag> Bags { get; set; }
+    public virtual DbSet<Bag> Bag { get; set; }
 
-    public virtual DbSet<Bagitem> Bagitems { get; set; }
+    public virtual DbSet<Bagitem> Bagitem { get; set; }
 
-    public virtual DbSet<Dailyreward> Dailyrewards { get; set; }
+    public virtual DbSet<Dailyreward> Dailyreward { get; set; }
 
-    public virtual DbSet<Dailyrewardclaim> Dailyrewardclaims { get; set; }
+    public virtual DbSet<Dailyrewardclaim> Dailyrewardclaim { get; set; }
 
-    public virtual DbSet<Deposittransaction> Deposittransactions { get; set; }
+    public virtual DbSet<Deposittransaction> Deposittransaction { get; set; }
 
-    public virtual DbSet<Efmigrationshistory> Efmigrationshistories { get; set; }
+    public virtual DbSet<Focusmethod> Focusmethod { get; set; }
 
-    public virtual DbSet<Focusmethod> Focusmethods { get; set; }
+    public virtual DbSet<Item> Item { get; set; }
 
-    public virtual DbSet<Item> Items { get; set; }
+    public virtual DbSet<Itemdetail> Itemdetail { get; set; }
 
-    public virtual DbSet<Itemdetail> Itemdetails { get; set; }
+    public virtual DbSet<Leaderboard> Leaderboard { get; set; }
 
-    public virtual DbSet<Leaderboard> Leaderboards { get; set; }
+    public virtual DbSet<Purchasehistory> Purchasehistory { get; set; }
 
-    public virtual DbSet<Purchasehistory> Purchasehistories { get; set; }
+    public virtual DbSet<Roles> Roles { get; set; }
 
-    public virtual DbSet<Role> Roles { get; set; }
+    public virtual DbSet<Tasks> Tasks { get; set; }
 
-    public virtual DbSet<Task> Tasks { get; set; }
+    public virtual DbSet<Taskstatus> Taskstatus { get; set; }
 
-    public virtual DbSet<Taskstatus> Taskstatuses { get; set; }
+    public virtual DbSet<Tradehistory> Tradehistory { get; set; }
 
-    public virtual DbSet<Tradehistory> Tradehistories { get; set; }
+    public virtual DbSet<Tradestatus> Tradestatus { get; set; }
 
-    public virtual DbSet<Tradestatus> Tradestatuses { get; set; }
+    public virtual DbSet<Transactions> Transactions { get; set; }
 
-    public virtual DbSet<Transaction> Transactions { get; set; }
+    public virtual DbSet<Treeprogress> Treeprogress { get; set; }
 
-    public virtual DbSet<Treeprogress> Treeprogresses { get; set; }
+    public virtual DbSet<Treetype> Treetype { get; set; }
 
-    public virtual DbSet<Treetype> Treetypes { get; set; }
+    public virtual DbSet<Useractivity> Useractivity { get; set; }
 
-    public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<Userexperience> Userexperience { get; set; }
 
-    public virtual DbSet<Useractivity> Useractivities { get; set; }
+    public virtual DbSet<Users> Users { get; set; }
 
-    public virtual DbSet<Userexperience> Userexperiences { get; set; }
+    public virtual DbSet<Usertree> Usertree { get; set; }
 
-    public virtual DbSet<Usertree> Usertrees { get; set; }
+    public virtual DbSet<Wallet> Wallet { get; set; }
 
-    public virtual DbSet<Wallet> Wallets { get; set; }
+    public virtual DbSet<Workspace> Workspace { get; set; }
 
-    public virtual DbSet<Workspace> Workspaces { get; set; }
-
-    public virtual DbSet<Workspaceitem> Workspaceitems { get; set; }
+    public virtual DbSet<Workspaceitem> Workspaceitem { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -98,7 +97,7 @@ public partial class zengardenContext : DbContext
                 .HasColumnType("timestamp");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Bags)
+            entity.HasOne(d => d.User).WithMany(p => p.Bag)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("bag_ibfk_1");
         });
@@ -120,11 +119,11 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.BagId).HasColumnName("BagID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
 
-            entity.HasOne(d => d.Bag).WithMany(p => p.Bagitems)
+            entity.HasOne(d => d.Bag).WithMany(p => p.Bagitem)
                 .HasForeignKey(d => d.BagId)
                 .HasConstraintName("bagitem_ibfk_1");
 
-            entity.HasOne(d => d.Item).WithMany(p => p.Bagitems)
+            entity.HasOne(d => d.Item).WithMany(p => p.Bagitem)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("bagitem_ibfk_2");
         });
@@ -135,7 +134,7 @@ public partial class zengardenContext : DbContext
 
             entity.ToTable("dailyreward");
 
-            entity.HasIndex(e => e.ItemId, "ItemID1");
+            entity.HasIndex(e => e.ItemId, "ItemID");
 
             entity.Property(e => e.DailyId).HasColumnName("DailyID");
             entity.Property(e => e.ConditionType).HasMaxLength(50);
@@ -144,7 +143,7 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.Reward).HasMaxLength(100);
             entity.Property(e => e.RewardType).HasMaxLength(50);
 
-            entity.HasOne(d => d.Item).WithMany(p => p.Dailyrewards)
+            entity.HasOne(d => d.Item).WithMany(p => p.Dailyreward)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("dailyreward_ibfk_1");
         });
@@ -167,11 +166,11 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Task).WithMany(p => p.Dailyrewardclaims)
+            entity.HasOne(d => d.Task).WithMany(p => p.Dailyrewardclaim)
                 .HasForeignKey(d => d.TaskId)
                 .HasConstraintName("dailyrewardclaim_ibfk_2");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Dailyrewardclaims)
+            entity.HasOne(d => d.User).WithMany(p => p.Dailyrewardclaim)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("dailyrewardclaim_ibfk_1");
         });
@@ -198,21 +197,9 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.TransactionReference).HasMaxLength(100);
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Deposittransactions)
+            entity.HasOne(d => d.User).WithMany(p => p.Deposittransaction)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("deposittransaction_ibfk_1");
-        });
-
-        modelBuilder.Entity<Efmigrationshistory>(entity =>
-        {
-            entity.HasKey(e => e.MigrationId).HasName("PRIMARY");
-
-            entity.ToTable("__efmigrationshistory");
-
-            entity.Property(e => e.MigrationId).HasMaxLength(150);
-            entity.Property(e => e.ProductVersion)
-                .IsRequired()
-                .HasMaxLength(32);
         });
 
         modelBuilder.Entity<Focusmethod>(entity =>
@@ -280,7 +267,7 @@ public partial class zengardenContext : DbContext
 
             entity.ToTable("leaderboard");
 
-            entity.HasIndex(e => e.UserId, "UserID1");
+            entity.HasIndex(e => e.UserId, "UserID");
 
             entity.Property(e => e.LeaderboardId).HasColumnName("LeaderboardID");
             entity.Property(e => e.LastUpdated)
@@ -289,7 +276,7 @@ public partial class zengardenContext : DbContext
                 .HasColumnType("timestamp");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Leaderboards)
+            entity.HasOne(d => d.User).WithMany(p => p.Leaderboard)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("leaderboard_ibfk_1");
         });
@@ -300,9 +287,9 @@ public partial class zengardenContext : DbContext
 
             entity.ToTable("purchasehistory");
 
-            entity.HasIndex(e => e.ItemId, "ItemID2");
+            entity.HasIndex(e => e.ItemId, "ItemID");
 
-            entity.HasIndex(e => e.UserId, "UserID2");
+            entity.HasIndex(e => e.UserId, "UserID");
 
             entity.Property(e => e.PurchaseId).HasColumnName("PurchaseID");
             entity.Property(e => e.CreatedAt)
@@ -313,16 +300,16 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.TotalPrice).HasPrecision(10, 2);
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Item).WithMany(p => p.Purchasehistories)
+            entity.HasOne(d => d.Item).WithMany(p => p.Purchasehistory)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("purchasehistory_ibfk_2");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Purchasehistories)
+            entity.HasOne(d => d.User).WithMany(p => p.Purchasehistory)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("purchasehistory_ibfk_1");
         });
 
-        modelBuilder.Entity<Role>(entity =>
+        modelBuilder.Entity<Roles>(entity =>
         {
             entity.HasKey(e => e.RoleId).HasName("PRIMARY");
 
@@ -332,11 +319,11 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.RoleName).HasMaxLength(50);
         });
 
-        modelBuilder.Entity<Task>(entity =>
+        modelBuilder.Entity<Tasks>(entity =>
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
 
-            entity.ToTable("task");
+            entity.ToTable("tasks");
 
             entity.HasIndex(e => e.StatusId, "StatusID");
 
@@ -361,11 +348,11 @@ public partial class zengardenContext : DbContext
 
             entity.HasOne(d => d.Status).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.StatusId)
-                .HasConstraintName("task_ibfk_2");
+                .HasConstraintName("tasks_ibfk_2");
 
             entity.HasOne(d => d.User).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("task_ibfk_1");
+                .HasConstraintName("tasks_ibfk_1");
         });
 
         modelBuilder.Entity<Taskstatus>(entity =>
@@ -410,23 +397,23 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.UserTreeAid).HasColumnName("UserTreeAID");
             entity.Property(e => e.UserTreeBid).HasColumnName("UserTreeBID");
 
-            entity.HasOne(d => d.Status).WithMany(p => p.Tradehistories)
+            entity.HasOne(d => d.Status).WithMany(p => p.Tradehistory)
                 .HasForeignKey(d => d.StatusId)
                 .HasConstraintName("tradehistory_ibfk_5");
 
-            entity.HasOne(d => d.UserA).WithMany(p => p.TradehistoryUserAs)
+            entity.HasOne(d => d.UserA).WithMany(p => p.TradehistoryUserA)
                 .HasForeignKey(d => d.UserAid)
                 .HasConstraintName("tradehistory_ibfk_1");
 
-            entity.HasOne(d => d.UserB).WithMany(p => p.TradehistoryUserBs)
+            entity.HasOne(d => d.UserB).WithMany(p => p.TradehistoryUserB)
                 .HasForeignKey(d => d.UserBid)
                 .HasConstraintName("tradehistory_ibfk_2");
 
-            entity.HasOne(d => d.UserTreeA).WithMany(p => p.TradehistoryUserTreeAs)
+            entity.HasOne(d => d.UserTreeA).WithMany(p => p.TradehistoryUserTreeA)
                 .HasForeignKey(d => d.UserTreeAid)
                 .HasConstraintName("tradehistory_ibfk_3");
 
-            entity.HasOne(d => d.UserTreeB).WithMany(p => p.TradehistoryUserTreeBs)
+            entity.HasOne(d => d.UserTreeB).WithMany(p => p.TradehistoryUserTreeB)
                 .HasForeignKey(d => d.UserTreeBid)
                 .HasConstraintName("tradehistory_ibfk_4");
         });
@@ -441,7 +428,7 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.StatusName).HasMaxLength(50);
         });
 
-        modelBuilder.Entity<Transaction>(entity =>
+        modelBuilder.Entity<Transactions>(entity =>
         {
             entity.HasKey(e => e.TransactionId).HasName("PRIMARY");
 
@@ -486,7 +473,7 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
             entity.Property(e => e.Xprequired).HasColumnName("XPRequired");
 
-            entity.HasOne(d => d.UserTree).WithMany(p => p.Treeprogresses)
+            entity.HasOne(d => d.UserTree).WithMany(p => p.Treeprogress)
                 .HasForeignKey(d => d.UserTreeId)
                 .HasConstraintName("treeprogress_ibfk_1");
         });
@@ -504,7 +491,64 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.Rarity).HasMaxLength(50);
         });
 
-        modelBuilder.Entity<User>(entity =>
+        modelBuilder.Entity<Useractivity>(entity =>
+        {
+            entity.HasKey(e => e.ActivityId).HasName("PRIMARY");
+
+            entity.ToTable("useractivity");
+
+            entity.HasIndex(e => e.FocusMethodId, "FocusMethodID");
+
+            entity.HasIndex(e => e.TaskId, "TaskID");
+
+            entity.HasIndex(e => e.UserId, "idx_user_activity_user");
+
+            entity.Property(e => e.ActivityId).HasColumnName("ActivityID");
+            entity.Property(e => e.EndTime).HasColumnType("timestamp");
+            entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
+            entity.Property(e => e.Keystrokes).HasDefaultValueSql("'0'");
+            entity.Property(e => e.MouseClicks).HasDefaultValueSql("'0'");
+            entity.Property(e => e.MouseScrolls).HasDefaultValueSql("'0'");
+            entity.Property(e => e.StartTime).HasColumnType("timestamp");
+            entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+
+            entity.HasOne(d => d.FocusMethod).WithMany(p => p.Useractivity)
+                .HasForeignKey(d => d.FocusMethodId)
+                .HasConstraintName("useractivity_ibfk_2");
+
+            entity.HasOne(d => d.Task).WithMany(p => p.Useractivity)
+                .HasForeignKey(d => d.TaskId)
+                .HasConstraintName("useractivity_ibfk_3");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Useractivity)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("useractivity_ibfk_1");
+        });
+
+        modelBuilder.Entity<Userexperience>(entity =>
+        {
+            entity.HasKey(e => e.UserExperienceId).HasName("PRIMARY");
+
+            entity.ToTable("userexperience");
+
+            entity.HasIndex(e => e.UserId, "UserID");
+
+            entity.Property(e => e.UserExperienceId).HasColumnName("UserExperienceID");
+            entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.XptoNextLevel).HasColumnName("XPToNextLevel");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Userexperience)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("userexperience_ibfk_1");
+        });
+
+        modelBuilder.Entity<Users>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
@@ -534,63 +578,6 @@ public partial class zengardenContext : DbContext
                 .HasConstraintName("users_ibfk_1");
         });
 
-        modelBuilder.Entity<Useractivity>(entity =>
-        {
-            entity.HasKey(e => e.ActivityId).HasName("PRIMARY");
-
-            entity.ToTable("useractivity");
-
-            entity.HasIndex(e => e.FocusMethodId, "FocusMethodID");
-
-            entity.HasIndex(e => e.TaskId, "TaskID1");
-
-            entity.HasIndex(e => e.UserId, "idx_user_activity_user");
-
-            entity.Property(e => e.ActivityId).HasColumnName("ActivityID");
-            entity.Property(e => e.EndTime).HasColumnType("timestamp");
-            entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
-            entity.Property(e => e.Keystrokes).HasDefaultValueSql("'0'");
-            entity.Property(e => e.MouseClicks).HasDefaultValueSql("'0'");
-            entity.Property(e => e.MouseScrolls).HasDefaultValueSql("'0'");
-            entity.Property(e => e.StartTime).HasColumnType("timestamp");
-            entity.Property(e => e.TaskId).HasColumnName("TaskID");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-
-            entity.HasOne(d => d.FocusMethod).WithMany(p => p.Useractivities)
-                .HasForeignKey(d => d.FocusMethodId)
-                .HasConstraintName("useractivity_ibfk_2");
-
-            entity.HasOne(d => d.Task).WithMany(p => p.Useractivities)
-                .HasForeignKey(d => d.TaskId)
-                .HasConstraintName("useractivity_ibfk_3");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Useractivities)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("useractivity_ibfk_1");
-        });
-
-        modelBuilder.Entity<Userexperience>(entity =>
-        {
-            entity.HasKey(e => e.UserExperienceId).HasName("PRIMARY");
-
-            entity.ToTable("userexperience");
-
-            entity.HasIndex(e => e.UserId, "UserID3");
-
-            entity.Property(e => e.UserExperienceId).HasColumnName("UserExperienceID");
-            entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
-            entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.XptoNextLevel).HasColumnName("XPToNextLevel");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Userexperiences)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("userexperience_ibfk_1");
-        });
-
         modelBuilder.Entity<Usertree>(entity =>
         {
             entity.HasKey(e => e.UserTreeId).HasName("PRIMARY");
@@ -599,7 +586,7 @@ public partial class zengardenContext : DbContext
 
             entity.HasIndex(e => e.FinalTreeId, "FinalTreeID");
 
-            entity.HasIndex(e => e.UserId, "UserID4");
+            entity.HasIndex(e => e.UserId, "UserID");
 
             entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
             entity.Property(e => e.FinalTreeId).HasColumnName("FinalTreeID");
@@ -615,11 +602,11 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Xp).HasColumnName("XP");
 
-            entity.HasOne(d => d.FinalTree).WithMany(p => p.Usertrees)
+            entity.HasOne(d => d.FinalTree).WithMany(p => p.Usertree)
                 .HasForeignKey(d => d.FinalTreeId)
                 .HasConstraintName("usertree_ibfk_2");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Usertrees)
+            entity.HasOne(d => d.User).WithMany(p => p.Usertree)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("usertree_ibfk_1");
@@ -631,7 +618,7 @@ public partial class zengardenContext : DbContext
 
             entity.ToTable("wallet");
 
-            entity.HasIndex(e => e.UserId, "UserID5");
+            entity.HasIndex(e => e.UserId, "UserID");
 
             entity.Property(e => e.WalletId).HasColumnName("WalletID");
             entity.Property(e => e.Balance)
@@ -643,7 +630,7 @@ public partial class zengardenContext : DbContext
                 .HasColumnType("timestamp");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Wallets)
+            entity.HasOne(d => d.User).WithMany(p => p.Wallet)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("wallet_ibfk_1");
         });
@@ -654,7 +641,7 @@ public partial class zengardenContext : DbContext
 
             entity.ToTable("workspace");
 
-            entity.HasIndex(e => e.UserId, "UserID6");
+            entity.HasIndex(e => e.UserId, "UserID");
 
             entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
             entity.Property(e => e.Configuration).HasColumnType("json");
@@ -667,7 +654,7 @@ public partial class zengardenContext : DbContext
                 .HasColumnType("timestamp");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Workspaces)
+            entity.HasOne(d => d.User).WithMany(p => p.Workspace)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("workspace_ibfk_1");
         });
@@ -678,7 +665,7 @@ public partial class zengardenContext : DbContext
 
             entity.ToTable("workspaceitem");
 
-            entity.HasIndex(e => e.ItemId, "ItemID3");
+            entity.HasIndex(e => e.ItemId, "ItemID");
 
             entity.HasIndex(e => e.WorkspaceId, "WorkspaceID");
 
@@ -693,15 +680,15 @@ public partial class zengardenContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
 
-            entity.HasOne(d => d.Item).WithMany(p => p.Workspaceitems)
+            entity.HasOne(d => d.Item).WithMany(p => p.Workspaceitem)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("workspaceitem_ibfk_2");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Workspaceitems)
+            entity.HasOne(d => d.User).WithMany(p => p.Workspaceitem)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("workspaceitem_ibfk_3");
 
-            entity.HasOne(d => d.Workspace).WithMany(p => p.Workspaceitems)
+            entity.HasOne(d => d.Workspace).WithMany(p => p.Workspaceitem)
                 .HasForeignKey(d => d.WorkspaceId)
                 .HasConstraintName("workspaceitem_ibfk_1");
         });

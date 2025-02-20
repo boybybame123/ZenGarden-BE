@@ -15,10 +15,6 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-         "Name": "__efmigrationshistory",
-         "ObjectType": 0
-      },
-      {
          "Name": "bag",
          "ObjectType": 0
       },
@@ -63,7 +59,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "task",
+         "Name": "tasks",
          "ObjectType": 0
       },
       {
@@ -131,7 +127,7 @@
    "UseFluentApiOnly": true,
    "UseHandleBars": false,
    "UseHierarchyId": false,
-   "UseInflector": true,
+   "UseInflector": false,
    "UseInternalAccessModifiersForSprocsAndFunctions": false,
    "UseLegacyPluralizer": false,
    "UseManyToManyEntity": false,

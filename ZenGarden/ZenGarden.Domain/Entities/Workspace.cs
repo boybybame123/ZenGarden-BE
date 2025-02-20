@@ -17,7 +17,7 @@ public partial class Workspace
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual Users User { get; set; }
 
-    public virtual ICollection<Workspaceitem> Workspaceitems { get; set; } = new List<Workspaceitem>();
+    public virtual ICollection<Workspaceitem> Workspaceitem { get; set; } = new List<Workspaceitem>();
 }
