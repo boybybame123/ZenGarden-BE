@@ -6,21 +6,25 @@ EXPOSE 443
 
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
+WORKDIR /ZenGarden  # Đặt đúng theo cấu trúc của bạn
 
-# Copy file project trước để tối ưu caching
-COPY ["ZenGarden/ZenGarden.API/ZenGarden.API.csproj", "ZenGarden/ZenGarden.API/"]
-COPY ["ZenGarden/ZenGarden.sln", "ZenGarden/"]
+# Copy solution file và các project files để tối ưu cache
+COPY ZenGarden/ZenGarden.sln ZenGarden/
+COPY ZenGarden/ZenGarden.API/ZenGarden.API.csproj ZenGarden/ZenGarden.API/
+COPY ZenGarden/ZenGarden.Core/ZenGarden.Core.csproj ZenGarden/ZenGarden.Core/
+COPY ZenGarden/ZenGarden.Infrastructure/ZenGarden.Infrastructure.csproj ZenGarden/ZenGarden.Infrastructure/
+COPY ZenGarden/ZenGarden.Domain/ZenGarden.Domain.csproj ZenGarden/ZenGarden.Domain/
+COPY ZenGarden/ZenGarden.Shared/ZenGarden.Shared.csproj ZenGarden/ZenGarden.Shared/
 
-# Chạy restore cho toàn bộ solution
-WORKDIR /src/ZenGarden
+# Chạy restore trước để tận dụng Docker caching
+WORKDIR /ZenGarden
 RUN dotnet restore "ZenGarden.sln"
 
-# Copy toàn bộ mã nguồn
+# Copy toàn bộ source code sau khi restore
 COPY . .
 
 # Build ứng dụng
-WORKDIR "/src/ZenGarden/ZenGarden.API"
+WORKDIR "/ZenGarden/ZenGarden.API"
 RUN dotnet build -c Release -o /app/build
 
 # Publish stage
