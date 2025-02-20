@@ -23,3 +23,5 @@ COPY --from=publish /app/publish .
 
 # 7️⃣ Chạy ứng dụng
 ENTRYPOINT ["dotnet", "ZenGarden.API.dll"]
+
+VOLUME /app/DataProtection-Keys
