@@ -7,7 +7,7 @@ EXPOSE 443
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["ZenGarden/ZenGarden.csproj", "ZenGarden/"]
+COPY ["ZenGarden.API/ZenGarden.API.csproj", "ZenGarden.API/"]
 RUN dotnet restore "ZenGarden/ZenGarden.csproj"
 
 COPY . .
