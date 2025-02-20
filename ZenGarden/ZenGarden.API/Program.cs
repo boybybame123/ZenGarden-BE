@@ -93,7 +93,10 @@ var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
+builder.WebHost.UseUrls("https://+:8080");
+
 var app = builder.Build();
+app.MapGet("/", () => "ZenGarden API is running! 🚀");
 
 
 // Configure the HTTP request pipeline.
