@@ -88,13 +88,13 @@ builder.Services.AddCors(options =>
         AllowAnyHeader());
 });
 
+var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var app = builder.Build();
 
-var keysPath = Path.Combine(app.Environment.ContentRootPath, "DataProtection-Keys");
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
