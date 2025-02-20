@@ -8,30 +8,31 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Sao chép solution file và các project files trước (tận dụng cache)
-COPY ZenGarden/ZenGarden.sln ZenGarden/
-COPY ZenGarden/ZenGarden.API/ZenGarden.API.csproj ZenGarden/ZenGarden.API/
-COPY ZenGarden/ZenGarden.Core/ZenGarden.Core.csproj ZenGarden/ZenGarden.Core/
-COPY ZenGarden/ZenGarden.Infrastructure/ZenGarden.Infrastructure.csproj ZenGarden/ZenGarden.Infrastructure/
-COPY ZenGarden/ZenGarden.Domain/ZenGarden.Domain.csproj ZenGarden/ZenGarden.Domain/
-COPY ZenGarden/ZenGarden.Shared/ZenGarden.Shared.csproj ZenGarden/ZenGarden.Shared/
+# Sao chép file solution và project để thực hiện restore
+COPY ["ZenGarden.sln", "."]
+COPY ["ZenGarden.API/ZenGarden.API.csproj", "ZenGarden.API/"]
+COPY ["ZenGarden.Core/ZenGarden.Core.csproj", "ZenGarden.Core/"]
+COPY ["ZenGarden.Domain/ZenGarden.Domain.csproj", "ZenGarden.Domain/"]
+COPY ["ZenGarden.Infrastructure/ZenGarden.Infrastructure.csproj", "ZenGarden.Infrastructure/"]
+COPY ["ZenGarden.Shared/ZenGarden.Shared.csproj", "ZenGarden.Shared/"]
 
-# Đặt WORKDIR để restore đúng nơi
-WORKDIR /src/ZenGarden
+# Chạy restore trước để tận dụng Docker caching
 RUN dotnet restore "ZenGarden.sln"
 
-# Copy toàn bộ source code
-COPY ZenGarden/ ZenGarden/
+# Sao chép toàn bộ source code vào container
+COPY . .
 
-# Build ứng dụng
-WORKDIR "/src/ZenGarden/ZenGarden.API"
+# Đặt thư mục làm việc thành API để build
+WORKDIR "/src/ZenGarden.API"
+
+# Biên dịch ứng dụng
 RUN dotnet build -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
 RUN dotnet publish -c Release -o /app/publish
 
-# Final stage - Runtime image
+# Final stage
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
