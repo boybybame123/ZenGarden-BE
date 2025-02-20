@@ -11,7 +11,7 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Migrations
 {
-    [DbContext(typeof(zengardenContext))]
+    [DbContext(typeof(ZenGardenContext))]
     [Migration("20250220053945_InitialCreate")]
     partial class InitialCreate
     {

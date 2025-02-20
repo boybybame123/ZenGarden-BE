@@ -10,7 +10,7 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Migrations
 {
-    [DbContext(typeof(zengardenContext))]
+    [DbContext(typeof(ZenGardenContext))]
     partial class zengardenContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
