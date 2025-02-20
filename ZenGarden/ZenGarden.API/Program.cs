@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -88,7 +89,12 @@ builder.Services.AddCors(options =>
 });
 
 
+
 var app = builder.Build();
+
+var keysPath = Path.Combine(app.Environment.ContentRootPath, "DataProtection-Keys");
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -97,7 +103,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
