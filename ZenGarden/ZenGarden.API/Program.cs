@@ -110,9 +110,13 @@ builder.Services.AddCors(options =>
 });
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-    .ProtectKeysWithCertificate("thumbprint");
+var dataProtectionBuilder = builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+if (OperatingSystem.IsWindows())
+{
+    dataProtectionBuilder.ProtectKeysWithDpapiNG();
+}
 
 var app = builder.Build();
 
