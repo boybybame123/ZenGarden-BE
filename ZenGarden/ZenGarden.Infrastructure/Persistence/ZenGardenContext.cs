@@ -309,7 +309,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.RoleId).HasName("PRIMARY");
 
-            entity.ToTable("roles");
+            entity.ToTable("Roles");
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.RoleName).HasMaxLength(50);
