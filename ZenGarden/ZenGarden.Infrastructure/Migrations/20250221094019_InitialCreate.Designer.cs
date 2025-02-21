@@ -12,7 +12,7 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    [Migration("20250220053945_InitialCreate")]
+    [Migration("20250221094019_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -21,7 +21,7 @@ namespace ZenGarden.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .UseCollation("utf8mb4_0900_ai_ci")
-                .HasAnnotation("ProductVersion", "8.0.8")
+                .HasAnnotation("ProductVersion", "8.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4");
@@ -60,7 +60,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_bag_user");
 
-                    b.ToTable("bag", (string)null);
+                    b.ToTable("Bag", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Bagitem", b =>
@@ -95,7 +95,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "ItemId" }, "ItemID");
 
-                    b.ToTable("bagitem", (string)null);
+                    b.ToTable("Bagitem", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Dailyreward", b =>
@@ -139,7 +139,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "ItemId" }, "ItemID")
                         .HasDatabaseName("ItemID1");
 
-                    b.ToTable("dailyreward", (string)null);
+                    b.ToTable("Dailyreward", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Dailyrewardclaim", b =>
@@ -175,7 +175,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_daily_reward_claim_user");
 
-                    b.ToTable("dailyrewardclaim", (string)null);
+                    b.ToTable("Dailyrewardclaim", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Deposittransaction", b =>
@@ -224,7 +224,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "UserID");
 
-                    b.ToTable("deposittransaction", (string)null);
+                    b.ToTable("Deposittransaction", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Focusmethod", b =>
@@ -266,7 +266,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("FocusMethodId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("focusmethod", (string)null);
+                    b.ToTable("Focusmethod", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Item", b =>
@@ -307,7 +307,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "Type", "Rarity" }, "idx_item_type_rarity");
 
-                    b.ToTable("item", (string)null);
+                    b.ToTable("Item", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Itemdetail", b =>
@@ -368,7 +368,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "ItemId" }, "idx_item_detail_itemid")
                         .IsUnique();
 
-                    b.ToTable("itemdetail", (string)null);
+                    b.ToTable("Itemdetail", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Leaderboard", b =>
@@ -406,7 +406,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID")
                         .HasDatabaseName("UserID1");
 
-                    b.ToTable("leaderboard", (string)null);
+                    b.ToTable("Leaderboard", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Purchasehistory", b =>
@@ -448,7 +448,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID")
                         .HasDatabaseName("UserID2");
 
-                    b.ToTable("purchasehistory", (string)null);
+                    b.ToTable("Purchasehistory", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Roles", b =>
@@ -467,7 +467,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("RoleId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("roles", (string)null);
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
@@ -527,7 +527,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_task_user");
 
-                    b.ToTable("tasks", (string)null);
+                    b.ToTable("Tasks", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Taskstatus", b =>
@@ -549,7 +549,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "StatusName" }, "StatusName")
                         .IsUnique();
 
-                    b.ToTable("taskstatus", (string)null);
+                    b.ToTable("Taskstatus", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tradehistory", b =>
@@ -608,7 +608,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserAid", "UserBid" }, "idx_tradehistory_user");
 
-                    b.ToTable("tradehistory", (string)null);
+                    b.ToTable("Tradehistory", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tradestatus", b =>
@@ -627,7 +627,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("StatusId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("tradestatus", (string)null);
+                    b.ToTable("Tradestatus", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Transactions", b =>
@@ -677,7 +677,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_transaction_user");
 
-                    b.ToTable("transactions", (string)null);
+                    b.ToTable("Transactions", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Treeprogress", b =>
@@ -708,7 +708,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserTreeId" }, "UserTreeID");
 
-                    b.ToTable("treeprogress", (string)null);
+                    b.ToTable("Treeprogress", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Treetype", b =>
@@ -738,7 +738,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("TreeTypeId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("treetype", (string)null);
+                    b.ToTable("Treetype", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Useractivity", b =>
@@ -820,7 +820,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_user_activity_user");
 
-                    b.ToTable("useractivity", (string)null);
+                    b.ToTable("Useractivity", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Userexperience", b =>
@@ -860,7 +860,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID")
                         .HasDatabaseName("UserID3");
 
-                    b.ToTable("userexperience", (string)null);
+                    b.ToTable("Userexperience", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
@@ -916,7 +916,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "RoleId" }, "RoleID");
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Usertree", b =>
@@ -970,7 +970,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID")
                         .HasDatabaseName("UserID4");
 
-                    b.ToTable("usertree", (string)null);
+                    b.ToTable("Usertree", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Wallet", b =>
@@ -1005,7 +1005,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID")
                         .HasDatabaseName("UserID5");
 
-                    b.ToTable("wallet", (string)null);
+                    b.ToTable("Wallet", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Workspace", b =>
@@ -1042,7 +1042,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID")
                         .HasDatabaseName("UserID6");
 
-                    b.ToTable("workspace", (string)null);
+                    b.ToTable("Workspace", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Workspaceitem", b =>
@@ -1087,7 +1087,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_workspace_item_user");
 
-                    b.ToTable("workspaceitem", (string)null);
+                    b.ToTable("Workspaceitem", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Bag", b =>
