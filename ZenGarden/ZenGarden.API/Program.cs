@@ -54,7 +54,12 @@ builder.Services.AddDbContext<ZenGardenContext>(options =>
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") 
-             ?? jwtSettings["Key"];
+             ?? builder.Configuration["Jwt:Key"];
+
+if (string.IsNullOrEmpty(jwtKey))
+{
+    throw new InvalidOperationException("JWT Key is missing in configuration.");
+}
 
 if (string.IsNullOrEmpty(jwtKey))
 {
