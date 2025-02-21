@@ -14,7 +14,7 @@ using ZenGarden.Infrastructure.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}", $"https://*:{port}");
+builder.WebHost.UseUrls($"http://*:{port}");
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

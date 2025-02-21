@@ -23,7 +23,7 @@ COPY --from=publish /app/publish .
 
 # Thêm các dòng này
 ENV PORT=8080
-ENV ASPNETCORE_URLS="http://+:${PORT};https://+:${PORT}"
+ENV ASPNETCORE_URLS="http://+:${PORT}"
 EXPOSE ${PORT}
 
 # 7️⃣ Chạy ứng dụng
