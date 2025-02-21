@@ -13,14 +13,7 @@ using ZenGarden.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = builder.Environment.IsDevelopment()
-    ? null  // Let .NET choose the port in Development environment
-    : Environment.GetEnvironmentVariable("PORT") ?? "8080"; // Deployment port
-
-if (!string.IsNullOrEmpty(port))
-{
-    builder.WebHost.UseUrls($"http://*:{port}");
-}
+_ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
 // Add services to the container.
 builder.Services.AddControllers().AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
@@ -117,9 +110,9 @@ builder.Services.AddCors(options =>
 });
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
-
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+    .ProtectKeysWithCertificate("thumbprint");
 
 var app = builder.Build();
 
