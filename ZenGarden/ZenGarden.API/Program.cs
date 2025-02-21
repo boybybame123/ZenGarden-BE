@@ -37,21 +37,30 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-var connectionString = builder.Configuration.GetConnectionString("ZenGardenDB");
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                       ?? builder.Configuration.GetConnectionString("ZenGardenDB");
 
-// Register DbContext with MySQL
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Database connection string is missing.");
+}
+
 builder.Services.AddDbContext<ZenGardenContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
 );
 
+
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = jwtSettings["Key"];
-if (string.IsNullOrEmpty(key))
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") 
+             ?? jwtSettings["Key"];
+
+if (string.IsNullOrEmpty(jwtKey))
 {
-    throw new InvalidOperationException("JWT Key is not configured. Please check your appsettings.json.");
+    throw new InvalidOperationException("JWT Key is not configured. Please check environment variables or appsettings.json.");
 }
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -66,7 +75,7 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
