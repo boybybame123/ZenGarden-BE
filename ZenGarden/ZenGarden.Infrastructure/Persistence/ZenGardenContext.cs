@@ -79,7 +79,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.BagId).HasName("PRIMARY");
 
-            entity.ToTable("bag");
+            entity.ToTable("Bag");
 
             entity.HasIndex(e => e.UserId, "idx_bag_user");
 
@@ -548,7 +548,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.ToTable("users");
+            entity.ToTable("Users");
 
             entity.HasIndex(e => e.Email, "Email").IsUnique();
 
