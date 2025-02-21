@@ -13,8 +13,15 @@ using ZenGarden.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}");
+var port = builder.Environment.IsDevelopment() 
+    ? null  // Để .NET tự chọn port trong môi trường Development
+    : Environment.GetEnvironmentVariable("PORT") ?? "8080"; // Port deploy
+
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,12 +31,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-var connectionString = builder.Configuration.GetConnectionString("ZenGardenDB");
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
+                       builder.Configuration.GetConnectionString("ZenGardenDB");
 
+// Đăng ký DbContext với MySQL
 builder.Services.AddDbContext<ZenGardenContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
 );
+
 
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -103,9 +113,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
