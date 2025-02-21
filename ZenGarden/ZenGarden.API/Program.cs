@@ -13,33 +13,37 @@ using ZenGarden.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = builder.Environment.IsDevelopment() 
-    ? null  // Để .NET tự chọn port trong môi trường Development
-    : Environment.GetEnvironmentVariable("PORT") ?? "8080"; // Port deploy
+var port = builder.Environment.IsDevelopment()
+    ? null  // Let .NET choose the port in Development environment
+    : Environment.GetEnvironmentVariable("PORT") ?? "8080"; // Deployment port
 
 if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://*:{port}");
 }
 
-
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers().AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
-                       builder.Configuration.GetConnectionString("ZenGardenDB");
 
-// Đăng ký DbContext với MySQL
+// Load the appropriate configuration file
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+var connectionString = builder.Configuration.GetConnectionString("ZenGardenDB");
+
+// Register DbContext with MySQL
 builder.Services.AddDbContext<ZenGardenContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
 );
-
 
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -59,7 +63,6 @@ builder.Services.AddAuthentication(options =>
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
@@ -74,8 +77,6 @@ builder.Services.AddSwaggerGen(c =>
     var securitySchema = new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Description = "Enter 'Bearer {your token}'",
-        In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
@@ -107,7 +108,6 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var app = builder.Build();
-
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
