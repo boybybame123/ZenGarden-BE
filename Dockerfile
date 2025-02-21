@@ -21,6 +21,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Thêm các dòng này
+ENV PORT=8080
+ENV ASPNETCORE_URLS="http://+:${PORT};https://+:${PORT}"
+EXPOSE ${PORT}
+
 # 7️⃣ Chạy ứng dụng
 ENTRYPOINT ["dotnet", "ZenGarden.API.dll"]
 
