@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: zengarden-api
+    runtime: docker
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: Jwt__Key
+        sync: false
+      - key: Jwt__Issuer
+        value: https://zengarden-be.onrender.com
+      - key: Jwt__Audience
+        sync: false
+    env: docker
+    plan: free
+    autoDeploy: true

@@ -21,7 +21,6 @@ public class UserRepository : IUserRepository
         {
             return null;
         }
-    
         return user;
     }
 

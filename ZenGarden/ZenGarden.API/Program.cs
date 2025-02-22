@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,28 +13,52 @@ using ZenGarden.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
+_ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers().AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-var connectionString = builder.Configuration.GetConnectionString("ZenGardenDB");
+
+// Load the appropriate configuration file
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                       ?? builder.Configuration.GetConnectionString("ZenGardenDB");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Database connection string is missing.");
+}
 
 builder.Services.AddDbContext<ZenGardenContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
 );
 
+
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = jwtSettings["Key"];
-if (string.IsNullOrEmpty(key))
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") 
+             ?? builder.Configuration["Jwt:Key"];
+
+if (string.IsNullOrEmpty(jwtKey))
 {
-    throw new InvalidOperationException("JWT Key is not configured. Please check your appsettings.json.");
+    throw new InvalidOperationException("JWT Key is missing in configuration.");
 }
+
+if (string.IsNullOrEmpty(jwtKey))
+{
+    throw new InvalidOperationException("JWT Key is not configured. Please check environment variables or appsettings.json.");
+}
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,11 +70,10 @@ builder.Services.AddAuthentication(options =>
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
@@ -60,8 +84,6 @@ builder.Services.AddSwaggerGen(c =>
     var securitySchema = new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Description = "Enter 'Bearer {your token}'",
-        In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
@@ -75,7 +97,7 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", securitySchema);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { securitySchema, new string[] { } }
+        { securitySchema, Array.Empty<string>() }
     });
 });
 
@@ -87,18 +109,23 @@ builder.Services.AddCors(options =>
         AllowAnyHeader());
 });
 
+var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
+var dataProtectionBuilder = builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+if (OperatingSystem.IsWindows())
+{
+    dataProtectionBuilder.ProtectKeysWithDpapiNG();
+}
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
