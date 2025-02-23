@@ -10,4 +10,6 @@ public interface IUserService
     Task UpdateUserAsync(Users user);
     Task DeleteUserAsync(int userId);
     Task<Users?> ValidateUserAsync(string? email, string? phone, string password);
+    Task<Users?> GetUserByRefreshTokenAsync(string refreshToken);
+    Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate);
 }

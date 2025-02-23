@@ -23,7 +23,7 @@ namespace ZenGarden.API.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unhandled exception occurred."); // ✅ Ghi log lỗi
+                _logger.LogError(ex, "An unhandled exception occurred.");
                 await HandleExceptionAsync(context, ex);
             }
         }
