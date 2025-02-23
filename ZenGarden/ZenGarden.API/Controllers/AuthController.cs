@@ -19,23 +19,15 @@ public class AuthController : Controller
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginModel loginModel)
+    public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
     {
-        
-        try
+        var user = await _userService.ValidateUserAsync(loginModel.Email, loginModel.Phone, loginModel.Password);
+        if (user == null)
         {
-            var user = _userService.ValidateUser(loginModel.Email, loginModel.Phone, loginModel.Password);
-            if (user == null)
-            {
-                return Unauthorized(new ErrorResponse("Invalid credentials."));
-            }
+            return Unauthorized(new ErrorResponse("Invalid credentials."));
+        }
 
-            var token = _tokenService.GenerateJwtToken(user);
-            return Ok(new { Token = token });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ErrorResponse("An error occurred while processing your request.", ex.Message));
-        }
+        var token = _tokenService.GenerateJwtToken(user);
+        return Ok(new { Token = token });
     }
 }

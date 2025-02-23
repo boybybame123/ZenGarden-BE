@@ -1,21 +1,29 @@
+using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository : GenericRepository<Users>, IUserRepository
 {
     private readonly ZenGardenContext _context;
-    public UserRepository(ZenGardenContext context)
+    public UserRepository(ZenGardenContext context) : base(context)
     {
         _context = context;
     }
 
-    public Users? ValidateUser(string? email, string? phone, string password)
+    public async Task<Users?> ValidateUserAsync(string? email, string? phone, string? password)
     {
-        var user = _context.Users.FirstOrDefault(u => 
-            (email != null && u.Email == email) || (phone != null && u.Phone == phone));
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
+            throw new ArgumentException("Email or phone must be provided."); 
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password cannot be empty.");
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u =>
+                (!string.IsNullOrEmpty(email) && u.Email.Equals(email, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(phone) && u.Phone == phone));
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
         {
@@ -23,5 +31,4 @@ public class UserRepository : IUserRepository
         }
         return user;
     }
-
 }
