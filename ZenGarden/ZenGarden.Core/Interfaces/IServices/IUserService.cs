@@ -5,7 +5,8 @@ namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IUserService
 {
-    Task<List<Users>> GetAllUsersAsync();
+   
+    Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter);
     Task<Users?> GetUserByIdAsync(int userId);
     Task<Users?> GetUserByEmailAsync(string email);
     Task CreateUserAsync(Users user);

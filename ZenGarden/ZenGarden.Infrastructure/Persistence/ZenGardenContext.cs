@@ -85,7 +85,7 @@ public partial class ZenGardenContext : DbContext
             .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
             .Build();
 
-        return configuration.GetConnectionString("DefaultConnection");
+        return configuration.GetConnectionString("ZenGardenDB");
     }
 
 

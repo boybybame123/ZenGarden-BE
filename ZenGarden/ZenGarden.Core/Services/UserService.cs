@@ -12,6 +12,15 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
     {
         return await userRepository.GetAllAsync();
     }
+    public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
+    {
+        var userFilterResult = await userRepository.GetAllAsync(filter);
+        if (userFilterResult == null || userFilterResult.Data == null)
+        {
+            throw new KeyNotFoundException("User not found.");
+        }
+        return userFilterResult.Data;
+    }
 
     public async Task<Users?> GetUserByIdAsync(int userId)
     {
