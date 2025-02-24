@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace ZenGarden.API.Middleware
 {
@@ -6,11 +6,17 @@ namespace ZenGarden.API.Middleware
     {
         public async Task Invoke(HttpContext context)
         {
-            if (!context.Request.HasJsonContentType())
+            // Bỏ qua kiểm tra Content-Type cho các phương thức GET, HEAD, OPTIONS
+            if (!HttpMethods.IsGet(context.Request.Method) &&
+                !HttpMethods.IsHead(context.Request.Method) &&
+                !HttpMethods.IsOptions(context.Request.Method))
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = "Invalid Content-Type" }));
-                return;
+                if (!context.Request.HasJsonContentType())
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = "Invalid Content-Type" }));
+                    return;
+                }
             }
 
             await next(context);
