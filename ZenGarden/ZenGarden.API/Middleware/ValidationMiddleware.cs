@@ -1,34 +1,30 @@
 ﻿using System.Text.Json;
 
-namespace ZenGarden.API.Middleware
+namespace ZenGarden.API.Middleware;
+
+public class ValidationMiddleware(RequestDelegate next)
 {
-    public class ValidationMiddleware(RequestDelegate next)
+    public async Task Invoke(HttpContext context)
     {
-        public async Task Invoke(HttpContext context)
-        {
-            // Bỏ qua kiểm tra Content-Type cho các phương thức GET, HEAD, OPTIONS
-            if (!HttpMethods.IsGet(context.Request.Method) &&
-                !HttpMethods.IsHead(context.Request.Method) &&
-                !HttpMethods.IsOptions(context.Request.Method))
+        if (!HttpMethods.IsGet(context.Request.Method) &&
+            !HttpMethods.IsHead(context.Request.Method) &&
+            !HttpMethods.IsOptions(context.Request.Method))
+            if (!context.Request.HasJsonContentType())
             {
-                if (!context.Request.HasJsonContentType())
-                {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = "Invalid Content-Type" }));
-                    return;
-                }
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = "Invalid Content-Type" }));
+                return;
             }
 
-            await next(context);
-        }
+        await next(context);
     }
+}
 
-    public static class HttpRequestExtensions
+public static class HttpRequestExtensions
+{
+    public static bool HasJsonContentType(this HttpRequest request)
     {
-        public static bool HasJsonContentType(this HttpRequest request)
-        {
-            return request.ContentType != null &&
-                   request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
-        }
+        return request.ContentType != null &&
+               request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
     }
 }

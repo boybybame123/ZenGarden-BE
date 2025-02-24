@@ -1,145 +1,145 @@
 ﻿{
-   "CodeGenerationMode": 4,
-   "ContextClassName": "zengardenContext",
-   "ContextNamespace": null,
-   "FilterSchemas": false,
-   "IncludeConnectionString": true,
-   "ModelNamespace": null,
-   "OutputContextPath": null,
-   "OutputPath": "Persistence",
-   "PreserveCasingWithRegex": true,
-   "ProjectRootNamespace": "ZenGarden.Infrastructure",
-   "Schemas": null,
-   "SelectedHandlebarsLanguage": 2,
-   "SelectedToBeGenerated": 1,
-   "T4TemplatePath": null,
-   "Tables": [
-      {
-         "Name": "bag",
-         "ObjectType": 0
-      },
-      {
-         "Name": "bagitem",
-         "ObjectType": 0
-      },
-      {
-         "Name": "dailyreward",
-         "ObjectType": 0
-      },
-      {
-         "Name": "dailyrewardclaim",
-         "ObjectType": 0
-      },
-      {
-         "Name": "deposittransaction",
-         "ObjectType": 0
-      },
-      {
-         "Name": "focusmethod",
-         "ObjectType": 0
-      },
-      {
-         "Name": "item",
-         "ObjectType": 0
-      },
-      {
-         "Name": "itemdetail",
-         "ObjectType": 0
-      },
-      {
-         "Name": "leaderboard",
-         "ObjectType": 0
-      },
-      {
-         "Name": "purchasehistory",
-         "ObjectType": 0
-      },
-      {
-         "Name": "roles",
-         "ObjectType": 0
-      },
-      {
-         "Name": "tasks",
-         "ObjectType": 0
-      },
-      {
-         "Name": "taskstatus",
-         "ObjectType": 0
-      },
-      {
-         "Name": "tradehistory",
-         "ObjectType": 0
-      },
-      {
-         "Name": "tradestatus",
-         "ObjectType": 0
-      },
-      {
-         "Name": "transactions",
-         "ObjectType": 0
-      },
-      {
-         "Name": "treeprogress",
-         "ObjectType": 0
-      },
-      {
-         "Name": "treetype",
-         "ObjectType": 0
-      },
-      {
-         "Name": "useractivity",
-         "ObjectType": 0
-      },
-      {
-         "Name": "userexperience",
-         "ObjectType": 0
-      },
-      {
-         "Name": "users",
-         "ObjectType": 0
-      },
-      {
-         "Name": "usertree",
-         "ObjectType": 0
-      },
-      {
-         "Name": "wallet",
-         "ObjectType": 0
-      },
-      {
-         "Name": "workspace",
-         "ObjectType": 0
-      },
-      {
-         "Name": "workspaceitem",
-         "ObjectType": 0
-      }
-   ],
-   "UiHint": null,
-   "UncountableWords": null,
-   "UseAsyncStoredProcedureCalls": true,
-   "UseBoolPropertiesWithoutDefaultSql": false,
-   "UseDatabaseNames": false,
-   "UseDatabaseNamesForRoutines": true,
-   "UseDateOnlyTimeOnly": true,
-   "UseDbContextSplitting": false,
-   "UseDecimalDataAnnotationForSprocResult": true,
-   "UseFluentApiOnly": true,
-   "UseHandleBars": false,
-   "UseHierarchyId": false,
-   "UseInflector": false,
-   "UseInternalAccessModifiersForSprocsAndFunctions": false,
-   "UseLegacyPluralizer": false,
-   "UseManyToManyEntity": false,
-   "UseNoDefaultConstructor": false,
-   "UseNoNavigations": false,
-   "UseNoObjectFilter": false,
-   "UseNodaTime": false,
-   "UseNullableReferences": false,
-   "UsePrefixNavigationNaming": false,
-   "UseSchemaFolders": false,
-   "UseSchemaNamespaces": false,
-   "UseSpatial": false,
-   "UseT4": false,
-   "UseT4Split": false
+  "CodeGenerationMode": 4,
+  "ContextClassName": "zengardenContext",
+  "ContextNamespace": null,
+  "FilterSchemas": false,
+  "IncludeConnectionString": true,
+  "ModelNamespace": null,
+  "OutputContextPath": null,
+  "OutputPath": "Persistence",
+  "PreserveCasingWithRegex": true,
+  "ProjectRootNamespace": "ZenGarden.Infrastructure",
+  "Schemas": null,
+  "SelectedHandlebarsLanguage": 2,
+  "SelectedToBeGenerated": 1,
+  "T4TemplatePath": null,
+  "Tables": [
+    {
+      "Name": "bag",
+      "ObjectType": 0
+    },
+    {
+      "Name": "bagitem",
+      "ObjectType": 0
+    },
+    {
+      "Name": "dailyreward",
+      "ObjectType": 0
+    },
+    {
+      "Name": "dailyrewardclaim",
+      "ObjectType": 0
+    },
+    {
+      "Name": "deposittransaction",
+      "ObjectType": 0
+    },
+    {
+      "Name": "focusmethod",
+      "ObjectType": 0
+    },
+    {
+      "Name": "item",
+      "ObjectType": 0
+    },
+    {
+      "Name": "itemdetail",
+      "ObjectType": 0
+    },
+    {
+      "Name": "leaderboard",
+      "ObjectType": 0
+    },
+    {
+      "Name": "purchasehistory",
+      "ObjectType": 0
+    },
+    {
+      "Name": "roles",
+      "ObjectType": 0
+    },
+    {
+      "Name": "tasks",
+      "ObjectType": 0
+    },
+    {
+      "Name": "taskstatus",
+      "ObjectType": 0
+    },
+    {
+      "Name": "tradehistory",
+      "ObjectType": 0
+    },
+    {
+      "Name": "tradestatus",
+      "ObjectType": 0
+    },
+    {
+      "Name": "transactions",
+      "ObjectType": 0
+    },
+    {
+      "Name": "treeprogress",
+      "ObjectType": 0
+    },
+    {
+      "Name": "treetype",
+      "ObjectType": 0
+    },
+    {
+      "Name": "useractivity",
+      "ObjectType": 0
+    },
+    {
+      "Name": "userexperience",
+      "ObjectType": 0
+    },
+    {
+      "Name": "users",
+      "ObjectType": 0
+    },
+    {
+      "Name": "usertree",
+      "ObjectType": 0
+    },
+    {
+      "Name": "wallet",
+      "ObjectType": 0
+    },
+    {
+      "Name": "workspace",
+      "ObjectType": 0
+    },
+    {
+      "Name": "workspaceitem",
+      "ObjectType": 0
+    }
+  ],
+  "UiHint": null,
+  "UncountableWords": null,
+  "UseAsyncStoredProcedureCalls": true,
+  "UseBoolPropertiesWithoutDefaultSql": false,
+  "UseDatabaseNames": false,
+  "UseDatabaseNamesForRoutines": true,
+  "UseDateOnlyTimeOnly": true,
+  "UseDbContextSplitting": false,
+  "UseDecimalDataAnnotationForSprocResult": true,
+  "UseFluentApiOnly": true,
+  "UseHandleBars": false,
+  "UseHierarchyId": false,
+  "UseInflector": false,
+  "UseInternalAccessModifiersForSprocsAndFunctions": false,
+  "UseLegacyPluralizer": false,
+  "UseManyToManyEntity": false,
+  "UseNoDefaultConstructor": false,
+  "UseNoNavigations": false,
+  "UseNoObjectFilter": false,
+  "UseNodaTime": false,
+  "UseNullableReferences": false,
+  "UsePrefixNavigationNaming": false,
+  "UseSchemaFolders": false,
+  "UseSchemaNamespaces": false,
+  "UseSpatial": false,
+  "UseT4": false,
+  "UseT4Split": false
 }

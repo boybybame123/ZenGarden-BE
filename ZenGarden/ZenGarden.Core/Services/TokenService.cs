@@ -9,8 +9,9 @@ namespace ZenGarden.Core.Services;
 
 public class TokenService(IOptions<JwtSettings> jwtOptions) : ITokenService
 {
-    private readonly JwtSettings _jwtSettings = jwtOptions.Value 
-                                                ?? throw new InvalidOperationException("JWT settings are missing in configuration.");
+    private readonly JwtSettings _jwtSettings = jwtOptions.Value
+                                                ?? throw new InvalidOperationException(
+                                                    "JWT settings are missing in configuration.");
 
     public string GenerateJwtToken(Users user)
     {
@@ -19,6 +20,6 @@ public class TokenService(IOptions<JwtSettings> jwtOptions) : ITokenService
 
     public string GenerateRefreshToken()
     {
-        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)); 
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 }
