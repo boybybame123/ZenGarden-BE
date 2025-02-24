@@ -3,15 +3,10 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(ZenGardenContext context) : IUnitOfWork
 {
-    private readonly ZenGardenContext _context;
+    private readonly ZenGardenContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
-    public UnitOfWork(ZenGardenContext context)
-    {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-    }
-    
     public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : class
     {
         return new GenericRepository<TEntity>(_context);

@@ -2,15 +2,8 @@ using System.Text.Json;
 
 namespace ZenGarden.API.Middleware
 {
-    public class ValidationMiddleware
+    public class ValidationMiddleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
-
-        public ValidationMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
-
         public async Task Invoke(HttpContext context)
         {
             if (!context.Request.HasJsonContentType())
@@ -20,7 +13,7 @@ namespace ZenGarden.API.Middleware
                 return;
             }
 
-            await _next(context);
+            await next(context);
         }
     }
 
