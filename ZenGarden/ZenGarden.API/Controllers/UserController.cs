@@ -12,14 +12,18 @@ namespace ZenGarden.API.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        IUserService userService;
+        private readonly IUserService userService;
+
+        public UserController(IUserService userService)
+        {
+            this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        }
 
         [HttpGet]
         public async Task<BusinessResult> GetUsers()
         {
             var users = await userService.GetAllUsersAsync();
-            return new BusinessResult(200,"oke",users);
+            return new BusinessResult(200, "oke", users);
         }
-    
     }
 }
