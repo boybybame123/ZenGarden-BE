@@ -1,6 +1,6 @@
-namespace ZenGarden.API.Models;
+namespace ZenGarden.Domain.DTOs;
 
-public class LoginModel
+public class LoginDto
 {
     public string? Email { get; set; }
     public string? Phone { get; set; }

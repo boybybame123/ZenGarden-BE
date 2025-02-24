@@ -1,27 +1,65 @@
+using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository(ZenGardenContext context) : GenericRepository<Users>(context), IUserRepository
 {
-    private readonly ZenGardenContext _context;
-    public UserRepository(ZenGardenContext context)
-    {
-        _context = context;
-    }
+    private readonly ZenGardenContext _context = context;
 
-    public Users? ValidateUser(string? email, string? phone, string password)
+    public async Task<Users?> ValidateUserAsync(string? email, string? phone, string? password)
     {
-        var user = _context.Users.FirstOrDefault(u => 
-            (email != null && u.Email == email) || (phone != null && u.Phone == phone));
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
+            throw new ArgumentException("Email or phone must be provided."); 
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password cannot be empty.");
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u =>
+                (!string.IsNullOrEmpty(email) && (u.Email).Equals(email, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(phone) && (u.Phone) == phone));
+
+        if (user == null || string.IsNullOrEmpty(user.Password))
         {
             return null;
         }
-        return user;
+
+        var isPasswordValid = PasswordHasher.VerifyPassword(password, user.Password);
+        return !isPasswordValid ? null : user;
+    }
+    
+    public async Task<Users?> GetByEmailAsync(string email)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    }
+    
+    public async Task<Users?> GetByPhoneAsync(string phone)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
+    }
+    
+    public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
     }
 
+    public async Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) throw new KeyNotFoundException("User not found");
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiry = expiryDate;
+
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task<Roles?> GetRoleByIdAsync(int roleId)
+    {
+        return await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId);
+    }
 }

@@ -1,49 +1,24 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
+using Microsoft.Extensions.Options;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.Config;
 using ZenGarden.Domain.Entities;
-
+using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
-public class TokenService : ITokenService
+public class TokenService(IOptions<JwtSettings> jwtOptions) : ITokenService
 {
-    private readonly IConfiguration _configuration;
-
-    public TokenService(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
+    private readonly JwtSettings _jwtSettings = jwtOptions.Value 
+                                                ?? throw new InvalidOperationException("JWT settings are missing in configuration.");
 
     public string GenerateJwtToken(Users user)
     {
-        var jwtSettings = _configuration.GetSection("Jwt");
-        var secretKey = jwtSettings["Key"];
-        if (string.IsNullOrEmpty(secretKey))
-        {
-            throw new InvalidOperationException("JWT Key is missing in configuration.");
-        }
+        return JwtHelper.GenerateToken(user, _jwtSettings);
+    }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expiration = DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpiresInMinutes"]));
-        
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: expiration,
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+    public string GenerateRefreshToken()
+    {
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)); 
     }
 }

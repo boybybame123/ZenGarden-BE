@@ -1,13 +1,19 @@
 using System.Text;
+using AspNetCoreRateLimit;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ZenGarden.API.Middleware;
+using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Core.Services;
+using ZenGarden.Domain.Config;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Infrastructure.Repositories;
 
@@ -15,15 +21,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
-// Add services to the container.
 builder.Services.AddControllers().AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
-// Load the appropriate configuration file
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -45,18 +50,10 @@ builder.Services.AddDbContext<ZenGardenContext>(options =>
 
 
 // Configure JWT authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") 
-             ?? builder.Configuration["Jwt:Key"];
-
-if (string.IsNullOrEmpty(jwtKey))
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
 {
     throw new InvalidOperationException("JWT Key is missing in configuration.");
-}
-
-if (string.IsNullOrEmpty(jwtKey))
-{
-    throw new InvalidOperationException("JWT Key is not configured. Please check environment variables or appsettings.json.");
 }
 
 builder.Services.AddAuthentication(options =>
@@ -71,9 +68,9 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
         };
     });
 
@@ -103,11 +100,30 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().
-            AllowAnyMethod().
-        AllowAnyHeader());
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+        policy.WithOrigins("https://yourfrontend.com") 
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(options =>
+{
+    options.GeneralRules =
+    [
+        new RateLimitRule
+        {
+            Endpoint = "*",
+            Limit = 100,
+            Period = "1m"
+        }
+    ];
+});
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
+builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 var dataProtectionBuilder = builder.Services.AddDataProtection()
@@ -123,8 +139,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigins");
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<LoggingMiddleware>();
+app.UseMiddleware<ValidationMiddleware>();
+app.UseIpRateLimiting();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
