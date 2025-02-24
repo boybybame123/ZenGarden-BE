@@ -8,6 +8,7 @@ namespace ZenGarden.Core.Services;
 
 public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork) : IUserService
 {
+    
     public async Task<List<Users>> GetAllUsersAsync()
     {
         return await userRepository.GetAllAsync();

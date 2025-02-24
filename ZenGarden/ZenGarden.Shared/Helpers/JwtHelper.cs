@@ -30,7 +30,11 @@ public static class JwtHelper
             claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
         }
 
-        claims.Add(new Claim(ClaimTypes.Role, user.Role.RoleName));
+        if (user.Role != null && !string.IsNullOrEmpty(user.Role.RoleName))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, user.Role.RoleName));
+        }
+        
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings.Issuer,
