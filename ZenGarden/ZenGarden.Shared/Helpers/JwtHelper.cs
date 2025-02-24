@@ -18,29 +18,31 @@ public static class JwtHelper
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expiresInMinutes = jwtSettings.ExpiresInMinutes > 0 ? jwtSettings.ExpiresInMinutes : 60;
+        var now = DateTime.UtcNow;
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Nbf, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
-
-        if (!string.IsNullOrEmpty(user.Email))
+        
+        if (!string.IsNullOrEmpty(user.FullName))
         {
-            claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
+            claims.Add(new Claim(ClaimTypes.Name, user.FullName));
         }
 
-        if (user.Role != null && !string.IsNullOrEmpty(user.Role.RoleName))
+        if (user.Role?.RoleName != null)
         {
             claims.Add(new Claim(ClaimTypes.Role, user.Role.RoleName));
         }
-        
 
         var token = new JwtSecurityToken(
-            issuer: jwtSettings.Issuer,
-            audience: jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(jwtSettings.ExpiresInMinutes),
+            expires: now.AddMinutes(expiresInMinutes),
             signingCredentials: credentials
         );
 
