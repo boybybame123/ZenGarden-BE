@@ -5,21 +5,26 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
+#nullable enable
 public partial class Users
 {
     public int UserId { get; set; }
 
     public int? RoleId { get; set; }
 
-    public string FullName { get; set; }
+    public string FullName { get; set; } = string.Empty;
 
-    public string Email { get; set; }
+    public string Email { get; set; } = string.Empty;
 
-    public string Password { get; set; }
+    public string Password { get; set; } = string.Empty;
 
-    public string Phone { get; set; }
+    public string Phone { get; set; } = string.Empty;
 
-    public string Status { get; set; }
+    public string Status { get; set; } = string.Empty;
+    
+    public string? RefreshToken { get; set; }
+    
+    public DateTime? RefreshTokenExpiry { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
@@ -35,7 +40,7 @@ public partial class Users
 
     public virtual ICollection<Purchasehistory> Purchasehistory { get; set; } = new List<Purchasehistory>();
 
-    public virtual Roles Role { get; set; }
+    public required virtual Roles Role { get; set; }
 
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
 
