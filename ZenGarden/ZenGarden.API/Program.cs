@@ -21,7 +21,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
-builder.Services.AddControllers().AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
+builder.Services.AddControllers()
+    .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -31,17 +32,15 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"))
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", false, true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
     .AddEnvironmentVariables();
 
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                        ?? builder.Configuration.GetConnectionString("ZenGardenDB");
 
 if (string.IsNullOrEmpty(connectionString))
-{
     throw new InvalidOperationException("Database connection string is missing.");
-}
 
 builder.Services.AddDbContext<ZenGardenContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
@@ -52,9 +51,7 @@ builder.Services.AddDbContext<ZenGardenContext>(options =>
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
-{
     throw new InvalidOperationException("JWT Key is missing in configuration.");
-}
 
 builder.Services.AddAuthentication(options =>
     {
@@ -101,7 +98,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins", policy =>
-        policy.WithOrigins("https://yourfrontend.com") 
+        policy.WithOrigins("https://yourfrontend.com")
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
@@ -127,7 +124,7 @@ builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>(); 
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 builder.Services.AddDataProtection()

@@ -13,9 +13,11 @@ public class EmailService : IEmailService
         EnableSsl = true
     };
 
-    public Task SendOtpEmailAsync(string email, string otp) => 
-        SendEmailAsync(email, "Your ZenGarden OTP Code", 
+    public Task SendOtpEmailAsync(string email, string otp)
+    {
+        return SendEmailAsync(email, "Your ZenGarden OTP Code",
             $"Your OTP code is: <b>{otp}</b>. It will expire in 5 minutes.");
+    }
 
     public async Task SendEmailAsync(string email, string subject, string body)
     {
@@ -24,7 +26,7 @@ public class EmailService : IEmailService
             From = new MailAddress("boybybame@gmail.com"),
             Subject = subject,
             Body = body,
-            IsBodyHtml = true,
+            IsBodyHtml = true
         };
         mailMessage.To.Add(email);
 
