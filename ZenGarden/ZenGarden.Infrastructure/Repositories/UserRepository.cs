@@ -18,11 +18,11 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
         if (string.IsNullOrWhiteSpace(password))
             throw new ArgumentException("Password cannot be empty.");
-
         var user = await _context.Users
+            .Include(u => u.Role) // Load thêm thông tin Role
             .FirstOrDefaultAsync(u =>
-                (!string.IsNullOrEmpty(email) && (u.Email).Equals(email, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(phone) && (u.Phone) == phone));
+                (!string.IsNullOrEmpty(email) && u.Email.Equals(email, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(phone) && u.Phone == phone));
 
         if (user == null || string.IsNullOrEmpty(user.Password))
         {
