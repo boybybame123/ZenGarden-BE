@@ -1,10 +1,14 @@
 using System.Text;
+using AspNetCoreRateLimit;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ZenGarden.API.Middleware;
+using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Core.Services;
@@ -15,7 +19,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
-// Add services to the container.
 builder.Services.AddControllers().AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -23,7 +26,6 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
-// Load the appropriate configuration file
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -103,11 +105,29 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().
-            AllowAnyMethod().
-        AllowAnyHeader());
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+        policy.WithOrigins("https://yourfrontend.com")  // Chỉ cho phép frontend chính thức
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(options =>
+{
+    options.GeneralRules = new List<RateLimitRule>
+    {
+        new RateLimitRule
+        {
+            Endpoint = "*",
+            Limit = 100,
+            Period = "1m"
+        }
+    };
+});
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginModelValidator>();
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 var dataProtectionBuilder = builder.Services.AddDataProtection()
@@ -123,8 +143,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigins");
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<LoggingMiddleware>();
+app.UseMiddleware<ValidationMiddleware>();
+app.UseIpRateLimiting();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

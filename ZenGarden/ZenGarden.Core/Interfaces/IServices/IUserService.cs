@@ -4,5 +4,12 @@ namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IUserService
 {
-    Users? ValidateUser(string? email, string? phone, string password);
+    Task<List<Users>> GetAllUsersAsync();
+    Task<Users?> GetUserByIdAsync(int userId);
+    Task CreateUserAsync(Users user);
+    Task UpdateUserAsync(Users user);
+    Task DeleteUserAsync(int userId);
+    Task<Users?> ValidateUserAsync(string? email, string? phone, string password);
+    Task<Users?> GetUserByRefreshTokenAsync(string refreshToken);
+    Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate);
 }
