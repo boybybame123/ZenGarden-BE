@@ -2,16 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserRepository : GenericRepository<Users>, IUserRepository
+public class UserRepository(ZenGardenContext context) : GenericRepository<Users>(context), IUserRepository
 {
-    private readonly ZenGardenContext _context;
-    public UserRepository(ZenGardenContext context) : base(context)
-    {
-        _context = context;
-    }
+    private readonly ZenGardenContext _context = context;
 
     public async Task<Users?> ValidateUserAsync(string? email, string? phone, string? password)
     {
@@ -31,13 +28,18 @@ public class UserRepository : GenericRepository<Users>, IUserRepository
             return null;
         }
 
-        var isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.Password);
+        var isPasswordValid = PasswordHasher.VerifyPassword(password, user.Password);
         return !isPasswordValid ? null : user;
     }
     
     public async Task<Users?> GetByEmailAsync(string email)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    }
+    
+    public async Task<Users?> GetByPhoneAsync(string phone)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
     }
     
     public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
@@ -54,5 +56,10 @@ public class UserRepository : GenericRepository<Users>, IUserRepository
         user.RefreshTokenExpiry = expiryDate;
 
         await _context.SaveChangesAsync();
+    }
+    
+    public async Task<Roles?> GetRoleByIdAsync(int roleId)
+    {
+        return await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId);
     }
 }

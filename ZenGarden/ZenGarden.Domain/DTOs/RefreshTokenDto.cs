@@ -1,6 +1,6 @@
-namespace ZenGarden.API.Models;
+namespace ZenGarden.Domain.DTOs;
 
-public class RefreshTokenRequest
+public class RefreshTokenDto
 {
     public string RefreshToken { get; set; } = string.Empty;
 }
