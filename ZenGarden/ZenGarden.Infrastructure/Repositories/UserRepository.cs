@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Shared.Helpers;
@@ -66,5 +67,64 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
     public async Task<Roles?> GetRoleByIdAsync(int roleId)
     {
         return await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId);
+    }
+    public async Task<FilterResult<Users>> GetAllAsync(UserFilterDto Filter)
+    {
+        int totalCount = 0;
+        IQueryable<Users> query = _context.Users
+            .Include(x => x.FullName)
+                .Include(x => x.Email)
+                    .Include(x => x.Phone)
+                        .Include(x=>x.Status)
+                            .Include(x=>x.Role);
+        //search
+        if (!string.IsNullOrWhiteSpace(Filter.Search))
+        {
+            query = query.Where(x => x.UserId.ToString().Contains(Filter.Search));
+        }
+        //filter
+        if (!string.IsNullOrWhiteSpace(Filter.Status))
+        {
+            query = query.Where(x => x.Status.ToString().Contains(Filter.Status));
+        }
+
+        if (!string.IsNullOrWhiteSpace(Filter.FullName))
+        {
+            query = query.Where(x => x.FullName.ToString().Contains(Filter.FullName));
+        }
+        if (!string.IsNullOrWhiteSpace(Filter.Phone))
+        {
+            query = query.Where(x => x.FullName.ToString().Contains(Filter.Phone));
+        }
+        if (!string.IsNullOrWhiteSpace(Filter.Email))
+        {
+            query = query.Where(x => x.FullName.ToString().Contains(Filter.Email));
+        }
+        // Sort
+        if (Filter.UserByDescending)
+        {
+            query = Filter.UserByDescending switch
+            {
+                _ => query.OrderByDescending(x => x.CreatedAt),
+            };
+        }
+        else
+        {
+            query = Filter.UserByDescending switch
+            {
+                _ => query.OrderBy(x => x.CreatedAt),
+            };
+        }
+        totalCount = await query.CountAsync();
+
+        // Pagination
+        int skip = ((int)Filter.PageNumber - 1) * 10;
+        query = query.Skip(skip).Take(10);
+
+        return new FilterResult<Users>
+        {
+            TotalCount = totalCount,
+            Data = await query.ToListAsync()
+        };
     }
 }
