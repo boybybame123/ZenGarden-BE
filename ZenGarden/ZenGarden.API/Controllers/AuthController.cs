@@ -13,8 +13,10 @@ namespace ZenGarden.API.Controllers;
 public class AuthController(
     IUserService userService,
     ITokenService tokenService,
+    IEmailService emailService,
     IValidator<LoginDto> loginValidator,
-    IValidator<RegisterDto> registerValidator)
+    IValidator<RegisterDto> registerValidator,
+    IValidator<ChangePasswordDto> changePasswordValidator)
     : Controller
 {
     [HttpPost("login")]
@@ -64,7 +66,6 @@ public class AuthController(
         return Ok(new { Token = newAccessToken, RefreshToken = newRefreshToken });
     }
 
-    
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
     {
@@ -124,16 +125,58 @@ public class AuthController(
             return NotFound(new ErrorResponse("User not found."));
         }
         
-        var userResponse = new UserResponse
+        return Ok(new UserResponse(user));
+    }
+    
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
+    {
+        var user = await userService.GetUserByEmailAsync(model.Email);
+        if (user == null)
         {
-            UserId = user.UserId,
-            FullName = user.FullName,
-            Email = user.Email,
-            Phone = user.Phone,
-            Status = user.Status,
-            Role = user.Role.RoleName
-        };
+            return NotFound(new { error = "User with this email does not exist." });
+        }
 
-        return Ok(userResponse);
+        var otp = await userService.GenerateAndSaveOtpAsync(user.Email);
+        await emailService.SendOtpEmailAsync(user.Email, otp);
+
+        return Ok(new { message = "OTP has been sent to your email." });
+    }
+    
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
+    {
+        var isResetSuccessful = await userService.ResetPasswordAsync(model.Email, model.Otp, model.NewPassword);
+        if (!isResetSuccessful)
+        {
+            return BadRequest(new { error = "Invalid or expired OTP." });
+        }
+
+        return Ok(new { message = "Password reset successfully." });
+    }
+    
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
+    {
+        var validationResult = await changePasswordValidator.ValidateAsync(model);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+        }
+
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var isChanged = await userService.ChangePasswordAsync(userId, model.CurrentPassword, model.NewPassword);
+        if (!isChanged)
+        {
+            return BadRequest(new { error = "Old password is incorrect." });
+        }
+
+        return Ok(new { message = "Password changed successfully." });
     }
 }

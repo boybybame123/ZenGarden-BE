@@ -22,13 +22,14 @@ public partial class Users
 
     public string Status { get; set; } = string.Empty;
     
-    public string? RefreshToken { get; set; }
-    
+    public bool IsActive { get; set; } = true;
+    public string? RefreshTokenHash { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
+    public string? OtpCodeHash { get; set; }
+    public DateTime? OtpExpiry { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual ICollection<Bag> Bag { get; set; } = new List<Bag>();
 
@@ -40,7 +41,7 @@ public partial class Users
 
     public virtual ICollection<Purchasehistory> Purchasehistory { get; set; } = new List<Purchasehistory>();
 
-    public required virtual Roles Role { get; set; }
+    public virtual Roles? Role { get; set; }
 
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
 

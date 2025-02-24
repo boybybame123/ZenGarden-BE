@@ -124,15 +124,14 @@ builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
 builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>(); 
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
-var dataProtectionBuilder = builder.Services.AddDataProtection()
+builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
-
-if (OperatingSystem.IsWindows())
-{
-    dataProtectionBuilder.ProtectKeysWithDpapiNG();
-}
 
 var app = builder.Build();
 

@@ -29,7 +29,7 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
         }
 
         var isPasswordValid = PasswordHasher.VerifyPassword(password, user.Password);
-        return !isPasswordValid ? null : user;
+        return isPasswordValid ? user : null;
     }
     
     public async Task<Users?> GetByEmailAsync(string email)
@@ -44,15 +44,20 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
     
     public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
-    }
+        var users = await _context.Users
+            .Where(u => u.RefreshTokenHash != null) 
+            .ToListAsync(); 
 
+        return users.FirstOrDefault(u => 
+            u.RefreshTokenHash != null && PasswordHasher.VerifyPassword(refreshToken, u.RefreshTokenHash));
+    }
+    
     public async Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null) throw new KeyNotFoundException("User not found");
 
-        user.RefreshToken = refreshToken;
+        user.RefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
         user.RefreshTokenExpiry = expiryDate;
 
         await _context.SaveChangesAsync();
