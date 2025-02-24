@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.API.Response;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Core.Services;
 using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
@@ -180,18 +181,5 @@ public class AuthController(
         return Ok(new { message = "Password changed successfully." });
     }
 
-    [HttpGet("GetUser")]
-
-    public async Task<IActionResult> GetUser([FromQuery] UserFilterDto model)
-    {
-        var userfilter = await userService.GetAllUserFilterAsync(model);
-        if (userfilter == null)
-        {
-            return NotFound(new ErrorResponse("User not found."));
-        }
-
-
-        return Ok(userfilter);
-    }
 
 }
