@@ -8,18 +8,16 @@ namespace ZenGarden.Core.Services;
 
 public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork) : IUserService
 {
-    
     public async Task<List<Users>> GetAllUsersAsync()
     {
         return await userRepository.GetAllAsync();
     }
+
     public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
     {
         var userFilterResult = await userRepository.GetAllAsync(filter);
         if (userFilterResult == null || userFilterResult.Data == null)
-        {
             throw new KeyNotFoundException("User not found.");
-        }
         return userFilterResult.Data;
     }
 
@@ -28,19 +26,16 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         return await userRepository.GetByIdAsync(userId)
                ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
     }
-    
+
     public async Task<Users?> GetUserByEmailAsync(string email)
     {
         return await userRepository.GetByEmailAsync(email);
     }
-    
+
     public async Task CreateUserAsync(Users user)
     {
         var existingUser = await userRepository.GetByEmailAsync(user.Email);
-        if (existingUser != null)
-        {
-            throw new InvalidOperationException($"User with email {user.Email} already exists.");
-        }
+        if (existingUser != null) throw new InvalidOperationException($"User with email {user.Email} already exists.");
 
         userRepository.Create(user);
         if (await unitOfWork.CommitAsync() == 0)
@@ -66,23 +61,20 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
 
     public async Task<Users?> ValidateUserAsync(string? email, string? phone, string password)
     {
-        var user = !string.IsNullOrEmpty(email) 
-            ? await userRepository.GetByEmailAsync(email) 
+        var user = !string.IsNullOrEmpty(email)
+            ? await userRepository.GetByEmailAsync(email)
             : await userRepository.GetByPhoneAsync(phone!);
 
-        if (user == null || string.IsNullOrEmpty(user.Password))
-        {
-            return null;
-        }
+        if (user == null || string.IsNullOrEmpty(user.Password)) return null;
 
         return PasswordHasher.VerifyPassword(password, user.Password) ? user : null;
     }
-    
+
     public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
     {
         return await userRepository.GetUserByRefreshTokenAsync(refreshToken);
     }
-    
+
     public async Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate)
     {
         await userRepository.UpdateUserRefreshTokenAsync(userId, refreshToken, expiryDate);
@@ -93,7 +85,7 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         var user = await userRepository.GetByIdAsync(userId)
                    ?? throw new KeyNotFoundException("User not found.");
 
-        user.RefreshTokenHash = null; 
+        user.RefreshTokenHash = null;
         user.RefreshTokenExpiry = DateTime.UtcNow;
 
         await unitOfWork.CommitAsync();
@@ -102,13 +94,10 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
     public async Task<Users?> RegisterUserAsync(RegisterDto dto)
     {
         var existingUser = await userRepository.GetByEmailAsync(dto.Email);
-        if (existingUser != null)
-        {
-            throw new InvalidOperationException("Email is already in use.");
-        }
+        if (existingUser != null) throw new InvalidOperationException("Email is already in use.");
 
         var role = await userRepository.GetRoleByIdAsync(dto.RoleId ?? 2)
-                    ?? throw new InvalidOperationException("Invalid RoleId.");
+                   ?? throw new InvalidOperationException("Invalid RoleId.");
 
         var newUser = new Users
         {
@@ -122,10 +111,7 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         };
 
         userRepository.Create(newUser);
-        if (await unitOfWork.CommitAsync() == 0)
-        {
-            throw new InvalidOperationException("Failed to create user.");
-        }
+        if (await unitOfWork.CommitAsync() == 0) throw new InvalidOperationException("Failed to create user.");
 
         return newUser;
     }
@@ -143,20 +129,14 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         await unitOfWork.CommitAsync();
         return otp;
     }
-    
+
     public async Task<bool> ResetPasswordAsync(string email, string otp, string newPassword)
     {
         var user = await userRepository.GetByEmailAsync(email);
-        if (user?.OtpCodeHash == null || user.OtpExpiry < DateTime.UtcNow)
-        {
-            return false; 
-        }
+        if (user?.OtpCodeHash == null || user.OtpExpiry < DateTime.UtcNow) return false;
 
         var isValid = PasswordHasher.VerifyPassword(otp, user.OtpCodeHash);
-        if (!isValid)
-        {
-            return false;
-        }
+        if (!isValid) return false;
 
         user.Password = PasswordHasher.HashPassword(newPassword);
         user.OtpCodeHash = null;
@@ -165,19 +145,13 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         await unitOfWork.CommitAsync();
         return true;
     }
-    
+
     public async Task<bool> ChangePasswordAsync(int userId, string oldPassword, string newPassword)
     {
         var user = await userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            return false;
-        }
+        if (user == null) return false;
 
-        if (!PasswordHasher.VerifyPassword(oldPassword, user.Password))
-        {
-            return false; 
-        }
+        if (!PasswordHasher.VerifyPassword(oldPassword, user.Password)) return false;
 
         user.Password = PasswordHasher.HashPassword(newPassword);
         await unitOfWork.CommitAsync();
