@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
@@ -20,7 +21,7 @@ public partial class Users
 
     public string Phone { get; set; } = string.Empty;
 
-    public string Status { get; set; } = string.Empty;
+    public UserStatus Status { get; set; }
     
     public bool IsActive { get; set; } = true;
     public string? RefreshTokenHash { get; set; }

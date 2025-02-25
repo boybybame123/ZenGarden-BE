@@ -2,6 +2,7 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
@@ -16,7 +17,7 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
     public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
     {
         var userFilterResult = await userRepository.GetAllAsync(filter);
-        if (userFilterResult == null || userFilterResult.Data == null)
+        if (userFilterResult.Data == null)
             throw new KeyNotFoundException("User not found.");
         return userFilterResult.Data;
     }
@@ -106,6 +107,8 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
             Password = PasswordHasher.HashPassword(dto.Password),
             RoleId = role.RoleId,
             Role = role,
+            Status = UserStatus.Active, 
+            IsActive = true,
             RefreshTokenHash = null,
             RefreshTokenExpiry = null
         };
