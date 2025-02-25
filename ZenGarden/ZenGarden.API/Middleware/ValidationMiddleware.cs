@@ -8,6 +8,7 @@ public class ValidationMiddleware(RequestDelegate next)
     {
         if (!HttpMethods.IsGet(context.Request.Method) &&
             !HttpMethods.IsHead(context.Request.Method) &&
+            !HttpMethods.IsDelete(context.Request.Method) &&
             !HttpMethods.IsOptions(context.Request.Method))
             if (!context.Request.HasJsonContentType())
             {

@@ -22,6 +22,34 @@ public class UserController : ControllerBase
         var users = await userService.GetAllUsersAsync();
         return Ok(users);
     }
-
-
+    [HttpGet("filter")]
+    public async Task<IActionResult> GetUsers([FromQuery] UserFilterDto filter)
+    {
+        var users = await userService.GetAllUserFilterAsync(filter);
+        return Ok(users);
+    }
+    [HttpGet("{userId}")]
+    public async Task<IActionResult> GetUserById(int userId)
+    {
+        var user = await userService.GetUserByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        return Ok(user);
+    }
+    [HttpDelete("{userId}")]
+    [Produces("application/json")]
+    public async Task<IActionResult> DeleteUser(int userId)
+    {
+        try
+        {
+            await userService.DeleteUserAsync(userId);
+            return Ok(new { message = "User deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return NoContent();
+        }
+    }
 }
