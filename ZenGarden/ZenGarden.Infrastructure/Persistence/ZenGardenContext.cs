@@ -183,7 +183,7 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Task).WithMany(p => p.Dailyrewardclaim)
+            entity.HasOne(d => d.Task).WithMany(p => p.DailyRewardClaim)
                 .HasForeignKey(d => d.TaskId)
                 .HasConstraintName("dailyrewardclaim_ibfk_2");
 
@@ -347,7 +347,7 @@ public partial class ZenGardenContext : DbContext
             entity.HasIndex(e => e.UserId, "idx_task_user");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
-            entity.Property(e => e.AiprocessedDescription)
+            entity.Property(e => e.AiProcessedDescription)
                 .HasColumnType("text")
                 .HasColumnName("AIProcessedDescription");
             entity.Property(e => e.CompletedAt)
@@ -361,7 +361,6 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.TaskDescription).HasColumnType("text");
             entity.Property(e => e.TaskName).HasMaxLength(255);
             entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.Xpreward).HasColumnName("XPReward");
 
             entity.HasOne(d => d.Status).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.StatusId)
@@ -534,7 +533,7 @@ public partial class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.FocusMethodId)
                 .HasConstraintName("useractivity_ibfk_2");
 
-            entity.HasOne(d => d.Task).WithMany(p => p.Useractivity)
+            entity.HasOne(d => d.Task).WithMany(p => p.UserActivity)
                 .HasForeignKey(d => d.TaskId)
                 .HasConstraintName("useractivity_ibfk_3");
 
