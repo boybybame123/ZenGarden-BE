@@ -1,18 +1,27 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserController(IUserService userService) : ControllerBase
+public class UserController : ControllerBase
 {
-    private readonly IUserService _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+    private readonly IUserService userService;
 
-    [HttpGet("users")]
-    public IActionResult GetUsers()
+    public UserController(IUserService userService)
     {
-        var users = _userService.GetAllUsersAsync();
+        this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
+    }
+
+    // GET: api/User
+    [HttpGet]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users = await userService.GetAllUsersAsync();
         return Ok(users);
     }
+
+
 }
