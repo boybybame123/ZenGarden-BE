@@ -1,4 +1,4 @@
-using ZenGarden.Core.Interfaces.IRepositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
@@ -9,9 +9,16 @@ namespace ZenGarden.Core.Services;
 
 public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork) : IUserService
 {
-    public async Task<List<Users>> GetAllUsersAsync()
+    public async Task<List<UserDto>> GetAllUsersAsync()
     {
-        return await userRepository.GetAllAsync();
+        var users = await userRepository.GetAllAsync();
+        return users.Select(u => new UserDto
+        {
+            Id = u.UserId,
+            Email = u.Email,
+            Phone = u.Phone
+            // Ánh xạ các thuộc tính khác
+        }).ToList();
     }
 
     public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
