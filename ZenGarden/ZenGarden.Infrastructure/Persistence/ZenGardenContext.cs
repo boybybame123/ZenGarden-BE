@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Infrastructure.Persistence;
@@ -68,6 +69,7 @@ public partial class ZenGardenContext : DbContext
     public virtual DbSet<Workspace> Workspace { get; set; }
 
     public virtual DbSet<Workspaceitem> Workspaceitem { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -88,8 +90,6 @@ public partial class ZenGardenContext : DbContext
         return configuration.GetConnectionString("ZenGardenDB");
     }
 
-
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -100,7 +100,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.BagId).HasName("PRIMARY");
 
-            entity.ToTable("Bag");
+            entity.ToTable("bag");
 
             entity.HasIndex(e => e.UserId, "idx_bag_user");
 
@@ -123,7 +123,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.BagItemId).HasName("PRIMARY");
 
-            entity.ToTable("Bagitem");
+            entity.ToTable("bagitem");
 
             entity.HasIndex(e => e.BagId, "BagID");
 
@@ -149,9 +149,9 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.DailyId).HasName("PRIMARY");
 
-            entity.ToTable("Dailyreward");
+            entity.ToTable("dailyreward");
 
-            entity.HasIndex(e => e.ItemId, "ItemID");
+            entity.HasIndex(e => e.ItemId, "ItemID1");
 
             entity.Property(e => e.DailyId).HasColumnName("DailyID");
             entity.Property(e => e.ConditionType).HasMaxLength(50);
@@ -169,7 +169,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.ClaimId).HasName("PRIMARY");
 
-            entity.ToTable("Dailyrewardclaim");
+            entity.ToTable("dailyrewardclaim");
 
             entity.HasIndex(e => e.TaskId, "TaskID");
 
@@ -196,7 +196,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.DepositId).HasName("PRIMARY");
 
-            entity.ToTable("Deposittransaction");
+            entity.ToTable("deposittransaction");
 
             entity.HasIndex(e => e.UserId, "UserID");
 
@@ -223,7 +223,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.FocusMethodId).HasName("PRIMARY");
 
-            entity.ToTable("Focusmethod");
+            entity.ToTable("focusmethod");
 
             entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
             entity.Property(e => e.CreatedAt)
@@ -236,7 +236,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.ItemId).HasName("PRIMARY");
 
-            entity.ToTable("Item");
+            entity.ToTable("item");
 
             entity.HasIndex(e => new { e.Type, e.Rarity }, "idx_item_type_rarity");
 
@@ -254,7 +254,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.ItemDetailId).HasName("PRIMARY");
 
-            entity.ToTable("Itemdetail");
+            entity.ToTable("itemdetail");
 
             entity.HasIndex(e => e.ItemId, "idx_item_detail_itemid").IsUnique();
 
@@ -282,9 +282,9 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.LeaderboardId).HasName("PRIMARY");
 
-            entity.ToTable("Leaderboard");
+            entity.ToTable("leaderboard");
 
-            entity.HasIndex(e => e.UserId, "UserID");
+            entity.HasIndex(e => e.UserId, "UserID1");
 
             entity.Property(e => e.LeaderboardId).HasColumnName("LeaderboardID");
             entity.Property(e => e.LastUpdated)
@@ -302,11 +302,11 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.PurchaseId).HasName("PRIMARY");
 
-            entity.ToTable("Purchasehistory");
+            entity.ToTable("purchasehistory");
 
-            entity.HasIndex(e => e.ItemId, "ItemID");
+            entity.HasIndex(e => e.ItemId, "ItemID2");
 
-            entity.HasIndex(e => e.UserId, "UserID");
+            entity.HasIndex(e => e.UserId, "UserID2");
 
             entity.Property(e => e.PurchaseId).HasColumnName("PurchaseID");
             entity.Property(e => e.CreatedAt)
@@ -330,7 +330,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.RoleId).HasName("PRIMARY");
 
-            entity.ToTable("Roles");
+            entity.ToTable("roles");
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.RoleName).HasMaxLength(50);
@@ -340,7 +340,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
 
-            entity.ToTable("Tasks");
+            entity.ToTable("tasks");
 
             entity.HasIndex(e => e.StatusId, "StatusID");
 
@@ -376,7 +376,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.StatusId).HasName("PRIMARY");
 
-            entity.ToTable("Taskstatus");
+            entity.ToTable("taskstatus");
 
             entity.HasIndex(e => e.StatusName, "StatusName").IsUnique();
 
@@ -388,7 +388,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.TradeId).HasName("PRIMARY");
 
-            entity.ToTable("Tradehistory");
+            entity.ToTable("tradehistory");
 
             entity.HasIndex(e => e.UserBid, "UserBID");
 
@@ -439,7 +439,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.StatusId).HasName("PRIMARY");
 
-            entity.ToTable("Tradestatus");
+            entity.ToTable("tradestatus");
 
             entity.Property(e => e.StatusId).HasColumnName("StatusID");
             entity.Property(e => e.StatusName).HasMaxLength(50);
@@ -449,7 +449,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.TransactionId).HasName("PRIMARY");
 
-            entity.ToTable("Transactions");
+            entity.ToTable("transactions");
 
             entity.HasIndex(e => e.WalletId, "WalletID");
 
@@ -481,7 +481,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.ProgressId).HasName("PRIMARY");
 
-            entity.ToTable("Treeprogress");
+            entity.ToTable("treeprogress");
 
             entity.HasIndex(e => e.UserTreeId, "UserTreeID");
 
@@ -499,7 +499,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.TreeTypeId).HasName("PRIMARY");
 
-            entity.ToTable("Treetype");
+            entity.ToTable("treetype");
 
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
             entity.Property(e => e.BasePrice).HasPrecision(10, 2);
@@ -512,11 +512,11 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.ActivityId).HasName("PRIMARY");
 
-            entity.ToTable("Useractivity");
+            entity.ToTable("useractivity");
 
             entity.HasIndex(e => e.FocusMethodId, "FocusMethodID");
 
-            entity.HasIndex(e => e.TaskId, "TaskID");
+            entity.HasIndex(e => e.TaskId, "TaskID1");
 
             entity.HasIndex(e => e.UserId, "idx_user_activity_user");
 
@@ -547,9 +547,9 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.UserExperienceId).HasName("PRIMARY");
 
-            entity.ToTable("Userexperience");
+            entity.ToTable("userexperience");
 
-            entity.HasIndex(e => e.UserId, "UserID");
+            entity.HasIndex(e => e.UserId, "UserID3");
 
             entity.Property(e => e.UserExperienceId).HasColumnName("UserExperienceID");
             entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
@@ -569,7 +569,7 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.ToTable("Users");
+            entity.ToTable("users");
 
             entity.HasIndex(e => e.Email, "Email").IsUnique();
 
@@ -579,12 +579,24 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp");
-            entity.Property(e => e.Email).HasMaxLength(100);
-            entity.Property(e => e.FullName).HasMaxLength(100);
-            entity.Property(e => e.Password).HasMaxLength(255);
-            entity.Property(e => e.Phone).HasMaxLength(20);
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.FullName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.OtpExpiry).HasMaxLength(6);
+            entity.Property(e => e.Password)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.Phone)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.RefreshTokenExpiry).HasMaxLength(6);
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
-            entity.Property(e => e.Status).HasMaxLength(20);
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -599,11 +611,11 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.UserTreeId).HasName("PRIMARY");
 
-            entity.ToTable("Usertree");
+            entity.ToTable("usertree");
 
             entity.HasIndex(e => e.FinalTreeId, "FinalTreeID");
 
-            entity.HasIndex(e => e.UserId, "UserID");
+            entity.HasIndex(e => e.UserId, "UserID4");
 
             entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
             entity.Property(e => e.FinalTreeId).HasColumnName("FinalTreeID");
@@ -633,9 +645,9 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.WalletId).HasName("PRIMARY");
 
-            entity.ToTable("Wallet");
+            entity.ToTable("wallet");
 
-            entity.HasIndex(e => e.UserId, "UserID");
+            entity.HasIndex(e => e.UserId, "UserID5");
 
             entity.Property(e => e.WalletId).HasColumnName("WalletID");
             entity.Property(e => e.Balance)
@@ -656,9 +668,9 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.WorkspaceId).HasName("PRIMARY");
 
-            entity.ToTable("Workspace");
+            entity.ToTable("workspace");
 
-            entity.HasIndex(e => e.UserId, "UserID");
+            entity.HasIndex(e => e.UserId, "UserID6");
 
             entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
             entity.Property(e => e.Configuration).HasColumnType("json");
@@ -680,9 +692,9 @@ public partial class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.WorkspaceItemId).HasName("PRIMARY");
 
-            entity.ToTable("Workspaceitem");
+            entity.ToTable("workspaceitem");
 
-            entity.HasIndex(e => e.ItemId, "ItemID");
+            entity.HasIndex(e => e.ItemId, "ItemID3");
 
             entity.HasIndex(e => e.WorkspaceId, "WorkspaceID");
 
