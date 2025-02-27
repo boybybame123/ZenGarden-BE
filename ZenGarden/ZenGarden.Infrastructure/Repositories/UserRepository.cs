@@ -50,51 +50,42 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
     public async Task<FilterResult<Users>> GetAllAsync(UserFilterDto filter)
     {
-        IQueryable<Users> query = _context.Users
-            .Include(x => x.FullName)
-            .Include(x => x.Email)
-            .Include(x => x.Phone)
-            .Include(x => x.Status)
-            .Include(x => x.Role);
-        //search
+        IQueryable<Users> query = _context.Users.Include(x => x.Role);
+
+        // Search theo UserId
         if (!string.IsNullOrWhiteSpace(filter.Search))
             query = query.Where(x => x.UserId.ToString().Contains(filter.Search));
-        //filter
-        if (!string.IsNullOrWhiteSpace(filter.Status))
+
+        // Filter theo Status
+        if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<UserStatus>(filter.Status, out var status))
         {
-            if (Enum.TryParse<UserStatus>(filter.Status, out var status))
-            {
-                query = query.Where(x => x.Status == status);
-            }
+            query = query.Where(x => x.Status == status);
         }
 
+        // Filter theo FullName, Phone, Email
         if (!string.IsNullOrWhiteSpace(filter.FullName))
-            query = query.Where(x => x.FullName.ToString().Contains(filter.FullName));
+            query = query.Where(x => x.FullName.Contains(filter.FullName));
+
         if (!string.IsNullOrWhiteSpace(filter.Phone))
-            query = query.Where(x => x.FullName.ToString().Contains(filter.Phone));
+            query = query.Where(x => x.Phone.Contains(filter.Phone));
+
         if (!string.IsNullOrWhiteSpace(filter.Email))
-            query = query.Where(x => x.FullName.ToString().Contains(filter.Email));
+            query = query.Where(x => x.Email.Contains(filter.Email));
+
         // Sort
         if (filter.UserByDescending)
-            query = filter.UserByDescending switch
-            {
-                _ => query.OrderByDescending(x => x.CreatedAt)
-            };
+            query = query.OrderByDescending(x => x.CreatedAt);
         else
-            query = filter.UserByDescending switch
-            {
-                _ => query.OrderBy(x => x.CreatedAt)
-            };
+            query = query.OrderBy(x => x.CreatedAt);
+
+        // Tổng số bản ghi (trước khi phân trang)
         var totalCount = await query.CountAsync();
 
         // Pagination
         var skip = (filter.PageNumber - 1) * 10;
-        query = query.Skip(skip).Take(10);
+        var users = await query.Skip(skip).Take(10).ToListAsync();
 
-        return new FilterResult<Users>
-        {
-            TotalCount = totalCount,
-            Data = await query.ToListAsync()
-        };
+        return new FilterResult<Users>(users, totalCount);
     }
+
 }
