@@ -42,14 +42,7 @@ public class UserController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> DeleteUser(int userId)
     {
-        try
-        {
             await userService.DeleteUserAsync(userId);
             return Ok(new { message = "User deleted successfully" });
-        }
-        catch (Exception ex)
-        {
-            return NoContent();
-        }
     }
 }

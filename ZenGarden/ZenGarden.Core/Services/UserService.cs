@@ -1,4 +1,5 @@
-﻿using ZenGarden.Core.Interfaces.IRepositories;
+﻿using AutoMapper;
+using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
@@ -7,18 +8,12 @@ using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
-public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork) : IUserService
+public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork,  IMapper mapper) : IUserService
 {
     public async Task<List<UserDto>> GetAllUsersAsync()
     {
         var users = await userRepository.GetAllAsync();
-        return users.Select(u => new UserDto
-        {
-            Id = u.UserId,
-            Email = u.Email,
-            Phone = u.Phone
-            // Ánh xạ các thuộc tính khác
-        }).ToList();
+        return mapper.Map<List<UserDto>>(users);
     }
 
     public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
@@ -107,18 +102,12 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         var role = await userRepository.GetRoleByIdAsync(dto.RoleId ?? 2)
                    ?? throw new InvalidOperationException("Invalid RoleId.");
 
-        var newUser = new Users
-        {
-            Email = dto.Email,
-            Phone = dto.Phone,
-            Password = PasswordHasher.HashPassword(dto.Password),
-            RoleId = role.RoleId,
-            Role = role,
-            Status = UserStatus.Active, 
-            IsActive = true,
-            RefreshTokenHash = null,
-            RefreshTokenExpiry = null
-        };
+        var newUser = mapper.Map<Users>(dto);
+        newUser.Password = PasswordHasher.HashPassword(dto.Password);
+        newUser.RoleId = role.RoleId;
+        newUser.Role = role;
+        newUser.Status = UserStatus.Active;
+        newUser.IsActive = true;
 
         userRepository.Create(newUser);
         if (await unitOfWork.CommitAsync() == 0) throw new InvalidOperationException("Failed to create user.");
