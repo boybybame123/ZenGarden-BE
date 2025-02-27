@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Infrastructure.Persistence;
 
@@ -594,6 +595,9 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.RefreshTokenExpiry).HasMaxLength(6);
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.Status)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (UserStatus)Enum.Parse(typeof(UserStatus), v))
                 .IsRequired()
                 .HasMaxLength(20);
             entity.Property(e => e.UpdatedAt)

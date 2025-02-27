@@ -11,11 +11,13 @@ using ZenGarden.API.Middleware;
 using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Core.Mappings;
 using ZenGarden.Core.Services;
 using ZenGarden.Domain.Config;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Infrastructure.Repositories;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -129,6 +131,9 @@ builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrateg
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
 
 var app = builder.Build();
 
