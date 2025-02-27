@@ -5,4 +5,4 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ZenGarden.Domain.DTOs;
-public record UserDto(int Id, string Email, string Phone);
+public record UserDto(int UserId = 0, string Email =null, string Phone = null);
