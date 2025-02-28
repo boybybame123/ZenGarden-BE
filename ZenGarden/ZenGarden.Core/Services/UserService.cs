@@ -8,7 +8,7 @@ using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
-public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork,  IMapper mapper) : IUserService
+public class UserService(IUserRepository userRepository, IBagRepository bagRepository, IWalletRepository walletRepository, IUnitOfWork unitOfWork,  IMapper mapper) : IUserService
 {
     public async Task<List<UserDto>> GetAllUsersAsync()
     {
@@ -108,6 +108,13 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork,
         newUser.Role = role;
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
+        
+        var wallet = new Wallet { User = newUser, Balance = 0 };
+        var bag = new Bag { User = newUser };
+
+        userRepository.Create(newUser);
+        walletRepository.Create(wallet);
+        bagRepository.Create(bag);
 
         userRepository.Create(newUser);
         if (await unitOfWork.CommitAsync() == 0) throw new InvalidOperationException("Failed to create user.");
