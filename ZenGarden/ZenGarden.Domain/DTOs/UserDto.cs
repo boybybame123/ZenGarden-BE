@@ -1,4 +1,4 @@
-﻿namespace ZenGarden.Domain.DTOs;
+namespace ZenGarden.Domain.DTOs;
 public class UserDto
 {
     public int UserId { get; set; }
