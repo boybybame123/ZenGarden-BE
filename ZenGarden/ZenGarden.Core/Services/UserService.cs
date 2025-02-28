@@ -8,7 +8,7 @@ using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
-public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork,  IMapper mapper) : IUserService
+public class UserService(IUserRepository userRepository, IBagRepository bagRepository, IWalletRepository walletRepository, IUnitOfWork unitOfWork,  IMapper mapper) : IUserService
 {
     public async Task<List<UserDto>> GetAllUsersAsync()
     {
@@ -66,7 +66,7 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork,
     {
         var user = !string.IsNullOrEmpty(email)
             ? await userRepository.GetByEmailAsync(email)
-            : await userRepository.GetByPhoneAsync(phone!);
+            : await userRepository.GetByPhoneAsync(phone);
 
         if (user == null || string.IsNullOrEmpty(user.Password)) return null;
 
@@ -109,11 +109,31 @@ public class UserService(IUserRepository userRepository, IUnitOfWork unitOfWork,
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
 
-        userRepository.Create(newUser);
-        if (await unitOfWork.CommitAsync() == 0) throw new InvalidOperationException("Failed to create user.");
+        await unitOfWork.BeginTransactionAsync();
+        try
+        {
+            userRepository.Create(newUser);
+            await unitOfWork.CommitAsync(); 
 
-        return newUser;
+            var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 }; 
+            var bag = new Bag { UserId = newUser.UserId }; 
+
+            walletRepository.Create(wallet);
+            bagRepository.Create(bag);
+
+            if (await unitOfWork.CommitAsync() == 0)
+                throw new InvalidOperationException("Failed to create wallet or bag.");
+
+            await unitOfWork.CommitTransactionAsync();
+            return newUser; 
+        }
+        catch
+        {
+            await unitOfWork.RollbackTransactionAsync();
+            throw; 
+        }
     }
+
 
     public async Task<string> GenerateAndSaveOtpAsync(string email)
     {
