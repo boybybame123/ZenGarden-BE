@@ -17,7 +17,7 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
         return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<Users?> GetByPhoneAsync(string phone)
+    public async Task<Users?> GetByPhoneAsync(string? phone)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
     }
@@ -73,10 +73,7 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
             query = query.Where(x => x.Email.Contains(filter.Email));
 
         // Sort
-        if (filter.UserByDescending)
-            query = query.OrderByDescending(x => x.CreatedAt);
-        else
-            query = query.OrderBy(x => x.CreatedAt);
+        query = filter.UserByDescending ? query.OrderByDescending(x => x.CreatedAt) : query.OrderBy(x => x.CreatedAt);
 
         // Tổng số bản ghi (trước khi phân trang)
         var totalCount = await query.CountAsync();

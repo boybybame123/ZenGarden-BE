@@ -124,6 +124,8 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
 builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IBagRepository, BagRepository>();
+builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();

@@ -66,7 +66,7 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
     {
         var user = !string.IsNullOrEmpty(email)
             ? await userRepository.GetByEmailAsync(email)
-            : await userRepository.GetByPhoneAsync(phone!);
+            : await userRepository.GetByPhoneAsync(phone);
 
         if (user == null || string.IsNullOrEmpty(user.Password)) return null;
 
@@ -108,19 +108,32 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
         newUser.Role = role;
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
-        
-        var wallet = new Wallet { User = newUser, Balance = 0 };
-        var bag = new Bag { User = newUser };
 
-        userRepository.Create(newUser);
-        walletRepository.Create(wallet);
-        bagRepository.Create(bag);
+        await unitOfWork.BeginTransactionAsync();
+        try
+        {
+            userRepository.Create(newUser);
+            await unitOfWork.CommitAsync(); 
 
-        userRepository.Create(newUser);
-        if (await unitOfWork.CommitAsync() == 0) throw new InvalidOperationException("Failed to create user.");
+            var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 }; 
+            var bag = new Bag { UserId = newUser.UserId }; 
 
-        return newUser;
+            walletRepository.Create(wallet);
+            bagRepository.Create(bag);
+
+            if (await unitOfWork.CommitAsync() == 0)
+                throw new InvalidOperationException("Failed to create wallet or bag.");
+
+            await unitOfWork.CommitTransactionAsync();
+            return newUser; 
+        }
+        catch
+        {
+            await unitOfWork.RollbackTransactionAsync();
+            throw; 
+        }
     }
+
 
     public async Task<string> GenerateAndSaveOtpAsync(string email)
     {
