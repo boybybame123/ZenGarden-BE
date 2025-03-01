@@ -9,6 +9,7 @@ public interface IUserService
     Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter);
     Task<Users?> GetUserByIdAsync(int userId);
     Task<Users?> GetUserByEmailAsync(string email);
+    Task ChangeUserisActiveAsync(int userId);
     Task CreateUserAsync(Users user);
     Task UpdateUserAsync(Users user);
     Task DeleteUserAsync(int userId);
