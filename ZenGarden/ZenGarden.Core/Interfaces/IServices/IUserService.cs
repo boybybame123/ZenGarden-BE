@@ -11,7 +11,7 @@ public interface IUserService
     Task<Users?> GetUserByEmailAsync(string email);
     Task ChangeUserisActiveAsync(int userId);
     Task CreateUserAsync(Users user);
-    Task UpdateUserAsync(Users user);
+    Task UpdateUserAsync(UserDto user);
     Task DeleteUserAsync(int userId);
     Task<Users?> ValidateUserAsync(string? email, string? phone, string password);
     Task<Users?> GetUserByRefreshTokenAsync(string refreshToken);
