@@ -52,4 +52,11 @@ public class UserController : ControllerBase
         await userService.ChangeUserisActiveAsync(userId);
         return Ok(new { message = "User active status changed successfully" });
     }
+    [HttpPost("update user")]
+    [Produces("application/json")]
+    public async Task<IActionResult> UpdateUser(UserDto user)
+    {
+        await userService.UpdateUserAsync(user);
+        return Ok(new { message = "User updated successfully" });
+    }
 }

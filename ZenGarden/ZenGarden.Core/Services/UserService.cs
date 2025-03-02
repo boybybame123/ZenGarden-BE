@@ -56,9 +56,12 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
             throw new InvalidOperationException("Failed to create user.");
     }
 
-    public async Task UpdateUserAsync(Users user)
+    public async Task UpdateUserAsync(UserDto user)
     {
-        userRepository.Update(user);
+        var userupdate = await GetUserByIdAsync(user.UserId);
+        userupdate = mapper.Map(user, userupdate);
+
+        userRepository.Update(userupdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
     }
