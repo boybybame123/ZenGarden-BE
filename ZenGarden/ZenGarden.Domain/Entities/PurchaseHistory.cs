@@ -5,19 +5,21 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Dailyrewardclaim
+public partial class PurchaseHistory
 {
-    public int ClaimId { get; set; }
+    public int PurchaseId { get; set; }
 
     public int? UserId { get; set; }
 
-    public int? DailyId { get; set; }
+    public int? ItemId { get; set; }
 
-    public int? TaskId { get; set; }
+    public decimal? TotalPrice { get; set; }
 
-    public DateTime? ClaimedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    public virtual Tasks Task { get; set; }
+    public string Status { get; set; }
+
+    public virtual Item Item { get; set; }
 
     public virtual Users User { get; set; }
 }

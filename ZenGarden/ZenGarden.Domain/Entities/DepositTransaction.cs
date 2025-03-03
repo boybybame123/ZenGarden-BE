@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Deposittransaction
+public partial class DepositTransaction
 {
     public int DepositId { get; set; }
 

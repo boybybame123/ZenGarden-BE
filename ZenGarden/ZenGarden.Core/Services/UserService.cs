@@ -103,6 +103,7 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
                    ?? throw new InvalidOperationException("Invalid RoleId.");
 
         var newUser = mapper.Map<Users>(dto);
+        newUser.UserName = string.IsNullOrWhiteSpace(dto.FullName) ? GenerateRandomUsername() : dto.FullName; 
         newUser.Password = PasswordHasher.HashPassword(dto.Password);
         newUser.RoleId = role.RoleId;
         newUser.Role = role;
@@ -115,26 +116,28 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
             userRepository.Create(newUser);
             await unitOfWork.CommitAsync(); 
 
-            var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 }; 
-            var bag = new Bag { UserId = newUser.UserId }; 
+            var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
+            var bag = new Bag { UserId = newUser.UserId };
 
             walletRepository.Create(wallet);
             bagRepository.Create(bag);
 
-            if (await unitOfWork.CommitAsync() == 0)
-                throw new InvalidOperationException("Failed to create wallet or bag.");
-
+            await unitOfWork.CommitAsync(); 
             await unitOfWork.CommitTransactionAsync();
-            return newUser; 
+            return newUser;
         }
         catch
         {
             await unitOfWork.RollbackTransactionAsync();
-            throw; 
+            throw;
         }
     }
-
-
+    
+    private static string GenerateRandomUsername()
+    {
+        return $"User_{Guid.NewGuid().ToString("N")[..8]}";
+    }
+    
     public async Task<string> GenerateAndSaveOtpAsync(string email)
     {
         var user = await userRepository.GetByEmailAsync(email)

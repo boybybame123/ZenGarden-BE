@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Taskstatus
+public partial class TradeStatus
 {
     public int StatusId { get; set; }
 
     public string StatusName { get; set; }
 
-    public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
+    public virtual ICollection<TradeHistory> TradeHistory { get; set; } = new List<TradeHistory>();
 }

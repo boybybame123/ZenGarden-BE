@@ -6,7 +6,7 @@ namespace ZenGarden.API.Response;
 public class UserResponse(Users user)
 {
     public int UserId { get; set; } = user.UserId;
-    public string FullName { get; set; } = user.FullName;
+    public string FullName { get; set; } = user.UserName;
     public string Email { get; set; } = user.Email;
     public string Phone { get; set; } = user.Phone;
     public UserStatus Status { get; set; } = user.Status;

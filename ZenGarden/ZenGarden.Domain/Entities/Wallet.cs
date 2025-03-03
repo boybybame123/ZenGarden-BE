@@ -12,8 +12,15 @@ public partial class Wallet
     public int? UserId { get; set; }
 
     public decimal? Balance { get; set; }
-
+    
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    
+    public string Currency { get; set; } = "VND"; 
+    
+    public bool IsLocked { get; set; } = false;
+    
+    public DateTime? LastTransactionAt { get; set; }
 
     public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();
 

@@ -17,7 +17,7 @@ public partial class Bag
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual ICollection<Bagitem> Bagitem { get; set; } = new List<Bagitem>();
+    public virtual ICollection<BagItem> BagItem { get; set; } = new List<BagItem>();
 
     public virtual Users User { get; set; }
 }
