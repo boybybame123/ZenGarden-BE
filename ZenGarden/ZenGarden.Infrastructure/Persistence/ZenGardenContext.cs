@@ -426,9 +426,6 @@ public partial class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.FocusMethodId)
                 .HasConstraintName("useractivity_ibfk_2");
 
-            entity.HasOne(d => d.Task).WithMany(p => p.UserActivity)
-                .HasForeignKey(d => d.TaskId)
-                .HasConstraintName("useractivity_ibfk_3");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserActivity)
                 .HasForeignKey(d => d.UserId)
@@ -606,9 +603,8 @@ public partial class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("workspaceitem_ibfk_3");
 
-            entity.HasOne(d => d.Workspace).WithMany(p => p.WorkspaceItem)
-                .HasForeignKey(d => d.WorkspaceId)
-                .HasConstraintName("workspaceitem_ibfk_1");
+           
+        
         });
 
         OnModelCreatingPartial(modelBuilder);
