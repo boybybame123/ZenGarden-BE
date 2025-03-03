@@ -573,6 +573,47 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.ToTable("treetype", (string)null);
                 });
 
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("LogID");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool>("IsExternalTask")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int?>("TaskId")
+                        .HasColumnType("int")
+                        .HasColumnName("TaskID");
+
+                    b.Property<int>("UserTreeId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserTreeID");
+
+                    b.Property<int>("XpAmount")
+                        .HasColumnType("int");
+
+                    b.HasKey("LogId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex(new[] { "TaskId" }, "idx_treexplog_task");
+
+                    b.HasIndex(new[] { "UserTreeId" }, "idx_treexplog_usertree");
+
+                    b.ToTable("treexplog", (string)null);
+                });
+
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserActivity", b =>
                 {
                     b.Property<int>("ActivityId")
@@ -766,6 +807,38 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID4");
 
                     b.ToTable("usertree", (string)null);
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("LogID");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserID");
+
+                    b.Property<int>("XpAmount")
+                        .HasColumnType("int");
+
+                    b.HasKey("LogId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex(new[] { "UserId" }, "idx_userxplog_user");
+
+                    b.ToTable("userxplog", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
@@ -1105,6 +1178,25 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("Wallet");
                 });
 
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpLog", b =>
+                {
+                    b.HasOne("ZenGarden.Domain.Entities.Tasks", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .HasConstraintName("treexplog_ibfk_2");
+
+                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTree")
+                        .WithMany()
+                        .HasForeignKey("UserTreeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("treexplog_ibfk_1");
+
+                    b.Navigation("Task");
+
+                    b.Navigation("UserTree");
+                });
+
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserActivity", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.FocusMethod", "FocusMethod")
@@ -1161,6 +1253,18 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasConstraintName("usertree_ibfk_1");
 
                     b.Navigation("FinalTree");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpLog", b =>
+                {
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("userxplog_ibfk_1");
 
                     b.Navigation("User");
                 });
