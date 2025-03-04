@@ -12,7 +12,8 @@ public class TreeXpLog
     [Required]
     public int UserTreeId { get; set; }
 
-    public int? TaskId { get; set; } 
+    [Required]
+    public int TaskId { get; set; } 
 
     [Required]
     public ActivityType ActivityType { get; set; }
@@ -21,7 +22,6 @@ public class TreeXpLog
     public int XpAmount { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool IsExternalTask { get; set; } = false;
 
     [ForeignKey("UserTreeId")]
     public virtual required UserTree UserTree { get; set; }

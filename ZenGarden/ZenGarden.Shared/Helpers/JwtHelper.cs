@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using ZenGarden.Domain.Config;
 using ZenGarden.Domain.Entities;
@@ -13,8 +14,9 @@ public static class JwtHelper
         if (jwtSettings.Key.Length < 32)
             throw new InvalidOperationException("JWT Key must be at least 32 characters long.");
 
-        var keyBytes = Convert.FromBase64String(jwtSettings.Key);
+        var keyBytes = Encoding.UTF8.GetBytes(jwtSettings.Key);
         var key = new SymmetricSecurityKey(keyBytes);
+
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresInMinutes = jwtSettings.ExpiresInMinutes > 0 ? jwtSettings.ExpiresInMinutes : 60;
         var now = DateTime.UtcNow;

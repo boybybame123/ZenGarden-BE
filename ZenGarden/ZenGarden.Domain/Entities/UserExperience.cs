@@ -10,14 +10,11 @@ namespace ZenGarden.Domain.Entities;
 public partial class UserExperience
 {
     [Key]
-    public int UserExperienceId { get; set; }
-
-    [Required]
     public int UserId { get; set; }
-
+    [Required]
     public long TotalXp { get; set; } = 0;
 
-    public int PreviousLevel { get; set; } = 1;
+    public int CurrentLevel { get; set; } = 1;
 
     public int XpToNextLevel { get; set; } = 100; 
 

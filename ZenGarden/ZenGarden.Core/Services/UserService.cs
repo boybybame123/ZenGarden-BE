@@ -8,7 +8,15 @@ using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
-public class UserService(IUserRepository userRepository, IBagRepository bagRepository, IWalletRepository walletRepository, IUnitOfWork unitOfWork,  IMapper mapper) : IUserService
+public class UserService(
+    IUserRepository userRepository, 
+    IBagRepository bagRepository, 
+    IWalletRepository walletRepository, 
+    IUserLevelConfigRepository userLevelConfigRepository,
+    IUserExperienceRepository userExperienceRepository,
+    IUnitOfWork unitOfWork, 
+    IWorkspaceRepository workspaceRepository, 
+    IMapper mapper) : IUserService
 {
     public async Task<List<UserDto>> GetAllUsersAsync()
     {
@@ -98,10 +106,10 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
     {
         var existingUser = await userRepository.GetByEmailAsync(dto.Email);
         if (existingUser != null) throw new InvalidOperationException("Email is already in use.");
-
+    
         var role = await userRepository.GetRoleByIdAsync(dto.RoleId ?? 2)
                    ?? throw new InvalidOperationException("Invalid RoleId.");
-
+    
         var newUser = mapper.Map<Users>(dto);
         newUser.UserName = string.IsNullOrWhiteSpace(dto.FullName) ? GenerateRandomUsername() : dto.FullName; 
         newUser.Password = PasswordHasher.HashPassword(dto.Password);
@@ -109,19 +117,43 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
         newUser.Role = role;
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
-
+    
         await unitOfWork.BeginTransactionAsync();
         try
         {
             userRepository.Create(newUser);
             await unitOfWork.CommitAsync(); 
-
+    
             var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
             var bag = new Bag { UserId = newUser.UserId };
-
+    
+            var defaultConfig = "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}";
+    
+            var workspace = new Workspace
+            {
+                UserId = newUser.UserId,
+                Configuration = defaultConfig, 
+                CreatedAt = DateTime.UtcNow
+            };
+    
+            var levelOneConfig = await userLevelConfigRepository.GetByIdAsync(1);
+            if (levelOneConfig == null) throw new Exception("UserLevelConfig is missing Level 1!");
+    
+            var userExperience = new UserExperience
+            {
+                UserId = newUser.UserId,
+                TotalXp = 0, 
+                CurrentLevel = 1, 
+                XpToNextLevel = levelOneConfig.XpRequired, 
+                LevelId = 1, 
+                UpdatedAt = DateTime.UtcNow
+            };
+    
             walletRepository.Create(wallet);
             bagRepository.Create(bag);
-
+            workspaceRepository.Create(workspace);
+            userExperienceRepository.Create(userExperience);
+    
             await unitOfWork.CommitAsync(); 
             await unitOfWork.CommitTransactionAsync();
             return newUser;
@@ -132,6 +164,7 @@ public class UserService(IUserRepository userRepository, IBagRepository bagRepos
             throw;
         }
     }
+
     
     private static string GenerateRandomUsername()
     {

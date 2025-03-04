@@ -32,10 +32,8 @@ public partial class Users
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public virtual ICollection<Bag> Bag { get; set; } = new List<Bag>();
+    public virtual Bag? Bag { get; set; }
     
-    public virtual ICollection<DepositTransaction> DepositTransaction { get; set; } = new List<DepositTransaction>();
-
     public virtual ICollection<Leaderboard> Leaderboard { get; set; } = new List<Leaderboard>();
 
     public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
@@ -49,16 +47,11 @@ public partial class Users
     public virtual ICollection<TradeHistory> TradeHistoryUserB { get; set; } = new List<TradeHistory>();
 
     public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();
-
-    public virtual ICollection<UserActivity> UserActivity { get; set; } = new List<UserActivity>();
-
-    public virtual ICollection<UserExperience> UserExperience { get; set; } = new List<UserExperience>();
-
+    
+    public virtual UserExperience? UserExperience { get; set; }
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
 
-    public virtual ICollection<Wallet> Wallet { get; set; } = new List<Wallet>();
-
-    public virtual ICollection<Workspace> Workspace { get; set; } = new List<Workspace>();
-
+    public virtual Wallet? Wallet { get; set; }
+    public virtual Workspace? Workspace { get; set; }
     public virtual ICollection<WorkspaceItem> WorkspaceItem { get; set; } = new List<WorkspaceItem>();
 }

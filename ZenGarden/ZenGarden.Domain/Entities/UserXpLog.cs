@@ -4,7 +4,7 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
-public class UserXpLog
+public partial class UserXpLog
 {
     [Key]
     public int LogId { get; set; }
@@ -13,7 +13,7 @@ public class UserXpLog
     public int UserId { get; set; }
 
     [Required]
-    public ActivityType ActivityType { get; set; } // TASK_XP, WEB_XP, DAILY_XP, STREAK_XP
+    public ActivityType ActivityType { get; set; } 
 
     [Required]
     public int XpAmount { get; set; }
