@@ -52,9 +52,9 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
     {
         IQueryable<Users> query = _context.Users.Include(x => x.Role);
 
-        // Search theo UserId
+        // Search theo UserName
         if (!string.IsNullOrWhiteSpace(filter.Search))
-            query = query.Where(x => x.UserId.ToString().Contains(filter.Search));
+            query = query.Where(x => x.UserName.ToString().Contains(filter.Search));
 
         // Filter theo Status
         if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<UserStatus>(filter.Status, out var status))
