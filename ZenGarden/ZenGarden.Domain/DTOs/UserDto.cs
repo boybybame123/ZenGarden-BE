@@ -1,4 +1,4 @@
-namespace ZenGarden.Domain.DTOs;
+﻿namespace ZenGarden.Domain.DTOs;
 public class UserDto
 {
     public int UserId { get; set; }
@@ -6,3 +6,4 @@ public class UserDto
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
 }
+

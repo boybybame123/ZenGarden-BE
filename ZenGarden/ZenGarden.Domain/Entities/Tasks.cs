@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
@@ -20,18 +21,13 @@ public partial class Tasks
     public string AiProcessedDescription { get; set; }
 
     public int? TimeOverdue { get; set; }
-
-    public int? StatusId { get; set; }
-
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
 
-    public virtual ICollection<Dailyrewardclaim> DailyRewardClaim { get; set; } = new List<Dailyrewardclaim>();
-
-    public virtual Taskstatus Status { get; set; }
+    public TasksStatus Status { get; set; }
 
     public virtual Users User { get; set; }
 
-    public virtual ICollection<Useractivity> UserActivity { get; set; } = new List<Useractivity>();
+    public virtual ICollection<UserActivity> UserActivity { get; set; } = new List<UserActivity>();
 }

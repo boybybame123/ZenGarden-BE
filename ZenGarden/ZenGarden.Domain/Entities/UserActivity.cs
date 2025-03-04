@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Useractivity
+public partial class UserActivity
 {
     public int ActivityId { get; set; }
 
@@ -43,7 +43,7 @@ public partial class Useractivity
 
     public int? WarningSpent { get; set; }
 
-    public virtual Focusmethod FocusMethod { get; set; }
+    public virtual FocusMethod FocusMethod { get; set; }
 
     public virtual Tasks Task { get; set; }
 

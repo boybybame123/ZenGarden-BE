@@ -2,10 +2,11 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Tradehistory
+public partial class TradeHistory
 {
     public int TradeId { get; set; }
 
@@ -18,20 +19,18 @@ public partial class Tradehistory
     public int? UserTreeBid { get; set; }
 
     public decimal? TradeFee { get; set; }
-
-    public int? StatusId { get; set; }
-
+    
     public DateTime? RequestedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
 
-    public virtual Tradestatus Status { get; set; }
+    public TradeStatus Status { get; set; }
 
     public virtual Users UserA { get; set; }
 
     public virtual Users UserB { get; set; }
 
-    public virtual Usertree UserTreeA { get; set; }
+    public virtual UserTree UserTreeA { get; set; }
 
-    public virtual Usertree UserTreeB { get; set; }
+    public virtual UserTree UserTreeB { get; set; }
 }

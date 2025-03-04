@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Treetype
+public partial class TreeType
 {
     public int TreeTypeId { get; set; }
 
@@ -17,5 +17,5 @@ public partial class Treetype
 
     public decimal? BasePrice { get; set; }
 
-    public virtual ICollection<Usertree> Usertree { get; set; } = new List<Usertree>();
+    public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
 }

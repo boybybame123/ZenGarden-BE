@@ -21,13 +21,11 @@ public partial class Item
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual ICollection<Bagitem> Bagitem { get; set; } = new List<Bagitem>();
+    public virtual ICollection<BagItem> BagItem { get; set; } = new List<BagItem>();
+    
+    public virtual ItemDetail ItemDetail { get; set; }
 
-    public virtual ICollection<Dailyreward> Dailyreward { get; set; } = new List<Dailyreward>();
+    public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
 
-    public virtual Itemdetail Itemdetail { get; set; }
-
-    public virtual ICollection<Purchasehistory> Purchasehistory { get; set; } = new List<Purchasehistory>();
-
-    public virtual ICollection<Workspaceitem> Workspaceitem { get; set; } = new List<Workspaceitem>();
+    public virtual ICollection<WorkspaceItem> WorkspaceItem { get; set; } = new List<WorkspaceItem>();
 }

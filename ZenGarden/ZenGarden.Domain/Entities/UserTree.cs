@@ -2,10 +2,11 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Usertree
+public partial class UserTree
 {
     public int UserTreeId { get; set; }
 
@@ -16,22 +17,22 @@ public partial class Usertree
     public DateTime? PlantedAt { get; set; }
 
     public int? TreeLevel { get; set; }
-
-    public int? Xp { get; set; }
+    
+    public int TotalXp { get; set; } = 0;
 
     public string TreeStatus { get; set; }
 
-    public string FinalTreeRarity { get; set; }
+    public TreeRarity? FinalTreeRarity { get; set; }
 
     public DateTime? LastUpdated { get; set; }
 
-    public virtual Treetype FinalTree { get; set; }
+    public virtual TreeType FinalTree { get; set; }
+    
+    public int LevelId { get; set; }
 
-    public virtual ICollection<Tradehistory> TradehistoryUserTreeA { get; set; } = new List<Tradehistory>();
+    public virtual ICollection<TradeHistory> TradeHistoryUserTreeA { get; set; } = new List<TradeHistory>();
 
-    public virtual ICollection<Tradehistory> TradehistoryUserTreeB { get; set; } = new List<Tradehistory>();
-
-    public virtual ICollection<Treeprogress> Treeprogress { get; set; } = new List<Treeprogress>();
-
+    public virtual ICollection<TradeHistory> TradeHistoryUserTreeB { get; set; } = new List<TradeHistory>();
+    
     public virtual Users User { get; set; }
 }

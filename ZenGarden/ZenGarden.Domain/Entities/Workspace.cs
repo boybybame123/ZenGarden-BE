@@ -19,5 +19,5 @@ public partial class Workspace
 
     public virtual Users User { get; set; }
 
-    public virtual ICollection<Workspaceitem> Workspaceitem { get; set; } = new List<Workspaceitem>();
+    public virtual ICollection<WorkspaceItem> WorkspaceItem { get; set; } = new List<WorkspaceItem>();
 }

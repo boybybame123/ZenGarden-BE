@@ -22,7 +22,6 @@ public static class JwtHelper
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()), 
-            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),  
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
@@ -30,7 +29,7 @@ public static class JwtHelper
         };
 
 
-        if (!string.IsNullOrEmpty(user.FullName)) claims.Add(new Claim(ClaimTypes.Name, user.FullName));
+        if (!string.IsNullOrEmpty(user.UserName)) claims.Add(new Claim(ClaimTypes.Name, user.UserName));
 
         if (user.Role?.RoleName != null) claims.Add(new Claim(ClaimTypes.Role, user.Role.RoleName));
 

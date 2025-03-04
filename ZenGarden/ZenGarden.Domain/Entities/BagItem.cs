@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Bagitem
+public partial class BagItem
 {
     public int BagItemId { get; set; }
 

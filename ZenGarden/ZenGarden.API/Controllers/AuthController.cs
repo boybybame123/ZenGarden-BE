@@ -89,19 +89,6 @@ public class AuthController(
         return Ok(new { message = "Logged out successfully." });
     }
 
-    [Authorize]
-    [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile()
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null || !int.TryParse(userId, out var parsedUserId)) return Unauthorized();
-
-        var user = await userService.GetUserByIdAsync(parsedUserId);
-        if (user == null) return NotFound(new ErrorResponse("User not found."));
-
-        return Ok(new UserResponse(user));
-    }
-
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
     {
