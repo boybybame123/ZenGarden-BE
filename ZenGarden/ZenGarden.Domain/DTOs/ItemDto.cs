@@ -23,8 +23,6 @@ namespace ZenGarden.Domain.DTOs
 
         public DateTime? CreatedAt { get; set; }
 
-
-
-        public virtual ItemDetail ItemDetail { get; set; }
+        public virtual ItemDetailDto ItemDetail { get; set; }
     }
 }

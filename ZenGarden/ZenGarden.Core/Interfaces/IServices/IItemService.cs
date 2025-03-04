@@ -10,6 +10,7 @@ namespace ZenGarden.Core.Interfaces.IServices
 {
     public interface IItemService
     {
+
         Task<List<ItemDto>> GetAllItemsAsync();
         Task<Item?> GetItemByIdAsync(int ItemId);
         Task CreateItemAsync(Item item);

@@ -15,7 +15,10 @@ namespace ZenGarden.Infrastructure.Repositories
         private readonly ZenGardenContext _context = context;
         public async Task<List<Item>> GetAllItemAsync()
         {
-            return await _context.Item.Include(u => u.ItemDetail).ToListAsync();
+            return await _context.Item
+                .Include(u => u.ItemDetail)
+                .Where(u => u.ItemDetail != null) // Chỉ lấy item có ItemDetail
+                .ToListAsync();
         }
 
     }

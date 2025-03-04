@@ -15,9 +15,11 @@ namespace ZenGarden.Core.Services
     {
         public async Task<List<ItemDto>> GetAllItemsAsync()
         {
-            var items = await itemRepository.GetAllAsync();
+            var items = await itemRepository.GetAllItemAsync(); // Gọi đúng phương thức có Include
             return mapper.Map<List<ItemDto>>(items);
         }
+
+
         public async Task<Item?> GetItemByIdAsync(int itemId)
         {
             return await itemRepository.GetByIdAsync(itemId)
