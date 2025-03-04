@@ -37,6 +37,17 @@ public class UserService(
         return await userRepository.GetByIdAsync(userId)
                ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
     }
+    public async Task ChangeUserisActiveAsync(int userId)
+    {
+        var user = await GetUserByIdAsync(userId);
+        user.IsActive = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        userRepository.Update(user);
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update user.");
+        
+    }
+
 
     public async Task<Users?> GetUserByEmailAsync(string email)
     {
@@ -53,9 +64,12 @@ public class UserService(
             throw new InvalidOperationException("Failed to create user.");
     }
 
-    public async Task UpdateUserAsync(Users user)
+    public async Task UpdateUserAsync(UserDto user)
     {
-        userRepository.Update(user);
+        var userupdate = await GetUserByIdAsync(user.UserId);
+        userupdate = mapper.Map(user, userupdate);
+
+        userRepository.Update(userupdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
     }

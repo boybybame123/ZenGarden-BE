@@ -57,10 +57,10 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_bag_user");
 
-                    b.ToTable("Bag", (string)null);
+                    b.ToTable("bag", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Bagitem", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.BagItem", b =>
                 {
                     b.Property<int>("BagItemId")
                         .ValueGeneratedOnAdd()
@@ -92,90 +92,10 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "ItemId" }, "ItemID");
 
-                    b.ToTable("Bagitem", (string)null);
+                    b.ToTable("bagitem", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Dailyreward", b =>
-                {
-                    b.Property<int>("DailyId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("DailyID");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DailyId"));
-
-                    b.Property<string>("ConditionType")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("ConditionValue")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<int?>("Day")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ItemId")
-                        .HasColumnType("int")
-                        .HasColumnName("ItemID");
-
-                    b.Property<int?>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reward")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("RewardType")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("DailyId")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex(new[] { "ItemId" }, "ItemID")
-                        .HasDatabaseName("ItemID1");
-
-                    b.ToTable("Dailyreward", (string)null);
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Dailyrewardclaim", b =>
-                {
-                    b.Property<int>("ClaimId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ClaimID");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ClaimId"));
-
-                    b.Property<DateTime?>("ClaimedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int?>("DailyId")
-                        .HasColumnType("int")
-                        .HasColumnName("DailyID");
-
-                    b.Property<int?>("TaskId")
-                        .HasColumnType("int")
-                        .HasColumnName("TaskID");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("UserID");
-
-                    b.HasKey("ClaimId")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex(new[] { "TaskId" }, "TaskID");
-
-                    b.HasIndex(new[] { "UserId" }, "idx_daily_reward_claim_user");
-
-                    b.ToTable("Dailyrewardclaim", (string)null);
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Deposittransaction", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.DepositTransaction", b =>
                 {
                     b.Property<int>("DepositId")
                         .ValueGeneratedOnAdd()
@@ -221,10 +141,10 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "UserID");
 
-                    b.ToTable("Deposittransaction", (string)null);
+                    b.ToTable("deposittransaction", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Focusmethod", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.FocusMethod", b =>
                 {
                     b.Property<int>("FocusMethodId")
                         .ValueGeneratedOnAdd()
@@ -263,7 +183,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("FocusMethodId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("Focusmethod", (string)null);
+                    b.ToTable("focusmethod", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Item", b =>
@@ -304,10 +224,10 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "Type", "Rarity" }, "idx_item_type_rarity");
 
-                    b.ToTable("Item", (string)null);
+                    b.ToTable("item", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Itemdetail", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.ItemDetail", b =>
                 {
                     b.Property<int>("ItemDetailId")
                         .ValueGeneratedOnAdd()
@@ -365,7 +285,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "ItemId" }, "idx_item_detail_itemid")
                         .IsUnique();
 
-                    b.ToTable("Itemdetail", (string)null);
+                    b.ToTable("itemdetail", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Leaderboard", b =>
@@ -400,13 +320,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("LeaderboardId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "UserId" }, "UserID")
-                        .HasDatabaseName("UserID1");
+                    b.HasIndex(new[] { "UserId" }, "UserID1");
 
-                    b.ToTable("Leaderboard", (string)null);
+                    b.ToTable("leaderboard", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Purchasehistory", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.PurchaseHistory", b =>
                 {
                     b.Property<int>("PurchaseId")
                         .ValueGeneratedOnAdd()
@@ -439,13 +358,11 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("PurchaseId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "ItemId" }, "ItemID")
-                        .HasDatabaseName("ItemID2");
+                    b.HasIndex(new[] { "ItemId" }, "ItemID2");
 
-                    b.HasIndex(new[] { "UserId" }, "UserID")
-                        .HasDatabaseName("UserID2");
+                    b.HasIndex(new[] { "UserId" }, "UserID2");
 
-                    b.ToTable("Purchasehistory", (string)null);
+                    b.ToTable("purchasehistory", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Roles", b =>
@@ -464,7 +381,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("RoleId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("roles", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
@@ -476,7 +393,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TaskId"));
 
-                    b.Property<string>("AiprocessedDescription")
+                    b.Property<string>("AiProcessedDescription")
                         .HasColumnType("text")
                         .HasColumnName("AIProcessedDescription");
 
@@ -495,9 +412,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<int?>("Duration")
                         .HasColumnType("int");
 
-                    b.Property<int?>("StatusId")
-                        .HasColumnType("int")
-                        .HasColumnName("StatusID");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<string>("TaskDescription")
                         .HasColumnType("text");
@@ -513,43 +429,15 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("UserID");
 
-                    b.Property<int?>("Xpreward")
-                        .HasColumnType("int")
-                        .HasColumnName("XPReward");
-
                     b.HasKey("TaskId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "StatusId" }, "StatusID");
-
                     b.HasIndex(new[] { "UserId" }, "idx_task_user");
 
-                    b.ToTable("Tasks", (string)null);
+                    b.ToTable("tasks", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Taskstatus", b =>
-                {
-                    b.Property<int>("StatusId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("StatusID");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("StatusId"));
-
-                    b.Property<string>("StatusName")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("StatusId")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex(new[] { "StatusName" }, "StatusName")
-                        .IsUnique();
-
-                    b.ToTable("Taskstatus", (string)null);
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Tradehistory", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TradeHistory", b =>
                 {
                     b.Property<int>("TradeId")
                         .ValueGeneratedOnAdd()
@@ -566,9 +454,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<int?>("StatusId")
-                        .HasColumnType("int")
-                        .HasColumnName("StatusID");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<decimal?>("TradeFee")
                         .ValueGeneratedOnAdd()
@@ -601,30 +488,9 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserTreeBid" }, "UserTreeBID");
 
-                    b.HasIndex(new[] { "StatusId" }, "idx_tradehistory_statusid");
-
                     b.HasIndex(new[] { "UserAid", "UserBid" }, "idx_tradehistory_user");
 
-                    b.ToTable("Tradehistory", (string)null);
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Tradestatus", b =>
-                {
-                    b.Property<int>("StatusId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("StatusID");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("StatusId"));
-
-                    b.Property<string>("StatusName")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("StatusId")
-                        .HasName("PRIMARY");
-
-                    b.ToTable("Tradestatus", (string)null);
+                    b.ToTable("tradehistory", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Transactions", b =>
@@ -674,41 +540,10 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "idx_transaction_user");
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("transactions", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Treeprogress", b =>
-                {
-                    b.Property<int>("ProgressId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ProgressID");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ProgressId"));
-
-                    b.Property<int?>("MaxTreesPerPeriod")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PeriodType")
-                        .HasColumnType("enum('Daily','Weekly','Monthly')");
-
-                    b.Property<int?>("UserTreeId")
-                        .HasColumnType("int")
-                        .HasColumnName("UserTreeID");
-
-                    b.Property<int?>("Xprequired")
-                        .HasColumnType("int")
-                        .HasColumnName("XPRequired");
-
-                    b.HasKey("ProgressId")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex(new[] { "UserTreeId" }, "UserTreeID");
-
-                    b.ToTable("Treeprogress", (string)null);
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Treetype", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>
                 {
                     b.Property<int>("TreeTypeId")
                         .ValueGeneratedOnAdd()
@@ -735,10 +570,51 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("TreeTypeId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("Treetype", (string)null);
+                    b.ToTable("treetype", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Useractivity", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("LogID");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool>("IsExternalTask")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int?>("TaskId")
+                        .HasColumnType("int")
+                        .HasColumnName("TaskID");
+
+                    b.Property<int>("UserTreeId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserTreeID");
+
+                    b.Property<int>("XpAmount")
+                        .HasColumnType("int");
+
+                    b.HasKey("LogId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex(new[] { "TaskId" }, "idx_treexplog_task");
+
+                    b.HasIndex(new[] { "UserTreeId" }, "idx_treexplog_usertree");
+
+                    b.ToTable("treexplog", (string)null);
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserActivity", b =>
                 {
                     b.Property<int>("ActivityId")
                         .ValueGeneratedOnAdd()
@@ -812,15 +688,14 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "FocusMethodId" }, "FocusMethodID");
 
-                    b.HasIndex(new[] { "TaskId" }, "TaskID")
-                        .HasDatabaseName("TaskID1");
+                    b.HasIndex(new[] { "TaskId" }, "TaskID1");
 
                     b.HasIndex(new[] { "UserId" }, "idx_user_activity_user");
 
-                    b.ToTable("Useractivity", (string)null);
+                    b.ToTable("useractivity", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Userexperience", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserExperience", b =>
                 {
                     b.Property<int>("UserExperienceId")
                         .ValueGeneratedOnAdd()
@@ -829,10 +704,13 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserExperienceId"));
 
-                    b.Property<int?>("PreviousLevel")
+                    b.Property<int>("LevelId")
                         .HasColumnType("int");
 
-                    b.Property<long?>("TotalXp")
+                    b.Property<int>("PreviousLevel")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TotalXp")
                         .HasColumnType("bigint")
                         .HasColumnName("TotalXP");
 
@@ -843,21 +721,124 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime?>("UpdatedAt"));
 
-                    b.Property<int?>("UserId")
+                    b.Property<int>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("UserID");
 
-                    b.Property<int?>("XptoNextLevel")
-                        .HasColumnType("int")
-                        .HasColumnName("XPToNextLevel");
+                    b.Property<int>("XpToNextLevel")
+                        .HasColumnType("int");
 
                     b.HasKey("UserExperienceId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "UserId" }, "UserID")
-                        .HasDatabaseName("UserID3");
+                    b.HasIndex("LevelId");
 
-                    b.ToTable("Userexperience", (string)null);
+                    b.HasIndex(new[] { "UserId" }, "UserID3");
+
+                    b.ToTable("userexperience", (string)null);
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserLevelConfig", b =>
+                {
+                    b.Property<int>("Level")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Level"));
+
+                    b.Property<int>("XpRequired")
+                        .HasColumnType("int");
+
+                    b.HasKey("Level");
+
+                    b.ToTable("UserLevelConfig");
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
+                {
+                    b.Property<int>("UserTreeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("UserTreeID");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserTreeId"));
+
+                    b.Property<int?>("FinalTreeId")
+                        .HasColumnType("int")
+                        .HasColumnName("FinalTreeID");
+
+                    b.Property<int?>("FinalTreeRarity")
+                        .HasMaxLength(50)
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastUpdated")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime?>("LastUpdated"));
+
+                    b.Property<int>("LevelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PlantedAt")
+                        .HasColumnType("timestamp");
+
+                    b.Property<int>("TotalXp")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TreeLevel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TreeStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("enum('Growing','Mature','MaxLevel')")
+                        .HasDefaultValueSql("'Growing'");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserID");
+
+                    b.HasKey("UserTreeId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex(new[] { "FinalTreeId" }, "FinalTreeID");
+
+                    b.HasIndex(new[] { "UserId" }, "UserID4");
+
+                    b.ToTable("usertree", (string)null);
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("LogID");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserID");
+
+                    b.Property<int>("XpAmount")
+                        .HasColumnType("int");
+
+                    b.HasKey("LogId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex(new[] { "UserId" }, "idx_userxplog_user");
+
+                    b.ToTable("userxplog", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
@@ -879,11 +860,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -891,6 +867,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<DateTime?>("OtpExpiry")
+                        .HasMaxLength(6)
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Password")
@@ -904,6 +881,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasMaxLength(6)
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("RefreshTokenHash")
@@ -925,6 +903,11 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
 
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.HasKey("UserId")
                         .HasName("PRIMARY");
 
@@ -933,61 +916,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex(new[] { "RoleId" }, "RoleID");
 
-                    b.ToTable("Users", (string)null);
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Usertree", b =>
-                {
-                    b.Property<int>("UserTreeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("UserTreeID");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserTreeId"));
-
-                    b.Property<int?>("FinalTreeId")
-                        .HasColumnType("int")
-                        .HasColumnName("FinalTreeID");
-
-                    b.Property<string>("FinalTreeRarity")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<DateTime?>("LastUpdated")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime?>("LastUpdated"));
-
-                    b.Property<DateTime?>("PlantedAt")
-                        .HasColumnType("timestamp");
-
-                    b.Property<int?>("TreeLevel")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TreeStatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("enum('Growing','Mature','MaxLevel')")
-                        .HasDefaultValueSql("'Growing'");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("UserID");
-
-                    b.Property<int?>("Xp")
-                        .HasColumnType("int")
-                        .HasColumnName("XP");
-
-                    b.HasKey("UserTreeId")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex(new[] { "FinalTreeId" }, "FinalTreeID");
-
-                    b.HasIndex(new[] { "UserId" }, "UserID")
-                        .HasDatabaseName("UserID4");
-
-                    b.ToTable("Usertree", (string)null);
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Wallet", b =>
@@ -1005,6 +934,18 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasDefaultValueSql("'0.00'");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Currency")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("LastTransactionAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp")
@@ -1019,10 +960,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("WalletId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "UserId" }, "UserID")
-                        .HasDatabaseName("UserID5");
+                    b.HasIndex(new[] { "UserId" }, "UserID5");
 
-                    b.ToTable("Wallet", (string)null);
+                    b.ToTable("wallet", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Workspace", b =>
@@ -1056,13 +996,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("WorkspaceId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "UserId" }, "UserID")
-                        .HasDatabaseName("UserID6");
+                    b.HasIndex(new[] { "UserId" }, "UserID6");
 
-                    b.ToTable("Workspace", (string)null);
+                    b.ToTable("workspace", (string)null);
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Workspaceitem", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.WorkspaceItem", b =>
                 {
                     b.Property<int>("WorkspaceItemId")
                         .ValueGeneratedOnAdd()
@@ -1097,14 +1036,13 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("WorkspaceItemId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "ItemId" }, "ItemID")
-                        .HasDatabaseName("ItemID3");
+                    b.HasIndex(new[] { "ItemId" }, "ItemID3");
 
                     b.HasIndex(new[] { "WorkspaceId" }, "WorkspaceID");
 
                     b.HasIndex(new[] { "UserId" }, "idx_workspace_item_user");
 
-                    b.ToTable("Workspaceitem", (string)null);
+                    b.ToTable("workspaceitem", (string)null);
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Bag", b =>
@@ -1117,15 +1055,15 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Bagitem", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.BagItem", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Bag", "Bag")
-                        .WithMany("Bagitem")
+                        .WithMany("BagItem")
                         .HasForeignKey("BagId")
                         .HasConstraintName("bagitem_ibfk_1");
 
                     b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
-                        .WithMany("Bagitem")
+                        .WithMany("BagItem")
                         .HasForeignKey("ItemId")
                         .HasConstraintName("bagitem_ibfk_2");
 
@@ -1134,48 +1072,21 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("Item");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Dailyreward", b =>
-                {
-                    b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
-                        .WithMany("Dailyreward")
-                        .HasForeignKey("ItemId")
-                        .HasConstraintName("dailyreward_ibfk_1");
-
-                    b.Navigation("Item");
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Dailyrewardclaim", b =>
-                {
-                    b.HasOne("ZenGarden.Domain.Entities.Tasks", "Task")
-                        .WithMany("Dailyrewardclaim")
-                        .HasForeignKey("TaskId")
-                        .HasConstraintName("dailyrewardclaim_ibfk_2");
-
-                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Dailyrewardclaim")
-                        .HasForeignKey("UserId")
-                        .HasConstraintName("dailyrewardclaim_ibfk_1");
-
-                    b.Navigation("Task");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Deposittransaction", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.DepositTransaction", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Deposittransaction")
+                        .WithMany("DepositTransaction")
                         .HasForeignKey("UserId")
                         .HasConstraintName("deposittransaction_ibfk_1");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Itemdetail", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.ItemDetail", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
-                        .WithOne("Itemdetail")
-                        .HasForeignKey("ZenGarden.Domain.Entities.Itemdetail", "ItemId")
+                        .WithOne("ItemDetail")
+                        .HasForeignKey("ZenGarden.Domain.Entities.ItemDetail", "ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("itemdetail_ibfk_1");
 
@@ -1192,15 +1103,15 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Purchasehistory", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.PurchaseHistory", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
-                        .WithMany("Purchasehistory")
+                        .WithMany("PurchaseHistory")
                         .HasForeignKey("ItemId")
                         .HasConstraintName("purchasehistory_ibfk_2");
 
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Purchasehistory")
+                        .WithMany("PurchaseHistory")
                         .HasForeignKey("UserId")
                         .HasConstraintName("purchasehistory_ibfk_1");
 
@@ -1211,49 +1122,35 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
                 {
-                    b.HasOne("ZenGarden.Domain.Entities.Taskstatus", "Status")
-                        .WithMany("Tasks")
-                        .HasForeignKey("StatusId")
-                        .HasConstraintName("tasks_ibfk_2");
-
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
                         .WithMany("Tasks")
                         .HasForeignKey("UserId")
                         .HasConstraintName("tasks_ibfk_1");
 
-                    b.Navigation("Status");
-
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Tradehistory", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TradeHistory", b =>
                 {
-                    b.HasOne("ZenGarden.Domain.Entities.Tradestatus", "Status")
-                        .WithMany("Tradehistory")
-                        .HasForeignKey("StatusId")
-                        .HasConstraintName("tradehistory_ibfk_5");
-
                     b.HasOne("ZenGarden.Domain.Entities.Users", "UserA")
-                        .WithMany("TradehistoryUserA")
+                        .WithMany("TradeHistoryUserA")
                         .HasForeignKey("UserAid")
                         .HasConstraintName("tradehistory_ibfk_1");
 
                     b.HasOne("ZenGarden.Domain.Entities.Users", "UserB")
-                        .WithMany("TradehistoryUserB")
+                        .WithMany("TradeHistoryUserB")
                         .HasForeignKey("UserBid")
                         .HasConstraintName("tradehistory_ibfk_2");
 
-                    b.HasOne("ZenGarden.Domain.Entities.Usertree", "UserTreeA")
-                        .WithMany("TradehistoryUserTreeA")
+                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTreeA")
+                        .WithMany("TradeHistoryUserTreeA")
                         .HasForeignKey("UserTreeAid")
                         .HasConstraintName("tradehistory_ibfk_3");
 
-                    b.HasOne("ZenGarden.Domain.Entities.Usertree", "UserTreeB")
-                        .WithMany("TradehistoryUserTreeB")
+                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTreeB")
+                        .WithMany("TradeHistoryUserTreeB")
                         .HasForeignKey("UserTreeBid")
                         .HasConstraintName("tradehistory_ibfk_4");
-
-                    b.Navigation("Status");
 
                     b.Navigation("UserA");
 
@@ -1281,30 +1178,38 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("Wallet");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Treeprogress", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpLog", b =>
                 {
-                    b.HasOne("ZenGarden.Domain.Entities.Usertree", "UserTree")
-                        .WithMany("Treeprogress")
+                    b.HasOne("ZenGarden.Domain.Entities.Tasks", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .HasConstraintName("treexplog_ibfk_2");
+
+                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTree")
+                        .WithMany()
                         .HasForeignKey("UserTreeId")
-                        .HasConstraintName("treeprogress_ibfk_1");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("treexplog_ibfk_1");
+
+                    b.Navigation("Task");
 
                     b.Navigation("UserTree");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Useractivity", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserActivity", b =>
                 {
-                    b.HasOne("ZenGarden.Domain.Entities.Focusmethod", "FocusMethod")
-                        .WithMany("Useractivity")
+                    b.HasOne("ZenGarden.Domain.Entities.FocusMethod", "FocusMethod")
+                        .WithMany("UserActivity")
                         .HasForeignKey("FocusMethodId")
                         .HasConstraintName("useractivity_ibfk_2");
 
                     b.HasOne("ZenGarden.Domain.Entities.Tasks", "Task")
-                        .WithMany("Useractivity")
-                        .HasForeignKey("TaskId")
-                        .HasConstraintName("useractivity_ibfk_3");
+                        .WithMany("UserActivity")
+                        .HasForeignKey("TaskId");
 
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Useractivity")
+                        .WithMany("UserActivity")
                         .HasForeignKey("UserId")
                         .HasConstraintName("useractivity_ibfk_1");
 
@@ -1315,12 +1220,51 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Userexperience", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserExperience", b =>
+                {
+                    b.HasOne("ZenGarden.Domain.Entities.UserLevelConfig", "UserLevelConfig")
+                        .WithMany()
+                        .HasForeignKey("LevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
+                        .WithMany("UserExperience")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("userexperience_ibfk_1");
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserLevelConfig");
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
+                {
+                    b.HasOne("ZenGarden.Domain.Entities.TreeType", "FinalTree")
+                        .WithMany("UserTree")
+                        .HasForeignKey("FinalTreeId");
+
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
+                        .WithMany("UserTree")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("usertree_ibfk_1");
+
+                    b.Navigation("FinalTree");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpLog", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Userexperience")
+                        .WithMany()
                         .HasForeignKey("UserId")
-                        .HasConstraintName("userexperience_ibfk_1");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("userxplog_ibfk_1");
 
                     b.Navigation("User");
                 });
@@ -1333,24 +1277,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasConstraintName("users_ibfk_1");
 
                     b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Usertree", b =>
-                {
-                    b.HasOne("ZenGarden.Domain.Entities.Treetype", "FinalTree")
-                        .WithMany("Usertree")
-                        .HasForeignKey("FinalTreeId")
-                        .HasConstraintName("usertree_ibfk_2");
-
-                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Usertree")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("usertree_ibfk_1");
-
-                    b.Navigation("FinalTree");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Wallet", b =>
@@ -1373,22 +1299,21 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Workspaceitem", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.WorkspaceItem", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
-                        .WithMany("Workspaceitem")
+                        .WithMany("WorkspaceItem")
                         .HasForeignKey("ItemId")
                         .HasConstraintName("workspaceitem_ibfk_2");
 
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Workspaceitem")
+                        .WithMany("WorkspaceItem")
                         .HasForeignKey("UserId")
                         .HasConstraintName("workspaceitem_ibfk_3");
 
                     b.HasOne("ZenGarden.Domain.Entities.Workspace", "Workspace")
-                        .WithMany("Workspaceitem")
-                        .HasForeignKey("WorkspaceId")
-                        .HasConstraintName("workspaceitem_ibfk_1");
+                        .WithMany("WorkspaceItem")
+                        .HasForeignKey("WorkspaceId");
 
                     b.Navigation("Item");
 
@@ -1399,25 +1324,23 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Bag", b =>
                 {
-                    b.Navigation("Bagitem");
+                    b.Navigation("BagItem");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Focusmethod", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.FocusMethod", b =>
                 {
-                    b.Navigation("Useractivity");
+                    b.Navigation("UserActivity");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Item", b =>
                 {
-                    b.Navigation("Bagitem");
+                    b.Navigation("BagItem");
 
-                    b.Navigation("Dailyreward");
+                    b.Navigation("ItemDetail");
 
-                    b.Navigation("Itemdetail");
+                    b.Navigation("PurchaseHistory");
 
-                    b.Navigation("Purchasehistory");
-
-                    b.Navigation("Workspaceitem");
+                    b.Navigation("WorkspaceItem");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Roles", b =>
@@ -1427,66 +1350,50 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
                 {
-                    b.Navigation("Dailyrewardclaim");
-
-                    b.Navigation("Useractivity");
+                    b.Navigation("UserActivity");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Taskstatus", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>
                 {
-                    b.Navigation("Tasks");
+                    b.Navigation("UserTree");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Tradestatus", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
                 {
-                    b.Navigation("Tradehistory");
-                });
+                    b.Navigation("TradeHistoryUserTreeA");
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Treetype", b =>
-                {
-                    b.Navigation("Usertree");
+                    b.Navigation("TradeHistoryUserTreeB");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
                 {
                     b.Navigation("Bag");
 
-                    b.Navigation("Dailyrewardclaim");
-
-                    b.Navigation("Deposittransaction");
+                    b.Navigation("DepositTransaction");
 
                     b.Navigation("Leaderboard");
 
-                    b.Navigation("Purchasehistory");
+                    b.Navigation("PurchaseHistory");
 
                     b.Navigation("Tasks");
 
-                    b.Navigation("TradehistoryUserA");
+                    b.Navigation("TradeHistoryUserA");
 
-                    b.Navigation("TradehistoryUserB");
+                    b.Navigation("TradeHistoryUserB");
 
                     b.Navigation("Transactions");
 
-                    b.Navigation("Useractivity");
+                    b.Navigation("UserActivity");
 
-                    b.Navigation("Userexperience");
+                    b.Navigation("UserExperience");
 
-                    b.Navigation("Usertree");
+                    b.Navigation("UserTree");
 
                     b.Navigation("Wallet");
 
                     b.Navigation("Workspace");
 
-                    b.Navigation("Workspaceitem");
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Usertree", b =>
-                {
-                    b.Navigation("TradehistoryUserTreeA");
-
-                    b.Navigation("TradehistoryUserTreeB");
-
-                    b.Navigation("Treeprogress");
+                    b.Navigation("WorkspaceItem");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Wallet", b =>
@@ -1496,7 +1403,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Workspace", b =>
                 {
-                    b.Navigation("Workspaceitem");
+                    b.Navigation("WorkspaceItem");
                 });
 #pragma warning restore 612, 618
         }
