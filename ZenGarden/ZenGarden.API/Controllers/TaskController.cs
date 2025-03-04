@@ -6,25 +6,25 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class taskController : ControllerBase
+public class TaskController : ControllerBase
 {
     private readonly ITaskService taskService;
 
-    public taskController(ITaskService taskService)
+    public TaskController(ITaskService taskService)
     {
         this.taskService = taskService ?? throw new ArgumentNullException(nameof(taskService));
     }
 
     // GET: api/task
     [HttpGet]
-    public async Task<IActionResult> Gettasks()
+    public async Task<IActionResult> GetTasks()
     {
         var tasks = await taskService.GetAllTaskAsync();
         return Ok(tasks);
     }
 
     [HttpGet("{taskId}")]
-    public async Task<IActionResult> GettaskById(int taskId)
+    public async Task<IActionResult> GetTaskById(int taskId)
     {
         var task = await taskService.GetTaskByIdAsync(taskId);
         if (task == null)
@@ -35,15 +35,15 @@ public class taskController : ControllerBase
     }
     [HttpDelete("{taskId}")]
     [Produces("application/json")]
-    public async Task<IActionResult> Deletetask(int taskId)
+    public async Task<IActionResult> DeleteTask(int taskId)
     {
         await taskService.DeleteTaskAsync(taskId);
         return Ok(new { message = "task deleted successfully" });
     }
 
-    [HttpPut("update-task")]
+    [HttpPut("Update-Task")]
     [Produces("application/json")]
-    public async Task<IActionResult> Updatetask(TaskDto task)
+    public async Task<IActionResult> UpdateTask(TaskDto task)
     {
         await taskService.UpdateTaskAsync(task);
         return Ok(new { message = "task updated successfully" });
