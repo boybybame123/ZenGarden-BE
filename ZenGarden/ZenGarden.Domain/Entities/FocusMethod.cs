@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Focusmethod
+public partial class FocusMethod
 {
     public int FocusMethodId { get; set; }
 
@@ -25,5 +25,5 @@ public partial class Focusmethod
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual ICollection<Useractivity> Useractivity { get; set; } = new List<Useractivity>();
+    public virtual ICollection<UserActivity> UserActivity { get; set; } = new List<UserActivity>();
 }

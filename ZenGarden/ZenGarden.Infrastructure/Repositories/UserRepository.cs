@@ -64,7 +64,7 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
         // Filter theo FullName, Phone, Email
         if (!string.IsNullOrWhiteSpace(filter.FullName))
-            query = query.Where(x => x.FullName.Contains(filter.FullName));
+            query = query.Where(x => x.UserName.Contains(filter.FullName));
 
         if (!string.IsNullOrWhiteSpace(filter.Phone))
             query = query.Where(x => x.Phone.Contains(filter.Phone));

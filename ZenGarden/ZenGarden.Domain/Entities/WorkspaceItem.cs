@@ -5,21 +5,25 @@ using System.Collections.Generic;
 
 namespace ZenGarden.Domain.Entities;
 
-public partial class Purchasehistory
+public partial class WorkspaceItem
 {
-    public int PurchaseId { get; set; }
+    public int WorkspaceItemId { get; set; }
 
-    public int? UserId { get; set; }
+    public int? WorkspaceId { get; set; }
 
     public int? ItemId { get; set; }
 
-    public decimal? TotalPrice { get; set; }
+    public int? UserId { get; set; }
+
+    public int? Quantity { get; set; }
+
+    public string Effect { get; set; }
 
     public DateTime? CreatedAt { get; set; }
-
-    public string Status { get; set; }
 
     public virtual Item Item { get; set; }
 
     public virtual Users User { get; set; }
+
+    public virtual Workspace Workspace { get; set; }
 }

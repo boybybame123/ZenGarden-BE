@@ -13,7 +13,7 @@ public partial class Users
 
     public int? RoleId { get; set; }
 
-    public string FullName { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
 
     public string Email { get; set; } = string.Empty;
 
@@ -33,34 +33,32 @@ public partial class Users
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual ICollection<Bag> Bag { get; set; } = new List<Bag>();
-
-    public virtual ICollection<Dailyrewardclaim> Dailyrewardclaim { get; set; } = new List<Dailyrewardclaim>();
-
-    public virtual ICollection<Deposittransaction> Deposittransaction { get; set; } = new List<Deposittransaction>();
+    
+    public virtual ICollection<DepositTransaction> DepositTransaction { get; set; } = new List<DepositTransaction>();
 
     public virtual ICollection<Leaderboard> Leaderboard { get; set; } = new List<Leaderboard>();
 
-    public virtual ICollection<Purchasehistory> Purchasehistory { get; set; } = new List<Purchasehistory>();
+    public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
 
     public virtual Roles? Role { get; set; }
 
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
 
-    public virtual ICollection<Tradehistory> TradehistoryUserA { get; set; } = new List<Tradehistory>();
+    public virtual ICollection<TradeHistory> TradeHistoryUserA { get; set; } = new List<TradeHistory>();
 
-    public virtual ICollection<Tradehistory> TradehistoryUserB { get; set; } = new List<Tradehistory>();
+    public virtual ICollection<TradeHistory> TradeHistoryUserB { get; set; } = new List<TradeHistory>();
 
     public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();
 
-    public virtual ICollection<Useractivity> Useractivity { get; set; } = new List<Useractivity>();
+    public virtual ICollection<UserActivity> UserActivity { get; set; } = new List<UserActivity>();
 
-    public virtual ICollection<Userexperience> Userexperience { get; set; } = new List<Userexperience>();
+    public virtual ICollection<UserExperience> UserExperience { get; set; } = new List<UserExperience>();
 
-    public virtual ICollection<Usertree> Usertree { get; set; } = new List<Usertree>();
+    public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
 
     public virtual ICollection<Wallet> Wallet { get; set; } = new List<Wallet>();
 
     public virtual ICollection<Workspace> Workspace { get; set; } = new List<Workspace>();
 
-    public virtual ICollection<Workspaceitem> Workspaceitem { get; set; } = new List<Workspaceitem>();
+    public virtual ICollection<WorkspaceItem> WorkspaceItem { get; set; } = new List<WorkspaceItem>();
 }

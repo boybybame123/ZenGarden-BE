@@ -1,6 +1,6 @@
 namespace ZenGarden.Domain.Enums;
 
-public enum TaskStatus
+public enum TasksStatus
 {
     NotStarted,
     InProgress,
