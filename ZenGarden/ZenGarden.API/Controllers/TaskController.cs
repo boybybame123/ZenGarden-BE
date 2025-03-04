@@ -19,7 +19,7 @@ public class taskController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Gettasks()
     {
-        var tasks = await taskService.GetAllUsersAsync();
+        var tasks = await taskService.GetAllTaskAsync();
         return Ok(tasks);
     }
 

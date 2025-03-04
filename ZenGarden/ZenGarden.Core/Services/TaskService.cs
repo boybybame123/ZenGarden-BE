@@ -8,7 +8,7 @@ namespace ZenGarden.Core.Services;
 
 public class TaskService(ITaskRepository taskRepository, IUnitOfWork unitOfWork, IMapper mapper) : ITaskService
 {
-    public async Task<List<TaskDto>> GetAllUsersAsync()
+    public async Task<List<TaskDto>> GetAllTaskAsync()
     {
         var tasks = await taskRepository.GetAllAsync();
         return mapper.Map<List<TaskDto>>(tasks);
