@@ -6,57 +6,53 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserController : ControllerBase
+public class UserController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService userService;
+    private readonly IUserService _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
-    public UserController(IUserService userService)
-    {
-        this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
-    }
-
-    // GET: api/User
     [HttpGet]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await userService.GetAllUsersAsync();
+        var users = await _userService.GetAllUsersAsync();
         return Ok(users);
     }
+
     [HttpGet("filter")]
     public async Task<IActionResult> GetUsers([FromQuery] UserFilterDto filter)
     {
-        var users = await userService.GetAllUserFilterAsync(filter);
+        var users = await _userService.GetAllUserFilterAsync(filter);
         return Ok(users);
     }
-    [HttpGet("{userId}")]
+
+    [HttpGet("{userId:int}")]
     public async Task<IActionResult> GetUserById(int userId)
     {
-        var user = await userService.GetUserByIdAsync(userId);
-        if (user == null)
-        {
-            return NotFound();
-        }
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null) return NotFound();
         return Ok(user);
     }
-    [HttpDelete("{userId}")]
+
+    [HttpDelete("{userId:int}")]
     [Produces("application/json")]
     public async Task<IActionResult> DeleteUser(int userId)
     {
-            await userService.DeleteUserAsync(userId);
-            return Ok(new { message = "User deleted successfully" });
+        await _userService.DeleteUserAsync(userId);
+        return Ok(new { message = "User deleted successfully" });
     }
-    [HttpGet("change-active/{userId}")]
+
+    [HttpGet("change-active/{userId:int}")]
     [Produces("application/json")]
-    public async Task<IActionResult> ChangeUserisActive(int userId)
+    public async Task<IActionResult> ChangeUserIsActive(int userId)
     {
-        await userService.ChangeUserisActiveAsync(userId);
+        await _userService.ChangeUserisActiveAsync(userId);
         return Ok(new { message = "User active status changed successfully" });
     }
+
     [HttpPut("update-user")]
     [Produces("application/json")]
     public async Task<IActionResult> UpdateUser(UserDto user)
     {
-        await userService.UpdateUserAsync(user);
+        await _userService.UpdateUserAsync(user);
         return Ok(new { message = "User updated successfully" });
     }
 }

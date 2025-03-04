@@ -4,4 +4,5 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class WorkspaceRepository(ZenGardenContext context) : GenericRepository<Workspace>(context), IWorkspaceRepository;
+public class WorkspaceRepository(ZenGardenContext context)
+    : GenericRepository<Workspace>(context), IWorkspaceRepository;

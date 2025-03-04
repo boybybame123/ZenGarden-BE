@@ -58,9 +58,7 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
         // Filter theo Status
         if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<UserStatus>(filter.Status, out var status))
-        {
             query = query.Where(x => x.Status == status);
-        }
 
         // Filter theo FullName, Phone, Email
         if (!string.IsNullOrWhiteSpace(filter.FullName))
@@ -84,5 +82,4 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
         return new FilterResult<Users>(users, totalCount);
     }
-
 }

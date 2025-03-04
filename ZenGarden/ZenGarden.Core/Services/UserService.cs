@@ -9,13 +9,13 @@ using ZenGarden.Shared.Helpers;
 namespace ZenGarden.Core.Services;
 
 public class UserService(
-    IUserRepository userRepository, 
-    IBagRepository bagRepository, 
-    IWalletRepository walletRepository, 
+    IUserRepository userRepository,
+    IBagRepository bagRepository,
+    IWalletRepository walletRepository,
     IUserLevelConfigRepository userLevelConfigRepository,
     IUserExperienceRepository userExperienceRepository,
-    IUnitOfWork unitOfWork, 
-    IWorkspaceRepository workspaceRepository, 
+    IUnitOfWork unitOfWork,
+    IWorkspaceRepository workspaceRepository,
     IMapper mapper) : IUserService
 {
     public async Task<List<UserDto>> GetAllUsersAsync()
@@ -37,15 +37,19 @@ public class UserService(
         return await userRepository.GetByIdAsync(userId)
                ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
     }
+
     public async Task ChangeUserisActiveAsync(int userId)
     {
         var user = await GetUserByIdAsync(userId);
-        user.IsActive = false;
-        user.UpdatedAt = DateTime.UtcNow;
-        userRepository.Update(user);
+        if (user != null)
+        {
+            user.IsActive = false;
+            user.UpdatedAt = DateTime.UtcNow;
+            userRepository.Update(user);
+        }
+
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
-        
     }
 
 
@@ -57,29 +61,33 @@ public class UserService(
     public async Task CreateUserAsync(Users user)
     {
         var existingUser = await userRepository.GetByEmailAsync(user.Email);
-        if (existingUser != null) throw new InvalidOperationException($"User with email {user.Email} already exists.");
+        if (existingUser != null) 
+            throw new InvalidOperationException($"User with email {user.Email} already exists.");
 
-        userRepository.Create(user);
+        await userRepository.CreateAsync(user);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to create user.");
     }
 
+
     public async Task UpdateUserAsync(UserDto user)
     {
-        var userupdate = await GetUserByIdAsync(user.UserId);
-        userupdate = mapper.Map(user, userupdate);
-
-        userRepository.Update(userupdate);
+        var userUpdate = await GetUserByIdAsync(user.UserId);
+        if (userUpdate == null) 
+            throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
+        mapper.Map(user, userUpdate);
+        userRepository.Update(userUpdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
     }
+
 
     public async Task DeleteUserAsync(int userId)
     {
         var user = await userRepository.GetByIdAsync(userId)
                    ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
 
-        userRepository.Remove(user);
+        await userRepository.RemoveAsync(user);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete user.");
     }
@@ -118,6 +126,9 @@ public class UserService(
 
     public async Task<Users?> RegisterUserAsync(RegisterDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            throw new ArgumentException("Password cannot be empty.");
+    
         var existingUser = await userRepository.GetByEmailAsync(dto.Email);
         if (existingUser != null) throw new InvalidOperationException("Email is already in use.");
     
@@ -125,50 +136,46 @@ public class UserService(
                    ?? throw new InvalidOperationException("Invalid RoleId.");
     
         var newUser = mapper.Map<Users>(dto);
-        newUser.UserName = string.IsNullOrWhiteSpace(dto.FullName) ? GenerateRandomUsername() : dto.FullName; 
+        newUser.UserName = string.IsNullOrWhiteSpace(dto.FullName) ? GenerateRandomUsername() : dto.FullName;
         newUser.Password = PasswordHasher.HashPassword(dto.Password);
         newUser.RoleId = role.RoleId;
-        newUser.Role = role;
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
     
         await unitOfWork.BeginTransactionAsync();
         try
         {
-            userRepository.Create(newUser);
-            await unitOfWork.CommitAsync(); 
+            await userRepository.CreateAsync(newUser); 
+            await unitOfWork.CommitAsync();
     
             var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
             var bag = new Bag { UserId = newUser.UserId };
-    
-            var defaultConfig = "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}";
-    
             var workspace = new Workspace
             {
                 UserId = newUser.UserId,
-                Configuration = defaultConfig, 
+                Configuration = "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}",
                 CreatedAt = DateTime.UtcNow
             };
     
-            var levelOneConfig = await userLevelConfigRepository.GetByIdAsync(1);
-            if (levelOneConfig == null) throw new Exception("UserLevelConfig is missing Level 1!");
+            var levelOneConfig = await userLevelConfigRepository.GetByIdAsync(1)
+                ?? throw new Exception("UserLevelConfig is missing Level 1!");
     
             var userExperience = new UserExperience
             {
                 UserId = newUser.UserId,
-                TotalXp = 0, 
-                CurrentLevel = 1, 
-                XpToNextLevel = levelOneConfig.XpRequired, 
-                LevelId = 1, 
+                TotalXp = 0,
+                CurrentLevel = 1,
+                XpToNextLevel = levelOneConfig.XpRequired,
+                LevelId = 1,
                 UpdatedAt = DateTime.UtcNow
             };
     
-            walletRepository.Create(wallet);
-            bagRepository.Create(bag);
-            workspaceRepository.Create(workspace);
-            userExperienceRepository.Create(userExperience);
+            await walletRepository.CreateAsync(wallet);
+            await bagRepository.CreateAsync(bag);
+            await workspaceRepository.CreateAsync(workspace);
+            await userExperienceRepository.CreateAsync(userExperience);
     
-            await unitOfWork.CommitAsync(); 
+            await unitOfWork.CommitAsync();
             await unitOfWork.CommitTransactionAsync();
             return newUser;
         }
@@ -179,12 +186,7 @@ public class UserService(
         }
     }
 
-    
-    private static string GenerateRandomUsername()
-    {
-        return $"User_{Guid.NewGuid().ToString("N")[..8]}";
-    }
-    
+
     public async Task<string> GenerateAndSaveOtpAsync(string email)
     {
         var user = await userRepository.GetByEmailAsync(email)
@@ -225,5 +227,11 @@ public class UserService(
         user.Password = PasswordHasher.HashPassword(newPassword);
         await unitOfWork.CommitAsync();
         return true;
+    }
+
+
+    private static string GenerateRandomUsername()
+    {
+        return $"User_{Guid.NewGuid().ToString("N")[..8]}";
     }
 }
