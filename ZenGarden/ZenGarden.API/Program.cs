@@ -135,6 +135,9 @@ builder.Services.AddScoped<IBagRepository, BagRepository>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
