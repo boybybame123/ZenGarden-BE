@@ -72,8 +72,8 @@ public partial class ZenGardenContext : DbContext
         if (!optionsBuilder.IsConfigured)
         {
             var connectionString = GetConnectionString();
-            optionsBuilder.UseMySql("server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
-            //optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            //optionsBuilder.UseMySql("server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+            optionsBuilder.UseMySql(GetConnectionString(), ServerVersion.AutoDetect(connectionString));
         }
     }
 
@@ -81,7 +81,8 @@ public partial class ZenGardenContext : DbContext
     {
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true)
             .Build();
 
         return configuration.GetConnectionString("ZenGardenDB");
@@ -96,35 +97,30 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Bag>(entity =>
         {
             entity.HasKey(e => e.BagId).HasName("PRIMARY");
-
-            entity.ToTable("bag");
-
-            entity.HasIndex(e => e.UserId, "idx_bag_user");
+            
+            entity.HasIndex(e => e.UserId, "idx_bag_user").IsUnique();
 
             entity.Property(e => e.BagId).HasColumnName("BagID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
             entity.Property(e => e.UserId).HasColumnName("UserID");
         });
 
         modelBuilder.Entity<BagItem>(entity =>
         {
             entity.HasKey(e => e.BagItemId).HasName("PRIMARY");
-
-            entity.ToTable("bagitem");
-
+            
             entity.HasIndex(e => e.BagId, "BagID");
 
             entity.HasIndex(e => e.ItemId, "ItemID");
 
             entity.Property(e => e.BagItemId).HasColumnName("BagItemID");
             entity.Property(e => e.AddedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.BagId).HasColumnName("BagID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
@@ -141,12 +137,10 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<FocusMethod>(entity =>
         {
             entity.HasKey(e => e.FocusMethodId).HasName("PRIMARY");
-
-            entity.ToTable("focusmethod");
-
+            
             entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.Name).HasMaxLength(100);
         });
@@ -154,15 +148,13 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Item>(entity =>
         {
             entity.HasKey(e => e.ItemId).HasName("PRIMARY");
-
-            entity.ToTable("item");
-
+            
             entity.HasIndex(e => new { e.Type, e.Rarity }, "idx_item_type_rarity");
 
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Cost).HasPrecision(10, 2);
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
@@ -172,9 +164,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<ItemDetail>(entity =>
         {
             entity.HasKey(e => e.ItemDetailId).HasName("PRIMARY");
-
-            entity.ToTable("itemdetail");
-
+            
             entity.HasIndex(e => e.ItemId, "idx_item_detail_itemid").IsUnique();
 
             entity.Property(e => e.ItemDetailId).HasColumnName("ItemDetailID");
@@ -187,9 +177,8 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.Stats).HasColumnType("json");
             entity.Property(e => e.Tags).HasColumnType("json");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
 
             entity.HasOne(d => d.Item).WithOne(p => p.ItemDetail)
                 .HasForeignKey<ItemDetail>(d => d.ItemId)
@@ -200,15 +189,13 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Leaderboard>(entity =>
         {
             entity.HasKey(e => e.LeaderboardId).HasName("PRIMARY");
-
-            entity.ToTable("leaderboard");
-
+            
             entity.HasIndex(e => e.UserId, "UserID1");
 
             entity.Property(e => e.LeaderboardId).HasColumnName("LeaderboardID");
             entity.Property(e => e.LastUpdated)
                 .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
@@ -220,16 +207,14 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<PurchaseHistory>(entity =>
         {
             entity.HasKey(e => e.PurchaseId).HasName("PRIMARY");
-
-            entity.ToTable("purchasehistory");
-
+            
             entity.HasIndex(e => e.ItemId, "ItemID2");
 
             entity.HasIndex(e => e.UserId, "UserID2");
 
             entity.Property(e => e.PurchaseId).HasColumnName("PurchaseID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Status).HasMaxLength(20);
@@ -248,9 +233,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Roles>(entity =>
         {
             entity.HasKey(e => e.RoleId).HasName("PRIMARY");
-
-            entity.ToTable("roles");
-
+            
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.RoleName).HasMaxLength(50);
         });
@@ -258,9 +241,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Tasks>(entity =>
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
-
-            entity.ToTable("tasks");
-
+            
             entity.HasIndex(e => e.UserId, "idx_task_user");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
@@ -269,10 +250,10 @@ public partial class ZenGardenContext : DbContext
                 .HasColumnName("AIProcessedDescription");
             entity.Property(e => e.CompletedAt)
                 .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.TaskDescription).HasColumnType("text");
             entity.Property(e => e.TaskName).HasMaxLength(255);
@@ -286,9 +267,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<TradeHistory>(entity =>
         {
             entity.HasKey(e => e.TradeId).HasName("PRIMARY");
-
-            entity.ToTable("tradehistory");
-
+            
             entity.HasIndex(e => e.UserBid, "UserBID");
 
             entity.HasIndex(e => e.UserTreeAid, "UserTreeAID");
@@ -300,7 +279,7 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.TradeId).HasColumnName("TradeID");
             entity.Property(e => e.CompletedAt).HasColumnType("timestamp");
             entity.Property(e => e.RequestedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.TradeFee)
                 .HasPrecision(10, 2)
@@ -313,7 +292,7 @@ public partial class ZenGardenContext : DbContext
 
             entity.HasOne(d => d.UserA).WithMany(p => p.TradeHistoryUserA)
                 .HasForeignKey(d => d.UserAid)
-                .HasConstraintName("tradehistory_ibfk_1");
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.UserB).WithMany(p => p.TradeHistoryUserB)
                 .HasForeignKey(d => d.UserBid)
@@ -332,9 +311,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Transactions>(entity =>
         {
             entity.HasKey(e => e.TransactionId).HasName("PRIMARY");
-
-            entity.ToTable("transactions");
-
+            
             entity.HasIndex(e => e.WalletId, "WalletID");
 
             entity.HasIndex(e => e.Status, "idx_transaction_status");
@@ -344,7 +321,7 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.TransactionId).HasColumnName("TransactionID");
             entity.Property(e => e.Amount).HasPrecision(10, 2);
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.UserId).HasColumnName("UserID");
@@ -363,12 +340,9 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<TreeType>(entity =>
         {
             entity.HasKey(e => e.TreeTypeId).HasName("PRIMARY");
-
-            entity.ToTable("treetype");
-
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
             entity.Property(e => e.BasePrice).HasPrecision(10, 2);
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()").HasColumnType("timestamp");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
         });
@@ -377,14 +351,11 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<UserExperience>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
-
-            entity.ToTable("userexperience");
-
+            
             entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
             entity.HasOne(e => e.User)
                 .WithOne(u => u.UserExperience)
                 .HasForeignKey<UserExperience>(e => e.UserId)
@@ -394,16 +365,14 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Users>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
-
-            entity.ToTable("users");
-
+            
             entity.HasIndex(e => e.Email, "Email").IsUnique();
 
             entity.HasIndex(e => e.RoleId, "RoleID");
 
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.Email)
                 .IsRequired()
@@ -430,25 +399,24 @@ public partial class ZenGardenContext : DbContext
                     .IsUnicode(false);
 
             entity.Property(e => e.RefreshTokenExpiry)
-                    .HasColumnType("timestamp")
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
 
             entity.Property(e => e.OtpCodeHash)
                     .HasMaxLength(255)
                     .IsUnicode(false);
 
             entity.Property(e => e.OtpExpiry)
-                    .HasColumnType("timestamp")
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
 
             entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                     .HasColumnType("timestamp");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
-
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
+            
             entity.HasOne(d => d.Role)
                 .WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
@@ -478,9 +446,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<UserTree>(entity =>
         {
             entity.HasKey(e => e.UserTreeId).HasName("PRIMARY");
-
-            entity.ToTable("usertree");
-
+            
             entity.HasIndex(e => e.FinalTreeId, "FinalTreeID");
 
             entity.HasIndex(e => e.UserId, "UserID4");
@@ -490,7 +456,7 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.FinalTreeRarity).HasMaxLength(50);
             entity.Property(e => e.LastUpdated)
                 .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.PlantedAt).HasColumnType("timestamp");
             entity.Property(e => e.TreeStatus)
@@ -507,19 +473,17 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Wallet>(entity =>
         {
             entity.HasKey(e => e.WalletId).HasName("PRIMARY");
-
-            entity.ToTable("wallet");
-
-            entity.HasIndex(e => e.UserId, "UserID5");
+            
+            entity.HasIndex(e => e.UserId, "UserID5").IsUnique();
 
             entity.Property(e => e.WalletId).HasColumnName("WalletID");
             entity.Property(e => e.Balance)
                 .HasPrecision(10, 2)
                 .HasDefaultValueSql("'0.00'");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
+
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.User).WithOne(p => p.Wallet)
@@ -531,20 +495,18 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<Workspace>(entity =>
         {
             entity.HasKey(e => e.WorkspaceId).HasName("PRIMARY");
-
-            entity.ToTable("workspace");
-
-            entity.HasIndex(e => e.UserId, "UserID6");
+            
+            entity.HasIndex(e => e.UserId, "idx_workspace_user").IsUnique();
 
             entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
             entity.Property(e => e.Configuration).HasColumnType("json");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("UTC_TIMESTAMP()");
+
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.User).WithOne(p => p.Workspace)
@@ -561,9 +523,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<WorkspaceItem>(entity =>
         {
             entity.HasKey(e => e.WorkspaceItemId).HasName("PRIMARY");
-
-            entity.ToTable("workspaceitem");
-
+            
             entity.HasIndex(e => e.ItemId, "ItemID3");
 
             entity.HasIndex(e => e.WorkspaceId, "WorkspaceID");
@@ -572,7 +532,7 @@ public partial class ZenGardenContext : DbContext
 
             entity.Property(e => e.WorkspaceItemId).HasColumnName("WorkspaceItemID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("UTC_TIMESTAMP()")
                 .HasColumnType("timestamp");
             entity.Property(e => e.Effect).HasColumnType("json");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
