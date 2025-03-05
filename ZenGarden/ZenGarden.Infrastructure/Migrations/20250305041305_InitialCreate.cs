@@ -78,6 +78,21 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
+                name: "TreeLevelConfig",
+                columns: table => new
+                {
+                    Level = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    XpRequired = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TreeLevelConfig", x => x.Level);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateTable(
                 name: "treetype",
                 columns: table => new
                 {
@@ -339,6 +354,30 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
+                name: "UserXpLog",
+                columns: table => new
+                {
+                    LogId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    ActivityType = table.Column<int>(type: "int", nullable: false),
+                    XpAmount = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserXpLog", x => x.LogId);
+                    table.ForeignKey(
+                        name: "FK_UserXpLog_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateTable(
                 name: "wallet",
                 columns: table => new
                 {
@@ -358,7 +397,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PRIMARY", x => x.WalletID);
                     table.ForeignKey(
-                        name: "FK_wallet_users_UserID",
+                        name: "wallet_ibfk_1",
                         column: x => x.UserID,
                         principalTable: "users",
                         principalColumn: "UserID",
@@ -384,7 +423,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PRIMARY", x => x.WorkspaceID);
                     table.ForeignKey(
-                        name: "FK_workspace_users_UserID",
+                        name: "workspace_ibfk_1",
                         column: x => x.UserID,
                         principalTable: "users",
                         principalColumn: "UserID",
@@ -611,6 +650,37 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
+            migrationBuilder.CreateTable(
+                name: "TreeXpLog",
+                columns: table => new
+                {
+                    LogId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    UserTreeId = table.Column<int>(type: "int", nullable: false),
+                    TaskId = table.Column<int>(type: "int", nullable: false),
+                    ActivityType = table.Column<int>(type: "int", nullable: false),
+                    XpAmount = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TreeXpLog", x => x.LogId);
+                    table.ForeignKey(
+                        name: "FK_TreeXpLog_tasks_TaskId",
+                        column: x => x.TaskId,
+                        principalTable: "tasks",
+                        principalColumn: "TaskID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TreeXpLog_usertree_UserTreeId",
+                        column: x => x.UserTreeId,
+                        principalTable: "usertree",
+                        principalColumn: "UserTreeID",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
             migrationBuilder.CreateIndex(
                 name: "idx_bag_user",
                 table: "bag",
@@ -720,6 +790,16 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "WalletID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TreeXpLog_TaskId",
+                table: "TreeXpLog",
+                column: "TaskId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TreeXpLog_UserTreeId",
+                table: "TreeXpLog",
+                column: "UserTreeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_userexperience_LevelId",
                 table: "userexperience",
                 column: "LevelId");
@@ -744,6 +824,11 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "UserID4",
                 table: "usertree",
                 column: "UserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserXpLog_UserId",
+                table: "UserXpLog",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_wallet_UserID",
@@ -808,7 +893,16 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "transactions");
 
             migrationBuilder.DropTable(
+                name: "TreeLevelConfig");
+
+            migrationBuilder.DropTable(
+                name: "TreeXpLog");
+
+            migrationBuilder.DropTable(
                 name: "userexperience");
+
+            migrationBuilder.DropTable(
+                name: "UserXpLog");
 
             migrationBuilder.DropTable(
                 name: "workspaceitem");
@@ -820,10 +914,10 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "focusmethod");
 
             migrationBuilder.DropTable(
-                name: "tasks");
+                name: "wallet");
 
             migrationBuilder.DropTable(
-                name: "wallet");
+                name: "tasks");
 
             migrationBuilder.DropTable(
                 name: "UserLevelConfig");

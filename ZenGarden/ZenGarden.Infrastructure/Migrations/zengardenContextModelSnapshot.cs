@@ -547,6 +547,22 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.ToTable("transactions", (string)null);
                 });
 
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeLevelConfig", b =>
+                {
+                    b.Property<int>("Level")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Level"));
+
+                    b.Property<int>("XpRequired")
+                        .HasColumnType("int");
+
+                    b.HasKey("Level");
+
+                    b.ToTable("TreeLevelConfig");
+                });
+
             modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>
                 {
                     b.Property<int>("TreeTypeId")
@@ -575,6 +591,38 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasName("PRIMARY");
 
                     b.ToTable("treetype", (string)null);
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserTreeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("XpAmount")
+                        .HasColumnType("int");
+
+                    b.HasKey("LogId");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserTreeId");
+
+                    b.ToTable("TreeXpLog");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserExperience", b =>
@@ -679,6 +727,33 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex(new[] { "UserId" }, "UserID4");
 
                     b.ToTable("usertree", (string)null);
+                });
+
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpLog", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("XpAmount")
+                        .HasColumnType("int");
+
+                    b.HasKey("LogId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserXpLog");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
@@ -1053,6 +1128,25 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("Wallet");
                 });
 
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpLog", b =>
+                {
+                    b.HasOne("ZenGarden.Domain.Entities.Tasks", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTree")
+                        .WithMany()
+                        .HasForeignKey("UserTreeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+
+                    b.Navigation("UserTree");
+                });
+
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserExperience", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.UserLevelConfig", "UserLevelConfig")
@@ -1089,6 +1183,17 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpLog", b =>
+                {
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Roles", "Role")
@@ -1105,7 +1210,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .WithOne("Wallet")
                         .HasForeignKey("ZenGarden.Domain.Entities.Wallet", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("wallet_ibfk_1");
 
                     b.Navigation("User");
                 });
@@ -1116,7 +1222,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .WithOne("Workspace")
                         .HasForeignKey("ZenGarden.Domain.Entities.Workspace", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("workspace_ibfk_1");
 
                     b.Navigation("User");
                 });
