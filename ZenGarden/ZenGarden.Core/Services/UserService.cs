@@ -125,7 +125,7 @@ public class UserService(
                    ?? throw new InvalidOperationException("Invalid RoleId.");
     
         var newUser = mapper.Map<Users>(dto);
-        newUser.UserName = string.IsNullOrWhiteSpace(dto.FullName) ? GenerateRandomUsername() : dto.FullName; 
+        newUser.UserName = string.IsNullOrWhiteSpace(dto.UserName) ? GenerateRandomUsername() : dto.UserName; 
         newUser.Password = PasswordHasher.HashPassword(dto.Password);
         newUser.RoleId = role.RoleId;
         newUser.Role = role;
