@@ -30,11 +30,11 @@ public class TaskService(ITaskRepository taskRepository, IUnitOfWork unitOfWork,
     public async Task UpdateTaskAsync(TaskDto task)
     {
         var updateTask = await GetTaskByIdAsync(task.TaskId);
-        if (updateTask == null) 
+        if (updateTask == null)
             throw new KeyNotFoundException($"Task with ID {task.TaskId} not found.");
-    
-        mapper.Map(task, updateTask); 
-    
+
+        mapper.Map(task, updateTask);
+
         taskRepository.Update(updateTask);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update task.");
@@ -44,7 +44,7 @@ public class TaskService(ITaskRepository taskRepository, IUnitOfWork unitOfWork,
     public async Task DeleteTaskAsync(int taskId)
     {
         var task = await GetTaskByIdAsync(taskId);
-        if (task == null) 
+        if (task == null)
             throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         await taskRepository.RemoveAsync(task);

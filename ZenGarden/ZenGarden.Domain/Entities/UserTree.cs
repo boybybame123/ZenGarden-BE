@@ -20,7 +20,7 @@ public partial class UserTree
     
     public int TotalXp { get; set; } = 0;
 
-    public string TreeStatus { get; set; }
+    public TreeStatus TreeStatus { get; set; } = TreeStatus.Growing;
 
     public TreeRarity? FinalTreeRarity { get; set; }
 
