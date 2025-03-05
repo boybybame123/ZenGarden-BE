@@ -74,7 +74,8 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -139,13 +140,33 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+builder.Services.AddScoped<IUserLevelConfigRepository, UserLevelConfigRepository>();
+builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
+builder.Services.AddScoped<IItemRepository, ItemRepository>();
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
+builder.Services.AddScoped<ITaskFocusRepository, TaskFocusRepository>();
+builder.Services.AddScoped<IItemService, ItemService>();
+
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddHttpClient<FocusMethodRepository>();
+
+var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+builder.Services.Configure<OpenAiSettings>(options =>
+{
+    options.ApiKey = openAiApiKey ?? string.Empty;
+});
+
 
 var app = builder.Build();
 

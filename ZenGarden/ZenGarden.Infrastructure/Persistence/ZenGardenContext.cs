@@ -275,30 +275,64 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.RoleName).HasMaxLength(50);
         });
 
+    
         modelBuilder.Entity<Tasks>(entity =>
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
-            
+
             entity.HasIndex(e => e.UserId, "idx_task_user");
+            entity.HasIndex(e => e.WorkspaceId, "idx_task_workspace");
+            entity.HasIndex(e => e.UserTreeID, "idx_task_usertree");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
             entity.Property(e => e.AiProcessedDescription)
                 .HasColumnType("text")
                 .HasColumnName("AIProcessedDescription");
+
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             entity.Property(e => e.TaskDescription).HasColumnType("text");
             entity.Property(e => e.TaskName).HasMaxLength(255);
             entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.Status)
+                .HasConversion<int>() 
+                .HasColumnName("Status")
+                .IsRequired();
 
-            entity.HasOne(d => d.User).WithMany(p => p.Tasks)
+
+            entity.Property(e => e.BaseXp)
+                .HasColumnType("int")
+                .HasDefaultValue(50)
+                .HasColumnName("BaseXP");
+
+            entity.Property(e => e.Type)
+                .HasConversion<int>() 
+                .HasColumnName("TaskType");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("tasks_ibfk_1");
+
+            entity.HasOne(d => d.UserTree)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(d => d.UserTreeID)
+                .HasConstraintName("tasks_ibfk_usertree");
+
+            entity.HasOne(d => d.Workspace)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(d => d.WorkspaceId)
+                .HasConstraintName("tasks_ibfk_workspace");
         });
+
+
+
+
 
         modelBuilder.Entity<TradeHistory>(entity =>
         {
