@@ -11,6 +11,10 @@ public partial class Tasks
     public int TaskId { get; set; }
 
     public int? UserId { get; set; }
+    
+    public int? WorkspaceId { get; set; }
+    
+    public int? UserTreeID { get; set; }
 
     public string TaskName { get; set; }
 
@@ -29,5 +33,9 @@ public partial class Tasks
 
     public virtual Users User { get; set; }
 
-    public virtual ICollection<UserActivity> UserActivity { get; set; } = new List<UserActivity>();
+    public virtual Workspace Workspace { get; set; }
+    
+    public virtual TaskFocusSetting TaskFocusSetting { get; set; }
+    
+    public virtual UserTree UserTree { get; set; }
 }

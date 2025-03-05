@@ -16,7 +16,7 @@ public partial class UserTree
 
     public DateTime? PlantedAt { get; set; }
 
-    public int? TreeLevel { get; set; }
+    public int TreeLevel { get; set; } = 1;
     
     public int TotalXp { get; set; } = 0;
 

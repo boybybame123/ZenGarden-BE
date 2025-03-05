@@ -8,7 +8,6 @@ namespace ZenGarden.Domain.Entities;
 public partial class FocusMethod
 {
     public int FocusMethodId { get; set; }
-
     public string Name { get; set; }
 
     public int? DefaultDuration { get; set; }
@@ -22,8 +21,6 @@ public partial class FocusMethod
     public int? MinBreak { get; set; }
 
     public int? MaxBreak { get; set; }
-
     public DateTime? CreatedAt { get; set; }
-
-    public virtual ICollection<UserActivity> UserActivity { get; set; } = new List<UserActivity>();
+    public virtual ICollection<TaskFocusSetting> TaskFocusSettings { get; set; } = new List<TaskFocusSetting>();
 }

@@ -9,9 +9,9 @@ public partial class Bag
 {
     public int BagId { get; set; }
 
-    public int? UserId { get; set; }
+    public int UserId { get; set; }
 
-    public int? Capacity { get; set; }
+    public int? Capacity { get; set; } = 100;
 
     public DateTime? CreatedAt { get; set; }
 

@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
@@ -15,13 +16,17 @@ public partial class Transactions
 
     public decimal? Amount { get; set; }
 
-    public string TransactionType { get; set; }
+    public TransactionType Type { get; set; }
 
-    public string Status { get; set; }
+    public TransactionStatus Status { get; set; }
 
-    public decimal? CommissionFee { get; set; }
+    public string PaymentMethod { get; set; } = "";
 
-    public DateTime? CreatedAt { get; set; }
+    public string TransactionRef { get; set; } = "";
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? CompletedAt { get; set; }
 
     public virtual Users User { get; set; }
 

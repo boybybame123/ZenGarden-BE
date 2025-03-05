@@ -9,15 +9,17 @@ public partial class Workspace
 {
     public int WorkspaceId { get; set; }
 
-    public int? UserId { get; set; }
+    public int UserId { get; set; }
 
-    public string Configuration { get; set; }
+    public string Configuration { get; set; } = "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}";
 
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Users User { get; set; }
+    
+    public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
 
     public virtual ICollection<WorkspaceItem> WorkspaceItem { get; set; } = new List<WorkspaceItem>();
 }
