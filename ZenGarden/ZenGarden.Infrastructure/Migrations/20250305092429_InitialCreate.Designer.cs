@@ -12,7 +12,7 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    [Migration("20250305091104_InitialCreate")]
+    [Migration("20250305092429_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -42,12 +42,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int")
@@ -74,7 +74,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("AddedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int?>("BagId")
                         .HasColumnType("int")
@@ -109,7 +109,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int?>("DefaultBreak")
                         .HasColumnType("int");
@@ -155,7 +155,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<bool?>("Limited")
                         .HasColumnType("tinyint(1)");
@@ -228,7 +228,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.HasKey("ItemDetailId")
                         .HasName("PRIMARY");
@@ -254,7 +254,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("LastUpdated")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime?>("LastUpdated"));
 
@@ -288,7 +288,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int?>("ItemId")
                         .HasColumnType("int")
@@ -387,14 +387,14 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime?>("CompletedAt"));
 
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int?>("Duration")
                         .HasColumnType("int");
@@ -449,7 +449,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("RequestedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -509,7 +509,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("PaymentMethod")
                         .HasColumnType("longtext");
@@ -576,7 +576,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("Name")
                         .HasMaxLength(100)
@@ -642,7 +642,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int>("XpToNextLevel")
                         .HasColumnType("int");
@@ -691,7 +691,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("LastUpdated")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime?>("LastUpdated"));
 
@@ -765,7 +765,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -785,7 +785,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("OtpExpiry")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -800,7 +800,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("RefreshTokenExpiry")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("RefreshTokenHash")
                         .HasMaxLength(255)
@@ -817,7 +817,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -865,7 +865,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int")
@@ -895,12 +895,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int")
@@ -927,7 +927,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP()");
 
                     b.Property<string>("Effect")
                         .HasColumnType("json");
