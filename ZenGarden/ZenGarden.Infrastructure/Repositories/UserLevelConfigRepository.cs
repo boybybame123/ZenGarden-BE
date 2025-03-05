@@ -4,4 +4,5 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserLevelConfigRepository(ZenGardenContext context) : GenericRepository<UserLevelConfig>(context), IUserLevelConfigRepository;
+public class UserLevelConfigRepository(ZenGardenContext context)
+    : GenericRepository<UserLevelConfig>(context), IUserLevelConfigRepository;

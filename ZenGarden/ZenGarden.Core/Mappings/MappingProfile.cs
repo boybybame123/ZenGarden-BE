@@ -1,6 +1,7 @@
 using AutoMapper;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Mappings;
 
@@ -10,6 +11,9 @@ public class MappingProfile : Profile
     {
         CreateMap<Users, UserDto>().ReverseMap();
         CreateMap<RegisterDto, Users>()
-            .ForMember(dest => dest.Password, opt => opt.Ignore());
+            .ForMember(dest => dest.Password, opt => opt.Ignore())
+            .AfterMap((src, dest) => dest.Password = PasswordHasher.HashPassword(src.Password));
+        CreateMap<Item, ItemDto>();
+        CreateMap<ItemDetail, ItemDetailDto>();
     }
 }

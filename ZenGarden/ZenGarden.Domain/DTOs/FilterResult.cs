@@ -6,5 +6,3 @@ public class FilterResult<T>(List<T> data, int totalCount)
     public int TotalCount { get; set; } = totalCount;
     public List<T> Data { get; set; } = data;
 }
-
-

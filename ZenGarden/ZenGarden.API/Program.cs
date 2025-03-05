@@ -18,7 +18,6 @@ using ZenGarden.Domain.DTOs;
 using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Infrastructure.Repositories;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
@@ -109,8 +108,8 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
+                .AllowAnyMethod()
+                .AllowAnyHeader();
         });
 });
 
@@ -147,7 +146,6 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddAutoMapper(typeof(ItemMappingProfile));
 
 var app = builder.Build();
 

@@ -4,8 +4,7 @@ namespace ZenGarden.Domain.Entities;
 
 public class UserLevelConfig
 {
-    [Key]
-    public int Level { get; set; }
+    [Key] public int Level { get; set; }
 
-    public int XpRequired { get; set; } 
+    public int XpRequired { get; set; }
 }

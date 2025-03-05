@@ -46,10 +46,10 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return expression == null ? await _dbSet.CountAsync() : await _dbSet.CountAsync(expression);
     }
 
-    public virtual void Create(T entity)
+    public virtual async Task CreateAsync(T entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        _dbSet.Add(entity);
+        await _dbSet.AddAsync(entity);
     }
 
     public virtual void Update(T entity)
@@ -58,9 +58,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         _context.Entry(entity).State = EntityState.Modified;
     }
 
-    public virtual void Remove(T entity)
+    public virtual async Task RemoveAsync(T entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        _dbSet.Remove(entity);
+        await Task.Run(() => _dbSet.Remove(entity));
     }
 }
