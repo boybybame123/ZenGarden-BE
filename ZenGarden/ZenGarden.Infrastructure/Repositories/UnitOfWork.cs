@@ -7,7 +7,7 @@ namespace ZenGarden.Infrastructure.Repositories;
 public class UnitOfWork(ZenGardenContext context) : IUnitOfWork
 {
     private readonly ZenGardenContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private IDbContextTransaction? _transaction; 
+    private IDbContextTransaction? _transaction;
 
     public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : class
     {

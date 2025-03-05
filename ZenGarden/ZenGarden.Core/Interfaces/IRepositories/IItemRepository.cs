@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZenGarden.Domain.Entities;
+﻿using ZenGarden.Domain.Entities;
 
-namespace ZenGarden.Core.Interfaces.IRepositories
+namespace ZenGarden.Core.Interfaces.IRepositories;
+
+public interface IItemRepository : IGenericRepository<Item>
 {
-    public interface IItemRepository : IGenericRepository<Item>
-    {
-        Task<List<Item>> GetAllItemAsync();
-
-    }
+    Task<List<Item>> GetAllItemAsync();
 }
