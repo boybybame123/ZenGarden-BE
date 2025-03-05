@@ -2,13 +2,14 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ZenGarden.Domain.Entities;
 
 public partial class Bag
 {
-    public int BagId { get; set; }
-
+    [Key, ForeignKey("User")]
     public int UserId { get; set; }
 
     public int? Capacity { get; set; } = 100;

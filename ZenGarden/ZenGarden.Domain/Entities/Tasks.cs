@@ -25,6 +25,9 @@ public partial class Tasks
     public string AiProcessedDescription { get; set; }
 
     public int? TimeOverdue { get; set; }
+    public int BaseXp { get; set; } = 50;
+    
+    public TaskType Type { get; set; }
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }

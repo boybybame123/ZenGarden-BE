@@ -10,7 +10,7 @@ public interface IGenericRepository<T> where T : class
     Task<T?> GetAsync(Expression<Func<T, bool>> expression, bool trackChanges = false);
     Task<T?> GetByIdAsync<TId>(TId id);
     Task<int> CountAsync(Expression<Func<T, bool>>? expression = null);
-    
+
     Task CreateAsync(T entity);
     void Update(T entity);
     Task RemoveAsync(T entity);

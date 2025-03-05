@@ -40,4 +40,11 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.UpdateTaskAsync(task);
         return Ok(new { message = "task updated successfully" });
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
+    {
+        var task = await taskService.CreateTaskAsync(dto);
+        return Ok(task);
+    }
 }
