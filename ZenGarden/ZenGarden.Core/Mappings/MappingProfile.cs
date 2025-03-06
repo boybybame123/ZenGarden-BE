@@ -13,7 +13,9 @@ public class MappingProfile : Profile
         CreateMap<RegisterDto, Users>()
             .ForMember(dest => dest.Password, opt => opt.Ignore())
             .AfterMap((src, dest) => dest.Password = PasswordHasher.HashPassword(src.Password));
-        CreateMap<Item, ItemDto>();
-        CreateMap<ItemDetail, ItemDetailDto>();
+        CreateMap<Item, ItemDto>().ReverseMap();
+        CreateMap<ItemDetail, ItemDetailDto>().ReverseMap();
+        CreateMap<Packages, PackageDto>().ReverseMap();
+
     }
 }
