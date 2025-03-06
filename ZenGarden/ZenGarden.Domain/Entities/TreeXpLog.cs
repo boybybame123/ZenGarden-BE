@@ -4,7 +4,7 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
-public class TreeXpLog
+public sealed class TreeXpLog
 {
     [Key] public int LogId { get; set; }
 
@@ -18,7 +18,7 @@ public class TreeXpLog
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [ForeignKey("UserTreeId")] public virtual required UserTree UserTree { get; set; }
+    [ForeignKey("UserTreeId")] public required UserTree UserTree { get; set; }
 
-    [ForeignKey("TaskId")] public virtual required Tasks Task { get; set; }
+    [ForeignKey("TaskId")] public required Tasks Task { get; set; }
 }

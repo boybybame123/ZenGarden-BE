@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 using System.Net;
 using System.Text.Json;
@@ -8,6 +9,11 @@ namespace ZenGarden.API.Middleware;
 
 public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -16,7 +22,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An unhandled exception occurred.");
+            logger.LogError(ex, "An unhandled exception occurred at {Path}", context.Request.Path);
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -29,6 +35,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         var statusCode = exception switch
         {
             ArgumentNullException => (int)HttpStatusCode.BadRequest,
+            ValidationException => (int)HttpStatusCode.UnprocessableEntity,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             InvalidOperationException => (int)HttpStatusCode.BadRequest,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
@@ -43,11 +50,11 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         {
             StatusCode = statusCode,
             Message = exception.Message,
-            Details = exception.InnerException?.Message
+            Details = statusCode == (int)HttpStatusCode.InternalServerError
+                ? "An unexpected error occurred. Please try again later."
+                : exception.InnerException?.Message
         };
 
-        var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-
-        return response.WriteAsync(JsonSerializer.Serialize(errorResponse, jsonOptions));
+        return response.WriteAsync(JsonSerializer.Serialize(errorResponse, JsonOptions));
     }
 }

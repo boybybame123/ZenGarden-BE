@@ -165,10 +165,7 @@ builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("Ope
 builder.Services.AddHttpClient<FocusMethodRepository>();
 
 var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-builder.Services.Configure<OpenAiSettings>(options =>
-{
-    options.ApiKey = openAiApiKey ?? string.Empty;
-});
+builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey ?? string.Empty; });
 
 
 var app = builder.Build();

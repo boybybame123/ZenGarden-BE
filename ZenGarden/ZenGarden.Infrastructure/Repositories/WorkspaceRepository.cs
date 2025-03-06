@@ -13,7 +13,7 @@ public class WorkspaceRepository(ZenGardenContext context)
     public async Task<Workspace?> GetByUserIdAsync(int userId)
     {
         return await _context.Workspace
-            .Include(w => w.Tasks) 
+            .Include(w => w.Tasks)
             .FirstOrDefaultAsync(w => w.UserId == userId);
     }
 }

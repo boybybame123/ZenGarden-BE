@@ -1,9 +1,4 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -11,7 +6,8 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Services;
 
-public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork unitOfWork, IMapper mapper) : IPackagesService
+public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork unitOfWork, IMapper mapper)
+    : IPackagesService
 {
     public async Task<List<PackageDto>> GetAllPackagesAsync()
     {
@@ -50,6 +46,7 @@ public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete Package.");
     }
+
     public async Task<Packages?> CreatePackageAsync(PackageDto Package)
     {
         var createPackage = mapper.Map<Packages>(Package);
