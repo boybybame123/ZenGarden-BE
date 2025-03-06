@@ -6,8 +6,8 @@ namespace ZenGarden.Core.Interfaces.IServices;
 public interface ITaskService
 {
     Task<List<TaskDto>> GetAllTaskAsync();
-    Task<Tasks?> GetTaskByIdAsync(int TaskId);
-    Task CreateTaskAsync(Tasks task);
+    Task<Tasks?> GetTaskByIdAsync(int taskId);
+    Task<Tasks> CreateTaskAsync(CreateTaskDto dto);
     Task UpdateTaskAsync(TaskDto task);
-    Task DeleteTaskAsync(int TaskId);
+    Task DeleteTaskAsync(int taskId);
 }

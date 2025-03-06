@@ -29,7 +29,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     MaxDuration = table.Column<int>(type: "int", nullable: true),
                     MinBreak = table.Column<int>(type: "int", nullable: true),
                     MaxBreak = table.Column<int>(type: "int", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -52,11 +52,32 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Cost = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
                     Limited = table.Column<bool>(type: "tinyint(1)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.ItemID);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateTable(
+                name: "Packages",
+                columns: table => new
+                {
+                    PackageID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Price = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PRIMARY", x => x.PackageID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -102,7 +123,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Rarity = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     BasePrice = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true)
                 },
                 constraints: table =>
@@ -131,9 +152,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "ItemDetail",
                 columns: table => new
                 {
-                    ItemDetailID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ItemID = table.Column<int>(type: "int", nullable: true),
+                    ItemID = table.Column<int>(type: "int", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ImageUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
@@ -151,13 +170,13 @@ namespace ZenGarden.Infrastructure.Migrations
                     MaxStack = table.Column<int>(type: "int", nullable: true),
                     Tags = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.ItemDetailID);
+                    table.PrimaryKey("PRIMARY", x => x.ItemID);
                     table.ForeignKey(
-                        name: "itemdetail_ibfk_1",
+                        name: "FK_ItemDetail_Item_ItemID",
                         column: x => x.ItemID,
                         principalTable: "Item",
                         principalColumn: "ItemID",
@@ -185,12 +204,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true),
                     RefreshTokenHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    RefreshTokenExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
+                    RefreshTokenExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     OtpCodeHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    OtpExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    OtpExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -208,16 +227,14 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Bag",
                 columns: table => new
                 {
-                    BagID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Capacity = table.Column<int>(type: "int", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.BagID);
+                    table.PrimaryKey("PRIMARY", x => x.UserID);
                     table.ForeignKey(
                         name: "FK_Bag_Users_UserID",
                         column: x => x.UserID,
@@ -238,8 +255,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     TotalTrees = table.Column<int>(type: "int", nullable: true),
                     BestTrees = table.Column<int>(type: "int", nullable: true),
                     ProductivityScore = table.Column<int>(type: "int", nullable: true),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.ComputedColumn)
+                    LastUpdated = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -262,7 +278,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     UserID = table.Column<int>(type: "int", nullable: true),
                     ItemID = table.Column<int>(type: "int", nullable: true),
                     TotalPrice = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     Status = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
@@ -287,16 +303,16 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "UserExperience",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false),
+                    UserID = table.Column<int>(type: "int", nullable: false),
                     TotalXP = table.Column<long>(type: "bigint", nullable: false),
                     CurrentLevel = table.Column<int>(type: "int", nullable: false),
                     XpToNextLevel = table.Column<int>(type: "int", nullable: false),
                     LevelId = table.Column<int>(type: "int", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.UserId);
+                    table.PrimaryKey("PRIMARY", x => x.UserID);
                     table.ForeignKey(
                         name: "FK_UserExperience_UserLevelConfig_LevelId",
                         column: x => x.LevelId,
@@ -304,8 +320,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "Level",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UserExperience_Users_UserId",
-                        column: x => x.UserId,
+                        name: "FK_UserExperience_Users_UserID",
+                        column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
@@ -321,14 +337,12 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: true),
                     FinalTreeID = table.Column<int>(type: "int", nullable: true),
-                    PlantedAt = table.Column<DateTime>(type: "timestamp", nullable: true),
+                    PlantedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     TreeLevel = table.Column<int>(type: "int", nullable: false),
                     TotalXp = table.Column<int>(type: "int", nullable: false),
-                    TreeStatus = table.Column<string>(type: "enum('Growing','Mature','MaxLevel')", nullable: true, defaultValueSql: "'Growing'", collation: "utf8mb4_0900_ai_ci")
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    FinalTreeRarity = table.Column<int>(type: "int", maxLength: 50, nullable: true),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.ComputedColumn),
+                    TreeStatus = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    FinalTreeRarity = table.Column<int>(type: "int", nullable: true),
+                    LastUpdated = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     LevelId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -377,12 +391,10 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Wallet",
                 columns: table => new
                 {
-                    WalletID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Balance = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "'0.00'"),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     Currency = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     IsLocked = table.Column<bool>(type: "tinyint(1)", nullable: false),
@@ -390,9 +402,9 @@ namespace ZenGarden.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.WalletID);
+                    table.PrimaryKey("PRIMARY", x => x.UserID);
                     table.ForeignKey(
-                        name: "wallet_ibfk_1",
+                        name: "FK_Wallet_Users_UserID",
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserID",
@@ -405,19 +417,17 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Workspace",
                 columns: table => new
                 {
-                    WorkspaceID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Configuration = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.WorkspaceID);
+                    table.PrimaryKey("PRIMARY", x => x.UserID);
                     table.ForeignKey(
-                        name: "workspace_ibfk_1",
+                        name: "FK_Workspace_Users_UserID",
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserID",
@@ -435,7 +445,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     BagID = table.Column<int>(type: "int", nullable: true),
                     ItemID = table.Column<int>(type: "int", nullable: true),
                     Quantity = table.Column<int>(type: "int", nullable: true),
-                    AddedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    AddedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -444,7 +454,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "bagitem_ibfk_1",
                         column: x => x.BagID,
                         principalTable: "Bag",
-                        principalColumn: "BagID");
+                        principalColumn: "UserID");
                     table.ForeignKey(
                         name: "bagitem_ibfk_2",
                         column: x => x.ItemID,
@@ -465,8 +475,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     UserTreeAID = table.Column<int>(type: "int", nullable: true),
                     UserTreeBID = table.Column<int>(type: "int", nullable: true),
                     TradeFee = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "'0.00'"),
-                    RequestedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true),
+                    RequestedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     Status = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -503,31 +513,38 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     TransactionID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    UserID = table.Column<int>(type: "int", nullable: true),
-                    WalletID = table.Column<int>(type: "int", nullable: true),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    WalletId = table.Column<int>(type: "int", nullable: true),
+                    PackageId = table.Column<int>(type: "int", nullable: true),
                     Amount = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
                     Type = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", maxLength: 20, nullable: false),
-                    PaymentMethod = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    PaymentMethod = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    TransactionRef = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    TransactionRef = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    CompletedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.TransactionID);
                     table.ForeignKey(
                         name: "transactions_ibfk_1",
-                        column: x => x.UserID,
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserID");
                     table.ForeignKey(
                         name: "transactions_ibfk_2",
-                        column: x => x.WalletID,
+                        column: x => x.WalletId,
                         principalTable: "Wallet",
-                        principalColumn: "WalletID");
+                        principalColumn: "UserID");
+                    table.ForeignKey(
+                        name: "transactions_ibfk_3",
+                        column: x => x.PackageId,
+                        principalTable: "Packages",
+                        principalColumn: "PackageID",
+                        onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -549,9 +566,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     AIProcessedDescription = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     TimeOverdue = table.Column<int>(type: "int", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()"),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.ComputedColumn),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     Status = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -566,8 +582,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "FK_Tasks_Workspace_WorkspaceId",
                         column: x => x.WorkspaceId,
                         principalTable: "Workspace",
-                        principalColumn: "WorkspaceID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "UserID");
                     table.ForeignKey(
                         name: "tasks_ibfk_1",
                         column: x => x.UserID,
@@ -589,7 +604,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     Quantity = table.Column<int>(type: "int", nullable: true),
                     Effect = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -598,7 +613,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "workspaceitem_ibfk_1",
                         column: x => x.WorkspaceID,
                         principalTable: "Workspace",
-                        principalColumn: "WorkspaceID");
+                        principalColumn: "UserID");
                     table.ForeignKey(
                         name: "workspaceitem_ibfk_2",
                         column: x => x.ItemID,
@@ -677,12 +692,6 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateIndex(
-                name: "idx_bag_user",
-                table: "Bag",
-                column: "UserID",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "BagID",
                 table: "BagItem",
                 column: "BagID");
@@ -696,12 +705,6 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "idx_item_type_rarity",
                 table: "Item",
                 columns: new[] { "Type", "Rarity" });
-
-            migrationBuilder.CreateIndex(
-                name: "idx_item_detail_itemid",
-                table: "ItemDetail",
-                column: "ItemID",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "UserID1",
@@ -765,19 +768,19 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "UserTreeBID");
 
             migrationBuilder.CreateIndex(
-                name: "idx_transaction_status",
+                name: "idx_transaction_package",
                 table: "Transactions",
-                column: "Status");
+                column: "PackageId");
 
             migrationBuilder.CreateIndex(
                 name: "idx_transaction_user",
                 table: "Transactions",
-                column: "UserID");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "WalletID",
+                name: "idx_transaction_wallet",
                 table: "Transactions",
-                column: "WalletID");
+                column: "WalletId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TreeXpLog_TaskId",
@@ -806,12 +809,12 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "RoleID");
 
             migrationBuilder.CreateIndex(
-                name: "FinalTreeID",
+                name: "IX_UserTree_FinalTreeID",
                 table: "UserTree",
                 column: "FinalTreeID");
 
             migrationBuilder.CreateIndex(
-                name: "UserID4",
+                name: "IX_UserTree_UserID",
                 table: "UserTree",
                 column: "UserID");
 
@@ -819,18 +822,6 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "IX_UserXpLog_UserId",
                 table: "UserXpLog",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "UserID5",
-                table: "Wallet",
-                column: "UserID",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "idx_workspace_user",
-                table: "Workspace",
-                column: "UserID",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "idx_workspace_item_user",
@@ -895,6 +886,9 @@ namespace ZenGarden.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Wallet");
+
+            migrationBuilder.DropTable(
+                name: "Packages");
 
             migrationBuilder.DropTable(
                 name: "Tasks");

@@ -87,7 +87,6 @@ public partial class ZenGardenContext : DbContext
         return configuration.GetConnectionString("ZenGardenDB");
     }
 
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -96,18 +95,24 @@ public partial class ZenGardenContext : DbContext
 
         modelBuilder.Entity<Bag>(entity =>
         {
-            entity.HasKey(e => e.BagId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.UserId, "idx_bag_user").IsUnique();
+            entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.Property(e => e.BagId).HasColumnName("BagID");
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("UserID");
+
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP"); 
+            
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.User)
+                .WithOne(u => u.Bag)
+                .HasForeignKey<Bag>(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<BagItem>(entity =>
@@ -120,8 +125,9 @@ public partial class ZenGardenContext : DbContext
 
             entity.Property(e => e.BagItemId).HasColumnName("BagItemID");
             entity.Property(e => e.AddedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP"); 
+
             entity.Property(e => e.BagId).HasColumnName("BagID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
 
@@ -134,16 +140,16 @@ public partial class ZenGardenContext : DbContext
                 .HasConstraintName("bagitem_ibfk_2");
         });
 
-modelBuilder.Entity<FocusMethod>(entity =>
-{
-    entity.HasKey(e => e.FocusMethodId).HasName("PRIMARY");
-    
-    entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
-    entity.Property(e => e.CreatedAt)
-        .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-        .HasColumnType("timestamp");
-    entity.Property(e => e.Name).HasMaxLength(100);
-});
+        modelBuilder.Entity<FocusMethod>(entity =>
+        {
+            entity.HasKey(e => e.FocusMethodId).HasName("PRIMARY");
+            
+            entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Name).HasMaxLength(100);
+        });
 
         modelBuilder.Entity<Item>(entity =>
         {
@@ -154,8 +160,8 @@ modelBuilder.Entity<FocusMethod>(entity =>
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Cost).HasPrecision(10, 2);
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
             entity.Property(e => e.Type).HasMaxLength(50);
@@ -163,28 +169,30 @@ modelBuilder.Entity<FocusMethod>(entity =>
 
         modelBuilder.Entity<ItemDetail>(entity =>
         {
-            entity.HasKey(e => e.ItemDetailId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.ItemId, "idx_item_detail_itemid").IsUnique();
+            entity.HasKey(e => e.ItemId).HasName("PRIMARY");
 
-            entity.Property(e => e.ItemDetailId).HasColumnName("ItemDetailID");
+            entity.Property(e => e.ItemId)
+                .ValueGeneratedNever()
+                .HasColumnName("ItemID");
+
             entity.Property(e => e.Description).HasColumnType("text");
             entity.Property(e => e.DurationType).HasMaxLength(50);
             entity.Property(e => e.ImageUrl).HasMaxLength(255);
-            entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Requirements).HasColumnType("json");
             entity.Property(e => e.SpecialEffects).HasColumnType("text");
             entity.Property(e => e.Stats).HasColumnType("json");
             entity.Property(e => e.Tags).HasColumnType("json");
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.HasOne(d => d.Item).WithOne(p => p.ItemDetail)
+            entity.HasOne(d => d.Item)
+                .WithOne(p => p.ItemDetail)
                 .HasForeignKey<ItemDetail>(d => d.ItemId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("itemdetail_ibfk_1");
+                .OnDelete(DeleteBehavior.Cascade);
         });
+
+
 
         modelBuilder.Entity<Leaderboard>(entity =>
         {
@@ -194,15 +202,44 @@ modelBuilder.Entity<FocusMethod>(entity =>
 
             entity.Property(e => e.LeaderboardId).HasColumnName("LeaderboardID");
             entity.Property(e => e.LastUpdated)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.User).WithMany(p => p.Leaderboard)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("leaderboard_ibfk_1");
         });
+        
+        modelBuilder.Entity<Packages>(entity =>
+        {
+            entity.HasKey(e => e.PackageId).HasName("PRIMARY");
+
+            entity.Property(e => e.PackageId).HasColumnName("PackageID");
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.Price)
+                .HasPrecision(10, 2); 
+
+            entity.Property(e => e.Amount)
+                .HasPrecision(10, 2); 
+
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        });
+
 
         modelBuilder.Entity<PurchaseHistory>(entity =>
         {
@@ -214,8 +251,8 @@ modelBuilder.Entity<FocusMethod>(entity =>
 
             entity.Property(e => e.PurchaseId).HasColumnName("PurchaseID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.TotalPrice).HasPrecision(10, 2);
@@ -238,31 +275,64 @@ modelBuilder.Entity<FocusMethod>(entity =>
             entity.Property(e => e.RoleName).HasMaxLength(50);
         });
 
+    
         modelBuilder.Entity<Tasks>(entity =>
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
-            
+
             entity.HasIndex(e => e.UserId, "idx_task_user");
+            entity.HasIndex(e => e.WorkspaceId, "idx_task_workspace");
+            entity.HasIndex(e => e.UserTreeID, "idx_task_usertree");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
             entity.Property(e => e.AiProcessedDescription)
                 .HasColumnType("text")
                 .HasColumnName("AIProcessedDescription");
+
             entity.Property(e => e.CompletedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             entity.Property(e => e.TaskDescription).HasColumnType("text");
             entity.Property(e => e.TaskName).HasMaxLength(255);
             entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.Status)
+                .HasConversion<int>() 
+                .HasColumnName("Status")
+                .IsRequired();
 
-            entity.HasOne(d => d.User).WithMany(p => p.Tasks)
+
+            entity.Property(e => e.BaseXp)
+                .HasColumnType("int")
+                .HasDefaultValue(50)
+                .HasColumnName("BaseXP");
+
+            entity.Property(e => e.Type)
+                .HasConversion<int>() 
+                .HasColumnName("TaskType");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("tasks_ibfk_1");
+
+            entity.HasOne(d => d.UserTree)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(d => d.UserTreeID)
+                .HasConstraintName("tasks_ibfk_usertree");
+
+            entity.HasOne(d => d.Workspace)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(d => d.WorkspaceId)
+                .HasConstraintName("tasks_ibfk_workspace");
         });
+
+
+
+
 
         modelBuilder.Entity<TradeHistory>(entity =>
         {
@@ -277,10 +347,13 @@ modelBuilder.Entity<FocusMethod>(entity =>
             entity.HasIndex(e => new { e.UserAid, e.UserBid }, "idx_tradehistory_user");
 
             entity.Property(e => e.TradeId).HasColumnName("TradeID");
-            entity.Property(e => e.CompletedAt).HasColumnType("timestamp");
+            entity.Property(e => e.CompletedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
             entity.Property(e => e.RequestedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.TradeFee)
                 .HasPrecision(10, 2)
                 .HasDefaultValueSql("'0.00'");
@@ -311,30 +384,42 @@ modelBuilder.Entity<FocusMethod>(entity =>
         modelBuilder.Entity<Transactions>(entity =>
         {
             entity.HasKey(e => e.TransactionId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.WalletId, "WalletID");
-
-            entity.HasIndex(e => e.Status, "idx_transaction_status");
-
-            entity.HasIndex(e => e.UserId, "idx_transaction_user");
 
             entity.Property(e => e.TransactionId).HasColumnName("TransactionID");
             entity.Property(e => e.Amount).HasPrecision(10, 2);
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
-            entity.Property(e => e.Status).HasMaxLength(20);
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.WalletId).HasColumnName("WalletID");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Transactions)
+            entity.Property(e => e.CompletedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+
+            entity.Property(e => e.PaymentMethod).HasMaxLength(50);
+            entity.Property(e => e.TransactionRef).HasMaxLength(255);
+
+            entity.HasIndex(e => e.UserId, "idx_transaction_user");
+            entity.HasIndex(e => e.WalletId, "idx_transaction_wallet");
+            entity.HasIndex(e => e.PackageId, "idx_transaction_package");  
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("transactions_ibfk_1");
 
-            entity.HasOne(d => d.Wallet).WithMany(p => p.Transactions)
+            entity.HasOne(d => d.Wallet)
+                .WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.WalletId)
                 .HasConstraintName("transactions_ibfk_2");
+
+            entity.HasOne(d => d.Package)
+                .WithMany()
+                .HasForeignKey(d => d.PackageId)
+                .OnDelete(DeleteBehavior.SetNull) 
+                .HasConstraintName("transactions_ibfk_3");
         });
+
 
 
         modelBuilder.Entity<TreeType>(entity =>
@@ -342,7 +427,9 @@ modelBuilder.Entity<FocusMethod>(entity =>
             entity.HasKey(e => e.TreeTypeId).HasName("PRIMARY");
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
             entity.Property(e => e.BasePrice).HasPrecision(10, 2);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP()").HasColumnType("timestamp");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");             
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
         });
@@ -351,174 +438,188 @@ modelBuilder.Entity<FocusMethod>(entity =>
         modelBuilder.Entity<UserExperience>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
-            
+
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("UserID");
+
             entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
+
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
             entity.HasOne(e => e.User)
                 .WithOne(u => u.UserExperience)
                 .HasForeignKey<UserExperience>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+
         modelBuilder.Entity<Users>(entity =>
-        {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.Email, "Email").IsUnique();
+{
+    entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.HasIndex(e => e.RoleId, "RoleID");
+    entity.HasIndex(e => e.Email, "Email").IsUnique();
 
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
-            entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.UserName)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Password)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Phone)
-                .IsRequired()
-                .HasMaxLength(20);
+    entity.HasIndex(e => e.RoleId, "RoleID");
 
-            entity.Property(e => e.RoleId).HasColumnName("RoleID");
-            entity.Property(e => e.Status)
-                .HasConversion<int>()
-                .IsRequired();
-            entity.Property(e => e.IsActive)
-                    .HasDefaultValue(true);
+    entity.Property(e => e.UserId).HasColumnName("UserID");
+    
+    entity.Property(e => e.CreatedAt)
+        .HasColumnType("timestamp")
+        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.RefreshTokenHash)
-                    .HasMaxLength(255)
-                    .IsUnicode(false);
+    entity.Property(e => e.UpdatedAt)
+        .HasColumnType("timestamp")
+        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.RefreshTokenExpiry)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
+    entity.Property(e => e.Email)
+        .IsRequired()
+        .HasMaxLength(100);
+    
+    entity.Property(e => e.UserName)
+        .IsRequired()
+        .HasMaxLength(100);
+    
+    entity.Property(e => e.Password)
+        .IsRequired()
+        .HasMaxLength(255);
+    
+    entity.Property(e => e.Phone)
+        .IsRequired()
+        .HasMaxLength(20);
 
-            entity.Property(e => e.OtpCodeHash)
-                    .HasMaxLength(255)
-                    .IsUnicode(false);
+    entity.Property(e => e.RoleId).HasColumnName("RoleID");
 
-            entity.Property(e => e.OtpExpiry)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
+    entity.Property(e => e.Status)
+        .HasConversion<int>()
+        .IsRequired();
 
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                    .HasColumnType("timestamp");
-            entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
-            
-            entity.HasOne(d => d.Role)
-                .WithMany(p => p.Users)
-                .HasForeignKey(d => d.RoleId)
-                .HasConstraintName("users_ibfk_1");
+    entity.Property(e => e.IsActive)
+        .HasDefaultValue(true);
 
-            entity.HasOne(u => u.Wallet)
-                .WithOne(w => w.User)
-                .HasForeignKey<Wallet>(w => w.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+    entity.Property(e => e.RefreshTokenHash)
+        .HasMaxLength(255)
+        .IsUnicode(false);
 
-            entity.HasOne(u => u.Bag)
-                .WithOne(b => b.User)
-                .HasForeignKey<Bag>(b => b.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+    entity.Property(e => e.RefreshTokenExpiry)
+        .HasColumnType("timestamp")
+        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            entity.HasOne(u => u.Workspace)
-                .WithOne(w => w.User)
-                .HasForeignKey<Workspace>(w => w.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+    entity.Property(e => e.OtpCodeHash)
+        .HasMaxLength(255)
+        .IsUnicode(false);
 
-            entity.HasOne(u => u.UserExperience)
-                .WithOne(ue => ue.User)
-                .HasForeignKey<UserExperience>(ue => ue.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+    entity.Property(e => e.OtpExpiry)
+        .HasColumnType("timestamp")
+        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+    
+    entity.HasOne(u => u.Bag)
+        .WithOne(b => b.User)
+        .HasForeignKey<Bag>(b => b.UserId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+    entity.HasOne(u => u.Wallet)
+        .WithOne(w => w.User)
+        .HasForeignKey<Wallet>(w => w.UserId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+    entity.HasOne(u => u.Workspace)
+        .WithOne(w => w.User)
+        .HasForeignKey<Workspace>(w => w.UserId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+    entity.HasOne(u => u.UserExperience)
+        .WithOne(ue => ue.User)
+        .HasForeignKey<UserExperience>(ue => ue.UserId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+    entity.HasOne(d => d.Role)
+        .WithMany(p => p.Users)
+        .HasForeignKey(d => d.RoleId)
+        .HasConstraintName("users_ibfk_1");
+});
+
 
         modelBuilder.Entity<UserTree>(entity =>
         {
             entity.HasKey(e => e.UserTreeId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.FinalTreeId, "FinalTreeID");
-
-            entity.HasIndex(e => e.UserId, "UserID4");
 
             entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
-            entity.Property(e => e.FinalTreeId).HasColumnName("FinalTreeID");
-            entity.Property(e => e.FinalTreeRarity).HasMaxLength(50);
-            entity.Property(e => e.LastUpdated)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
-            entity.Property(e => e.PlantedAt).HasColumnType("timestamp");
-            entity.Property(e => e.TreeStatus)
-                .HasDefaultValueSql("'Growing'")
-                .HasColumnType("enum('Growing','Mature','MaxLevel')");
+
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.UserTree)
+            entity.Property(e => e.FinalTreeId).HasColumnName("FinalTreeID");
+
+            entity.Property(e => e.TreeStatus)
+                .HasConversion<int>() 
+                .HasDefaultValue(TreeStatus.Growing); 
+
+            entity.Property(e => e.PlantedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP"); 
+
+            entity.Property(e => e.LastUpdated)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserTree)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("usertree_ibfk_1");
         });
 
+
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.WalletId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.UserId, "UserID5").IsUnique();
+            entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.Property(e => e.WalletId).HasColumnName("WalletID");
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("UserID");
+
             entity.Property(e => e.Balance)
                 .HasPrecision(10, 2)
                 .HasDefaultValueSql("'0.00'");
+
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-
-            entity.HasOne(d => d.User).WithOne(p => p.Wallet)
+            entity.HasOne(d => d.User)
+                .WithOne(p => p.Wallet)
                 .HasForeignKey<Wallet>(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("wallet_ibfk_1");
+                .OnDelete(DeleteBehavior.Cascade);
         });
+
 
         modelBuilder.Entity<Workspace>(entity =>
         {
-            entity.HasKey(e => e.WorkspaceId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.UserId, "idx_workspace_user").IsUnique();
+            entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("UserID");
+
             entity.Property(e => e.Configuration).HasColumnType("json");
+
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-
-            entity.HasOne(d => d.User).WithOne(p => p.Workspace)
+            entity.HasOne(d => d.User)
+                .WithOne(p => p.Workspace)
                 .HasForeignKey<Workspace>(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("workspace_ibfk_1");
-
-            entity.HasMany(w => w.Tasks)
-                .WithOne(t => t.Workspace)
-                .HasForeignKey(t => t.WorkspaceId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
 
         modelBuilder.Entity<WorkspaceItem>(entity =>
         {
@@ -532,8 +633,8 @@ modelBuilder.Entity<FocusMethod>(entity =>
 
             entity.Property(e => e.WorkspaceItemId).HasColumnName("WorkspaceItemID");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP()")
-                .HasColumnType("timestamp");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Effect).HasColumnType("json");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.UserId).HasColumnName("UserID");

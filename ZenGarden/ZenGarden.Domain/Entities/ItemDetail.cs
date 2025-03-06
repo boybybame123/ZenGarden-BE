@@ -2,13 +2,14 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ZenGarden.Domain.Entities;
 
 public partial class ItemDetail
 {
-    public int ItemDetailId { get; set; }
-
+    [Key, ForeignKey("Item")]
     public int? ItemId { get; set; }
 
     public string Description { get; set; }
