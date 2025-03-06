@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -38,6 +38,8 @@ public static class JwtHelper
         if (user.Role?.RoleName != null) claims.Add(new Claim(ClaimTypes.Role, user.Role.RoleName));
 
         var token = new JwtSecurityToken(
+            issuer: jwtSettings.Issuer,      
+            audience: jwtSettings.Audience,
             claims: claims,
             expires: now.AddMinutes(expiresInMinutes),
             signingCredentials: credentials
