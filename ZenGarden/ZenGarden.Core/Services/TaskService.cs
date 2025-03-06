@@ -40,7 +40,8 @@ public class TaskService(
               ?? throw new InvalidOperationException("Invalid Focus Method selected.");
 
         if (dto.Duration < selectedFocusMethod.MinDuration || dto.Duration > selectedFocusMethod.MaxDuration)
-            throw new ArgumentException($"Duration must be between {selectedFocusMethod.MinDuration} and {selectedFocusMethod.MaxDuration}");
+            throw new ArgumentException(
+                $"Duration must be between {selectedFocusMethod.MinDuration} and {selectedFocusMethod.MaxDuration}");
 
 
         var task = new Tasks
@@ -120,12 +121,12 @@ public class TaskService(
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete task.");
     }
-    
+
     public async Task<FocusMethod?> GetSuggestedFocusMethodsAsync(string taskName, string? taskDescription)
     {
         return await focusMethodRepository.GetRecommendedMethodAsync(taskName, taskDescription);
     }
-    
+
     public async Task StartTaskAsync(int taskId)
     {
         var task = await taskRepository.GetByIdAsync(taskId)
@@ -141,62 +142,60 @@ public class TaskService(
 
         task.Status = TasksStatus.InProgress;
         taskRepository.Update(task);
-    
+
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
     }
-    
+
     public async Task CompleteTaskAsync(int taskId)
-{
-    var task = await taskRepository.GetByIdAsync(taskId)
-        ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-
-    if (task.Status != TasksStatus.InProgress)
-        throw new InvalidOperationException("Only in-progress tasks can be completed.");
-
-    task.Status = TasksStatus.Completed;
-    task.CompletedAt = DateTime.UtcNow;
-    taskRepository.Update(task);
-
-    if (task.UserTreeId.HasValue)
     {
-        var userTree = await userTreeRepository.GetByIdAsync(task.UserTreeId.Value);
-        if (userTree != null)
+        var task = await taskRepository.GetByIdAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        if (task.Status != TasksStatus.InProgress)
+            throw new InvalidOperationException("Only in-progress tasks can be completed.");
+
+        task.Status = TasksStatus.Completed;
+        task.CompletedAt = DateTime.UtcNow;
+        taskRepository.Update(task);
+
+        if (task.UserTreeId.HasValue)
         {
-            var xpGained = task.Type switch
+            var userTree = await userTreeRepository.GetByIdAsync(task.UserTreeId.Value);
+            if (userTree != null)
             {
-                TaskType.InWorkspace => (int)(task.BaseXp * 1.2) 
-                ,
-                TaskType.External => (int)(task.BaseXp * 0.8) 
-                ,
-                _ => task.BaseXp
-            };
+                var xpGained = task.Type switch
+                {
+                    TaskType.InWorkspace => (int)(task.BaseXp * 1.2),
+                    TaskType.External => (int)(task.BaseXp * 0.8),
+                    _ => task.BaseXp
+                };
 
-            userTree.TotalXp += xpGained; 
+                userTree.TotalXp += xpGained;
 
-            await treeXpLogRepository.CreateAsync(new TreeXpLog
-            {
-                UserTreeId = userTree.UserTreeId,
-                TaskId = task.TaskId,
-                ActivityType = ActivityType.TASK_XP,
-                XpAmount = xpGained,
-                UserTree = userTree, 
-                Task = task
-            });
+                await treeXpLogRepository.CreateAsync(new TreeXpLog
+                {
+                    UserTreeId = userTree.UserTreeId,
+                    TaskId = task.TaskId,
+                    ActivityType = ActivityType.TASK_XP,
+                    XpAmount = xpGained,
+                    UserTree = userTree,
+                    Task = task
+                });
 
-            var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.TreeLevel + 1);
-            if (nextLevel != null && userTree.TotalXp >= nextLevel.XpRequired)
-            {
-                userTree.TreeLevel += 1; 
-                userTree.TotalXp = 0; 
+                var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.TreeLevel + 1);
+                if (nextLevel != null && userTree.TotalXp >= nextLevel.XpRequired)
+                {
+                    userTree.TreeLevel += 1;
+                    userTree.TotalXp = 0;
+                }
+
+                userTree.UpdatedAt = DateTime.UtcNow;
+                userTreeRepository.Update(userTree);
             }
-
-            userTree.UpdatedAt = DateTime.UtcNow;
-            userTreeRepository.Update(userTree);
         }
-    }
 
-    if (await unitOfWork.CommitAsync() == 0)
-        throw new InvalidOperationException("Failed to complete the task.");
-}
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to complete the task.");
+    }
 }

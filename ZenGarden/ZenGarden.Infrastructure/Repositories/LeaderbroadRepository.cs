@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ZenGarden.Infrastructure.Repositories;
 
-namespace ZenGarden.Infrastructure.Repositories
+internal class LeaderbroadRepository
 {
-    internal class LeaderbroadRepository
-    {
-    }
 }

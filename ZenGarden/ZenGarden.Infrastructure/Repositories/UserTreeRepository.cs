@@ -4,4 +4,4 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserTreeRepository(ZenGardenContext context) : GenericRepository<UserTree>(context) , IUserTreeRepository;
+public class UserTreeRepository(ZenGardenContext context) : GenericRepository<UserTree>(context), IUserTreeRepository;

@@ -4,7 +4,7 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TreeLevelConfigRepository(ZenGardenContext context) : GenericRepository<TreeLevelConfig>(context), ITreeLevelConfigRepository
+public class TreeLevelConfigRepository(ZenGardenContext context)
+    : GenericRepository<TreeLevelConfig>(context), ITreeLevelConfigRepository
 {
-    
 }

@@ -11,7 +11,7 @@ public sealed class TaskFocusSetting
 
     public int SuggestedBreak { get; set; }
     public int? CustomBreak { get; set; }
-    
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }

@@ -11,6 +11,6 @@ public class FinalizeTaskDto
     public int BaseXp { get; set; }
     public TaskType Type { get; set; }
     public int FocusMethodId { get; set; }
-    public int? CustomDuration { get; set; }  
-    public int? CustomBreak { get; set; } 
+    public int? CustomDuration { get; set; }
+    public int? CustomBreak { get; set; }
 }

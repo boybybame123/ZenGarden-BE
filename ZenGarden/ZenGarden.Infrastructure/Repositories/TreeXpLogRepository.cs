@@ -4,4 +4,5 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TreeXpLogRepository(ZenGardenContext context) : GenericRepository<TreeXpLog>(context) , ITreeXpLogRepository;
+public class TreeXpLogRepository(ZenGardenContext context)
+    : GenericRepository<TreeXpLog>(context), ITreeXpLogRepository;

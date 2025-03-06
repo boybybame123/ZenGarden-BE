@@ -47,7 +47,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         var task = await _taskService.CreateTaskAsync(dto);
         return CreatedAtAction(nameof(GetTaskById), new { id = task.TaskId }, task);
     }
-    
+
     [HttpPost("suggest-focus-methods")]
     public async Task<IActionResult> GetSuggestedFocusMethods([FromBody] CreateTaskDto dto)
     {
@@ -55,14 +55,14 @@ public class TaskController(ITaskService taskService) : ControllerBase
 
         return Ok(result);
     }
-    
+
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
     {
         await _taskService.StartTaskAsync(taskId);
         return Ok(new { message = "Task started successfully." });
     }
-    
+
     [HttpPost("complete-task/{taskId:int}")]
     public async Task<IActionResult> CompleteTask(int taskId)
     {
