@@ -61,7 +61,7 @@ public class UserService(
     public async Task CreateUserAsync(Users user)
     {
         var existingUser = await userRepository.GetByEmailAsync(user.Email);
-        if (existingUser != null) 
+        if (existingUser != null)
             throw new InvalidOperationException($"User with email {user.Email} already exists.");
 
         await userRepository.CreateAsync(user);
@@ -73,7 +73,7 @@ public class UserService(
     public async Task UpdateUserAsync(UserDto user)
     {
         var userUpdate = await GetUserByIdAsync(user.UserId);
-        if (userUpdate == null) 
+        if (userUpdate == null)
             throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
         mapper.Map(user, userUpdate);
         userRepository.Update(userUpdate);
@@ -128,13 +128,13 @@ public class UserService(
     {
         if (string.IsNullOrWhiteSpace(dto.Password))
             throw new ArgumentException("Password cannot be empty.");
-    
+
         var existingUser = await userRepository.GetByEmailAsync(dto.Email);
         if (existingUser != null) throw new InvalidOperationException("Email is already in use.");
-    
+
         var role = await userRepository.GetRoleByIdAsync(dto.RoleId ?? 2)
                    ?? throw new InvalidOperationException("Invalid RoleId.");
-    
+
         var newUser = mapper.Map<Users>(dto);
 
         newUser.UserName = string.IsNullOrWhiteSpace(dto.UserName) ? GenerateRandomUsername() : dto.UserName;
@@ -143,25 +143,26 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
-    
+
         await unitOfWork.BeginTransactionAsync();
         try
         {
-            await userRepository.CreateAsync(newUser); 
+            await userRepository.CreateAsync(newUser);
             await unitOfWork.CommitAsync();
-    
+
             var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
             var bag = new Bag { UserId = newUser.UserId };
             var workspace = new Workspace
             {
                 UserId = newUser.UserId,
-                Configuration = "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}",
+                Configuration =
+                    "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}",
                 CreatedAt = DateTime.UtcNow
             };
-    
+
             var levelOneConfig = await userLevelConfigRepository.GetByIdAsync(1)
-                ?? throw new Exception("UserLevelConfig is missing Level 1!");
-    
+                                 ?? throw new Exception("UserLevelConfig is missing Level 1!");
+
             var userExperience = new UserExperience
             {
                 UserId = newUser.UserId,
@@ -171,12 +172,12 @@ public class UserService(
                 LevelId = 1,
                 UpdatedAt = DateTime.UtcNow
             };
-    
+
             await walletRepository.CreateAsync(wallet);
             await bagRepository.CreateAsync(bag);
             await workspaceRepository.CreateAsync(workspace);
             await userExperienceRepository.CreateAsync(userExperience);
-    
+
             await unitOfWork.CommitAsync();
             await unitOfWork.CommitTransactionAsync();
             return newUser;
