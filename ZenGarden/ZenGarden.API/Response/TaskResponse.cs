@@ -9,7 +9,6 @@ public class TaskResponse(Tasks task)
     public string TaskName { get; set; } = task.TaskName;
     public string TaskDescription { get; set; } = task.TaskDescription;
     public int? Duration { get; set; } = task.Duration;
-    public string AiProcessedDescription { get; set; } = task.AiProcessedDescription;
     public int? TimeOverdue { get; set; } = task.TimeOverdue;
     public TasksStatus Status { get; set; } = task.Status;
     public DateTime? CreatedAt { get; set; } = task.CreatedAt;

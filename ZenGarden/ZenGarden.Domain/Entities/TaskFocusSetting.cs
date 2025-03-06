@@ -1,6 +1,6 @@
 namespace ZenGarden.Domain.Entities;
 
-public class TaskFocusSetting
+public sealed class TaskFocusSetting
 {
     public int TaskFocusSettingId { get; set; }
     public int TaskId { get; set; }
@@ -11,7 +11,11 @@ public class TaskFocusSetting
 
     public int SuggestedBreak { get; set; }
     public int? CustomBreak { get; set; }
+    
+    public DateTime? CreatedAt { get; set; }
 
-    public virtual required Tasks Task { get; set; }
-    public virtual required FocusMethod FocusMethod { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    public required Tasks Task { get; set; }
+    public required FocusMethod FocusMethod { get; set; }
 }
