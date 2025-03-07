@@ -9,7 +9,9 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class Bag
 {
-    [Key, ForeignKey("User")]
+    [Key]
+    public int BagId { get; set; }
+    [ForeignKey("UserId")]
     public int UserId { get; set; }
 
     public int? Capacity { get; set; } = 100;

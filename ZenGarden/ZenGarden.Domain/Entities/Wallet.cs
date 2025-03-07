@@ -9,7 +9,10 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class Wallet
 {
-    [Key, ForeignKey("User")]
+    [Key]
+    public int WalletId { get; set; }
+
+    [ForeignKey("UserId")]
     public int UserId { get; set; }
 
     public decimal? Balance { get; set; } = 0;

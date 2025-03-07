@@ -9,7 +9,7 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class UserExperience
 {
-    [Key, ForeignKey("User")]
+    public int UserExperienceId { get; set; }
     public int UserId { get; set; }
     [Required]
     public long TotalXp { get; set; } = 0;
