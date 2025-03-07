@@ -17,7 +17,7 @@ public partial class FocusMethod
     public int? MinBreak { get; set; }
     public int? MaxBreak { get; set; }
     public bool IsActive { get; set; } = true;
-    public DateTime? CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public virtual ICollection<TaskFocusSetting> TaskFocusSettings { get; set; } = new List<TaskFocusSetting>();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public virtual ICollection<TaskFocusConfig> TaskFocusSettings { get; set; } = new List<TaskFocusConfig>();
 }

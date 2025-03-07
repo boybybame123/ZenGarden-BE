@@ -15,9 +15,8 @@ public partial class BagItem
 
     public int? Quantity { get; set; }
 
-    public DateTime? AddedAt { get; set; }
-
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Bag Bag { get; set; }
-
     public virtual Item Item { get; set; }
 }
