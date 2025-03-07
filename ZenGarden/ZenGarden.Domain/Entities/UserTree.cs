@@ -14,7 +14,7 @@ public partial class UserTree
 
     public int? FinalTreeId { get; set; }
 
-    public DateTime? PlantedAt { get; set; }
+    
 
     public int TreeLevel { get; set; } = 1;
     
@@ -23,8 +23,9 @@ public partial class UserTree
     public TreeStatus TreeStatus { get; set; } = TreeStatus.Growing;
 
     public TreeRarity? FinalTreeRarity { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    public DateTime? LastUpdated { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual TreeType FinalTree { get; set; }
     

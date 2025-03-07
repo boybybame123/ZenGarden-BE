@@ -22,12 +22,12 @@ public static class JwtHelper
 
         var claims = new List<Claim>
         {
-            new ("sub", user.UserId.ToString()), 
-            new ("jti", Guid.NewGuid().ToString()), 
-            new ("email", user.Email), 
-            new ("userId", user.UserId.ToString()) 
+            new("sub", user.UserId.ToString()),
+            new("jti", Guid.NewGuid().ToString()),
+            new("email", user.Email),
+            new("userId", user.UserId.ToString())
         };
-        
+
         if (!string.IsNullOrEmpty(user.UserName))
             claims.Add(new Claim("name", user.UserName));
 

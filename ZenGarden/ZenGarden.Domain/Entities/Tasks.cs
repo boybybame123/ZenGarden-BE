@@ -14,15 +14,14 @@ public partial class Tasks
     
     public int? WorkspaceId { get; set; }
     
-    public int? UserTreeID { get; set; }
+    public int? UserTreeId { get; set; }
+    public int TaskFocusSettingId { get; set; }
 
     public string TaskName { get; set; }
 
     public string TaskDescription { get; set; }
 
     public int? Duration { get; set; }
-
-    public string AiProcessedDescription { get; set; }
 
     public int? TimeOverdue { get; set; }
     public int BaseXp { get; set; } = 50;

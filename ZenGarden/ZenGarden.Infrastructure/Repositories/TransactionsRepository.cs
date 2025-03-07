@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
+﻿namespace ZenGarden.Infrastructure.Repositories;
 
-namespace ZenGarden.Infrastructure.Repositories
-{
     public class TransactionsRepository : GenericRepository<Transactions>, ITransactionsRepository
     {
         private readonly ZenGardenContext _context;
@@ -25,4 +24,3 @@ namespace ZenGarden.Infrastructure.Repositories
                 .FirstOrDefaultAsync(t => t.TransactionRef == transactionRef);
         }
     }
-}

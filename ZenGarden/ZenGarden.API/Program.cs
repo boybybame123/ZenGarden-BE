@@ -152,7 +152,10 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
+builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
 builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
+builder.Services.AddScoped<ITreeLevelConfigRepository, TreeLevelConfigRepository>();
 builder.Services.AddScoped<ITaskFocusRepository, TaskFocusRepository>();
 builder.Services.AddScoped<IItemService, ItemService>();
 
@@ -168,10 +171,7 @@ builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("Ope
 builder.Services.AddHttpClient<FocusMethodRepository>();
 
 var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-builder.Services.Configure<OpenAiSettings>(options =>
-{
-    options.ApiKey = openAiApiKey ?? string.Empty;
-});
+builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey ?? string.Empty; });
 
 
 var app = builder.Build();
