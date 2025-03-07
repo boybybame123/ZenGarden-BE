@@ -73,7 +73,7 @@ public partial class ZenGardenContext : DbContext
         {
             var connectionString = GetConnectionString();
             //optionsBuilder.UseMySql("server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
-            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=123456", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
         }
     }
 
@@ -143,12 +143,15 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<FocusMethod>(entity =>
         {
             entity.HasKey(e => e.FocusMethodId).HasName("PRIMARY");
-            
+
             entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Name).HasMaxLength(100);
+
+            entity.HasOne(d => d.TaskFocusSetting)
+                .WithOne(p => p.FocusMethod)
+                .HasForeignKey<TaskFocusSetting>(d => d.FocusMethodId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Item>(entity =>
@@ -325,8 +328,37 @@ public partial class ZenGardenContext : DbContext
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.WorkspaceId)
                 .HasConstraintName("tasks_ibfk_workspace");
-        });
 
+
+            entity.HasOne(t => t.TaskFocusSetting)
+                 .WithOne(tfs => tfs.Task)
+                 .HasForeignKey<TaskFocusSetting>(tfs => tfs.TaskId);
+
+        });
+        modelBuilder.Entity<TaskFocusSetting>(entity =>
+        {
+            entity.HasKey(e => e.TaskFocusSettingId).HasName("PRIMARY");
+            
+            entity.Property(e => e.TaskFocusSettingId).HasColumnName("TaskFocusSettingID");
+            entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
+            entity.Property(e => e.SuggestedDuration).HasColumnName("SuggestedDuration");
+            entity.Property(e => e.CustomDuration).HasColumnName("CustomDuration");
+            entity.Property(e => e.SuggestedBreak).HasColumnName("SuggestedBreak");
+            entity.Property(e => e.CustomBreak).HasColumnName("CustomBreak");
+            entity.Property(e => e.CreatedAt).HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            entity.HasOne(d => d.Task)
+                .WithOne(p => p.TaskFocusSetting)
+                .HasForeignKey<TaskFocusSetting>(d => d.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.FocusMethod)
+                .WithOne(p => p.TaskFocusSetting)
+                .HasForeignKey<TaskFocusSetting>(d => d.FocusMethodId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
 
 
