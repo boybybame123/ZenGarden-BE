@@ -33,4 +33,6 @@ public partial class Users
     public virtual UserExperience? UserExperience { get; set; }
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
     public virtual Wallet? Wallet { get; set; }
+
+
 }

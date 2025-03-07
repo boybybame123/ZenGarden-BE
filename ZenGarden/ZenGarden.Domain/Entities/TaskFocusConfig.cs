@@ -10,6 +10,6 @@ public class TaskFocusConfig
     public bool IsSuggested { get; init; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public Tasks? Task { get; init; }
+    public Tasks? Tasks { get; init; }
     public FocusMethod? FocusMethod { get; init; }
 }

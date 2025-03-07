@@ -13,5 +13,5 @@ public class UserChallenge
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual required Challenge Challenge { get; set; }
-    public virtual required Task Task { get; set; }
+    public virtual required Tasks Task { get; set; }
 }
