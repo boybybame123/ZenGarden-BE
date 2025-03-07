@@ -7,7 +7,7 @@ using ZenGarden.Domain.DTOs;
 namespace ZenGarden.API.Controllers
 {
     [ApiController]
-    [Route("api/payments")]
+    [Route("api/[controller]")]
     public class PaymentController : ControllerBase
     {
         private readonly PaymentService _paymentService;
@@ -35,7 +35,7 @@ namespace ZenGarden.API.Controllers
         public async Task<IActionResult> StripeWebhook()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            var stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], "whsec_CxNnn1vnE2FGCs9rPN3s270VWscmJEdJ");
+            var stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], "whsec_6IjPYRvzTVNalopb8mHYCaXah5e4BSRI");
 
             if (stripeEvent.Type == "payment_intent.succeeded")
             {

@@ -17,6 +17,7 @@ namespace ZenGarden.Core.Services
         private readonly IWalletRepository _walletRepository;
         private readonly IPackageRepository _packageRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly StripeClient _stripeClient;
 
         public PaymentService(
             ITransactionsRepository transactionRepository,
@@ -28,6 +29,7 @@ namespace ZenGarden.Core.Services
             _walletRepository = walletRepository;
             _packageRepository = packageRepository;
             _unitOfWork = unitOfWork;
+            _stripeClient = new StripeClient("sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
         }
 
         public async Task<string> CreatePaymentIntent(CreatePaymentRequest request)
@@ -38,12 +40,12 @@ namespace ZenGarden.Core.Services
 
             var options = new PaymentIntentCreateOptions
             {
-                Amount = (long)(package.Price * 100), // Đơn vị: cent
+                Amount = (long)(package.Price * 100),
                 Currency = "vnd",
                 PaymentMethodTypes = new List<string> { "card" }
             };
 
-            var service = new PaymentIntentService();
+            var service = new PaymentIntentService(_stripeClient);
             var paymentIntent = await service.CreateAsync(options);
 
             var transaction = new Transactions
