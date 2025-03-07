@@ -95,8 +95,9 @@ public partial class ZenGardenContext : DbContext
 
         modelBuilder.Entity<Bag>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.BagId).HasName("PRIMARY");
 
+            entity.Property(e => e.BagId).HasColumnName("BagID");
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
                 .HasColumnName("UserID");
@@ -467,7 +468,8 @@ public partial class ZenGardenContext : DbContext
 
         modelBuilder.Entity<UserExperience>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.UserExperienceId).HasName("PRIMARY");
+            entity.Property(e => e.UserExperienceId).HasColumnName("UserExperienceID");
 
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
@@ -605,8 +607,8 @@ public partial class ZenGardenContext : DbContext
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
-
+            entity.HasKey(e => e.WalletId).HasName("PRIMARY");
+            entity.Property(e => e.WalletId).HasColumnName("WalletID");
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
                 .HasColumnName("UserID");
@@ -628,8 +630,9 @@ public partial class ZenGardenContext : DbContext
 
         modelBuilder.Entity<Workspace>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.WorkspaceId).HasName("PRIMARY");
 
+            entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
                 .HasColumnName("UserID");

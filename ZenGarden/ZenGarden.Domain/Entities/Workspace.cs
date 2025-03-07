@@ -9,7 +9,9 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class Workspace
 {
-    [Key, ForeignKey("User")]
+    [Key]
+    public int WorkspaceId { get; set; }
+    [ForeignKey("UserId")]
     public int UserId { get; set; }
 
     public string Configuration { get; set; } = "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}";

@@ -231,6 +231,8 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Bag",
                 columns: table => new
                 {
+                    BagID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Capacity = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -238,7 +240,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.UserID);
+                    table.PrimaryKey("PRIMARY", x => x.BagID);
                     table.ForeignKey(
                         name: "FK_Bag_Users_UserID",
                         column: x => x.UserID,
@@ -307,6 +309,8 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "UserExperience",
                 columns: table => new
                 {
+                    UserExperienceID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     TotalXP = table.Column<long>(type: "bigint", nullable: false),
                     CurrentLevel = table.Column<int>(type: "int", nullable: false),
@@ -316,7 +320,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.UserID);
+                    table.PrimaryKey("PRIMARY", x => x.UserExperienceID);
                     table.ForeignKey(
                         name: "FK_UserExperience_UserLevelConfig_LevelId",
                         column: x => x.LevelId,
@@ -395,6 +399,8 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Wallet",
                 columns: table => new
                 {
+                    WalletID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Balance = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "'0.00'"),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
@@ -406,7 +412,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.UserID);
+                    table.PrimaryKey("PRIMARY", x => x.WalletID);
                     table.ForeignKey(
                         name: "FK_Wallet_Users_UserID",
                         column: x => x.UserID,
@@ -421,6 +427,8 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Workspace",
                 columns: table => new
                 {
+                    WorkspaceID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Configuration = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -429,7 +437,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.UserID);
+                    table.PrimaryKey("PRIMARY", x => x.WorkspaceID);
                     table.ForeignKey(
                         name: "FK_Workspace_Users_UserID",
                         column: x => x.UserID,
@@ -458,7 +466,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "bagitem_ibfk_1",
                         column: x => x.BagID,
                         principalTable: "Bag",
-                        principalColumn: "UserID");
+                        principalColumn: "BagID");
                     table.ForeignKey(
                         name: "bagitem_ibfk_2",
                         column: x => x.ItemID,
@@ -542,7 +550,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "transactions_ibfk_2",
                         column: x => x.WalletId,
                         principalTable: "Wallet",
-                        principalColumn: "UserID");
+                        principalColumn: "WalletID");
                     table.ForeignKey(
                         name: "transactions_ibfk_3",
                         column: x => x.PackageId,
@@ -592,7 +600,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "tasks_ibfk_workspace",
                         column: x => x.WorkspaceId,
                         principalTable: "Workspace",
-                        principalColumn: "UserID");
+                        principalColumn: "WorkspaceID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -618,7 +626,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "workspaceitem_ibfk_1",
                         column: x => x.WorkspaceID,
                         principalTable: "Workspace",
-                        principalColumn: "UserID");
+                        principalColumn: "WorkspaceID");
                     table.ForeignKey(
                         name: "workspaceitem_ibfk_2",
                         column: x => x.ItemID,
@@ -697,6 +705,12 @@ namespace ZenGarden.Infrastructure.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bag_UserID",
+                table: "Bag",
+                column: "UserID",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "BagID",
@@ -805,6 +819,12 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "LevelId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_UserExperience_UserID",
+                table: "UserExperience",
+                column: "UserID",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "Email",
                 table: "Users",
                 column: "Email",
@@ -829,6 +849,18 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "IX_UserXpLog_UserId",
                 table: "UserXpLog",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Wallet_UserID",
+                table: "Wallet",
+                column: "UserID",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Workspace_UserID",
+                table: "Workspace",
+                column: "UserID",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "idx_workspace_item_user",
