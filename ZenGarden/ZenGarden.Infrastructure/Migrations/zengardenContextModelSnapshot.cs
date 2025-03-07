@@ -104,6 +104,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<int?>("DefaultDuration")
                         .HasColumnType("int");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int?>("MaxBreak")
                         .HasColumnType("int");
 
@@ -119,6 +125,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("FocusMethodId")
                         .HasName("PRIMARY");
@@ -399,8 +408,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasKey("TaskFocusSettingId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex("FocusMethodId")
-                        .IsUnique();
+                    b.HasIndex("FocusMethodId");
 
                     b.HasIndex("TaskId")
                         .IsUnique();
@@ -1059,8 +1067,8 @@ namespace ZenGarden.Infrastructure.Migrations
             modelBuilder.Entity("ZenGarden.Domain.Entities.TaskFocusSetting", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.FocusMethod", "FocusMethod")
-                        .WithOne("TaskFocusSetting")
-                        .HasForeignKey("ZenGarden.Domain.Entities.TaskFocusSetting", "FocusMethodId")
+                        .WithMany("TaskFocusSettings")
+                        .HasForeignKey("FocusMethodId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1284,7 +1292,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.FocusMethod", b =>
                 {
-                    b.Navigation("TaskFocusSetting");
+                    b.Navigation("TaskFocusSettings");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Item", b =>

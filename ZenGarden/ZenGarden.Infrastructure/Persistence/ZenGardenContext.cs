@@ -148,11 +148,12 @@ public partial class ZenGardenContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Name).HasMaxLength(100);
 
-            entity.HasOne(d => d.TaskFocusSetting)
+            entity.HasMany(d => d.TaskFocusSettings)
                 .WithOne(p => p.FocusMethod)
-                .HasForeignKey<TaskFocusSetting>(d => d.FocusMethodId)
+                .HasForeignKey(d => d.FocusMethodId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
 
         modelBuilder.Entity<Item>(entity =>
         {
@@ -338,7 +339,7 @@ public partial class ZenGardenContext : DbContext
         modelBuilder.Entity<TaskFocusSetting>(entity =>
         {
             entity.HasKey(e => e.TaskFocusSettingId).HasName("PRIMARY");
-            
+            entity.HasIndex(e => e.TaskId).IsUnique();
             entity.Property(e => e.TaskFocusSettingId).HasColumnName("TaskFocusSettingID");
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
             entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
@@ -355,8 +356,8 @@ public partial class ZenGardenContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.FocusMethod)
-                .WithOne(p => p.TaskFocusSetting)
-                .HasForeignKey<TaskFocusSetting>(d => d.FocusMethodId)
+                .WithMany(p => p.TaskFocusSettings)
+                .HasForeignKey(d => d.FocusMethodId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

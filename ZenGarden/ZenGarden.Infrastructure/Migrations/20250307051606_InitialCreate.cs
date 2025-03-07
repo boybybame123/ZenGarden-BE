@@ -23,13 +23,17 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    Description = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     DefaultDuration = table.Column<int>(type: "int", nullable: true),
                     DefaultBreak = table.Column<int>(type: "int", nullable: true),
                     MinDuration = table.Column<int>(type: "int", nullable: true),
                     MaxDuration = table.Column<int>(type: "int", nullable: true),
                     MinBreak = table.Column<int>(type: "int", nullable: true),
                     MaxBreak = table.Column<int>(type: "int", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -727,8 +731,7 @@ namespace ZenGarden.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_TaskFocusSetting_FocusMethodID",
                 table: "TaskFocusSetting",
-                column: "FocusMethodID",
-                unique: true);
+                column: "FocusMethodID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TaskFocusSetting_TaskID",
