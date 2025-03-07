@@ -14,7 +14,9 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
     public async Task<Users?> GetByEmailAsync(string email)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public async Task<Users?> GetByPhoneAsync(string? phone)

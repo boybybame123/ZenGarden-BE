@@ -73,7 +73,7 @@ public partial class ZenGardenContext : DbContext
         {
             var connectionString = GetConnectionString();
             //optionsBuilder.UseMySql("server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
-            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=123456", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
         }
     }
 
