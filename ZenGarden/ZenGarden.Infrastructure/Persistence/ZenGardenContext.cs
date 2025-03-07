@@ -73,7 +73,7 @@ public partial class ZenGardenContext : DbContext
         {
             var connectionString = GetConnectionString();
             //optionsBuilder.UseMySql("server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
-            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=123456", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
         }
     }
 
@@ -282,12 +282,9 @@ public partial class ZenGardenContext : DbContext
 
             entity.HasIndex(e => e.UserId, "idx_task_user");
             entity.HasIndex(e => e.WorkspaceId, "idx_task_workspace");
-            entity.HasIndex(e => e.UserTreeID, "idx_task_usertree");
+            entity.HasIndex(e => e.UserTreeId, "idx_task_usertree");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
-            entity.Property(e => e.AiProcessedDescription)
-                .HasColumnType("text")
-                .HasColumnName("AIProcessedDescription");
 
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp")
@@ -321,7 +318,7 @@ public partial class ZenGardenContext : DbContext
 
             entity.HasOne(d => d.UserTree)
                 .WithMany(p => p.Tasks)
-                .HasForeignKey(d => d.UserTreeID)
+                .HasForeignKey(d => d.UserTreeId)
                 .HasConstraintName("tasks_ibfk_usertree");
 
             entity.HasOne(d => d.Workspace)
@@ -557,11 +554,11 @@ public partial class ZenGardenContext : DbContext
                 .HasConversion<int>() 
                 .HasDefaultValue(TreeStatus.Growing); 
 
-            entity.Property(e => e.PlantedAt)
+            entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP"); 
 
-            entity.Property(e => e.LastUpdated)
+            entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             

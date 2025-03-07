@@ -16,6 +16,5 @@ public class MappingProfile : Profile
         CreateMap<Item, ItemDto>().ReverseMap();
         CreateMap<ItemDetail, ItemDetailDto>().ReverseMap();
         CreateMap<Packages, PackageDto>().ReverseMap();
-
     }
 }

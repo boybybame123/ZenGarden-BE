@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Domain.Entities;
+using ZenGarden.Infrastructure.Persistence;
 
-namespace ZenGarden.Infrastructure.Repositories
+namespace ZenGarden.Infrastructure.Repositories;
+
+public class TreeLevelConfigRepository(ZenGardenContext context)
+    : GenericRepository<TreeLevelConfig>(context), ITreeLevelConfigRepository
 {
-    internal class TreeLevelConfigRepository
-    {
-    }
 }

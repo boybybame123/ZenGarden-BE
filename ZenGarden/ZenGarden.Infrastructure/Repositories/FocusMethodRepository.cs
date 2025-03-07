@@ -15,13 +15,15 @@ public class FocusMethodRepository : GenericRepository<FocusMethod>, IFocusMetho
     private readonly ZenGardenContext _context;
     private readonly HttpClient _httpClient;
 
-    public FocusMethodRepository(ZenGardenContext context, HttpClient httpClient, IOptions<OpenAiSettings> openAiSettings)
+    public FocusMethodRepository(ZenGardenContext context, HttpClient httpClient,
+        IOptions<OpenAiSettings> openAiSettings)
         : base(context)
     {
         _context = context;
         _httpClient = httpClient;
-        var apiKey = openAiSettings.Value.ApiKey ?? throw new ArgumentNullException(nameof(openAiSettings), "OpenAI API Key is missing.");
-        
+        var apiKey = openAiSettings.Value.ApiKey ??
+                     throw new ArgumentNullException(nameof(openAiSettings), "OpenAI API Key is missing.");
+
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     }
 
@@ -30,8 +32,13 @@ public class FocusMethodRepository : GenericRepository<FocusMethod>, IFocusMetho
         if (string.IsNullOrWhiteSpace(taskName))
             throw new ArgumentException("Task name is required.", nameof(taskName));
 
-        var prompt = $"Suggest a focus method for the task: {taskName}. Description: {taskDescription}. " +
-                     "Available methods: Pomodoro, Deep Work, Time Blocking.";
+        var availableMethods = await _context.FocusMethod.ToListAsync();
+        if (availableMethods.Count == 0) return null;
+
+        var prompt = $"Select the most suitable focus method for the task: {taskName}. " +
+                     $"Description: {taskDescription}. " +
+                     $"Available focus methods: {string.Join(", ", availableMethods.Select(m => m.Name))}. " +
+                     $"Please choose one from the list.";
 
         var requestBody = new
         {
@@ -55,7 +62,8 @@ public class FocusMethodRepository : GenericRepository<FocusMethod>, IFocusMetho
 
         if (!response.IsSuccessStatusCode)
         {
-            Console.WriteLine($"[ERROR] OpenAI API returned {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            Console.WriteLine(
+                $"[ERROR] OpenAI API returned {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
             return null;
         }
 
@@ -65,14 +73,23 @@ public class FocusMethodRepository : GenericRepository<FocusMethod>, IFocusMetho
             return null;
 
         var firstChoice = choices[0];
-        if (!firstChoice.TryGetProperty("message", out var message) || !message.TryGetProperty("content", out var contentElement))
+        if (!firstChoice.TryGetProperty("message", out var message) ||
+            !message.TryGetProperty("content", out var contentElement))
             return null;
 
-        var suggestedMethod = contentElement.GetString()?.Trim();
-        if (string.IsNullOrEmpty(suggestedMethod))
+        var suggestedMethodName = contentElement.GetString()?.Trim();
+        if (string.IsNullOrEmpty(suggestedMethodName))
             return null;
 
-        return await _context.FocusMethod
-            .FirstOrDefaultAsync(fm => fm.Name.ToLower().Contains(suggestedMethod.ToLower()));
+        var suggestedMethod = availableMethods.FirstOrDefault(fm =>
+            fm.Name.Equals(suggestedMethodName, StringComparison.CurrentCultureIgnoreCase));
+
+        return suggestedMethod;
+    }
+
+
+    public async Task<FocusMethod?> GetByIdAsync(int focusMethodId)
+    {
+        return await _context.FocusMethod.FirstOrDefaultAsync(fm => fm.FocusMethodId == focusMethodId);
     }
 }

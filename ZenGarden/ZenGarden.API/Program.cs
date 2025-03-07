@@ -30,6 +30,7 @@ builder.Services.AddScoped<IPackagesRepository, PackagesRepository>();
 builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
 builder.Services.AddScoped<IUserLevelConfigRepository, UserLevelConfigRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
+builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IPackagesService, PackagesService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
@@ -139,9 +140,11 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBagRepository, BagRepository>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
+builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 builder.Services.AddScoped<IUserLevelConfigRepository, UserLevelConfigRepository>();
 builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
@@ -149,7 +152,10 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
+builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
 builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
+builder.Services.AddScoped<ITreeLevelConfigRepository, TreeLevelConfigRepository>();
 builder.Services.AddScoped<ITaskFocusRepository, TaskFocusRepository>();
 builder.Services.AddScoped<IItemService, ItemService>();
 
@@ -165,10 +171,7 @@ builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("Ope
 builder.Services.AddHttpClient<FocusMethodRepository>();
 
 var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-builder.Services.Configure<OpenAiSettings>(options =>
-{
-    options.ApiKey = openAiApiKey ?? string.Empty;
-});
+builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey ?? string.Empty; });
 
 
 var app = builder.Build();
