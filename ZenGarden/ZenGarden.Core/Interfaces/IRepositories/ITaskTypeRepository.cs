@@ -2,6 +2,4 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Interfaces.IRepositories;
 
-public interface ITreeLevelConfigRepository : IGenericRepository<TreeXpConfig>
-{
-}
+public interface ITaskTypeRepository : IGenericRepository<TaskType>;

@@ -2,11 +2,11 @@ namespace ZenGarden.Domain.Entities;
 
 public class Packages
 {
-    public int PackageId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-    public decimal Amount { get; set; }
-    public bool IsActive { get; set; } = true;
+    public int PackageId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public decimal Price { get; init; }
+    public decimal Amount { get; init; }
+    public bool IsActive { get; init; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

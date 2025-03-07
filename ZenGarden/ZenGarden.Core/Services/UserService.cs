@@ -12,10 +12,9 @@ public class UserService(
     IUserRepository userRepository,
     IBagRepository bagRepository,
     IWalletRepository walletRepository,
-    IUserLevelConfigRepository userLevelConfigRepository,
+    IUserXpConfigRepository userXpConfigRepository,
     IUserExperienceRepository userExperienceRepository,
     IUnitOfWork unitOfWork,
-    IWorkspaceRepository workspaceRepository,
     IMapper mapper) : IUserService
 {
     public async Task<List<UserDto>> GetAllUsersAsync()
@@ -152,15 +151,8 @@ public class UserService(
 
             var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
             var bag = new Bag { UserId = newUser.UserId };
-            var workspace = new Workspace
-            {
-                UserId = newUser.UserId,
-                Configuration =
-                    "{\"theme\": \"light\", \"notifications\": true, \"layout\": \"grid\", \"widgets\": []}",
-                CreatedAt = DateTime.UtcNow
-            };
 
-            var levelOneConfig = await userLevelConfigRepository.GetByIdAsync(1)
+            var levelOneConfig = await userXpConfigRepository.GetByIdAsync(1)
                                  ?? throw new Exception("UserLevelConfig is missing Level 1!");
 
             var userExperience = new UserExperience
@@ -168,14 +160,13 @@ public class UserService(
                 UserId = newUser.UserId,
                 TotalXp = 0,
                 CurrentLevel = 1,
-                XpToNextLevel = levelOneConfig.XpRequired,
+                XpToNextLevel = levelOneConfig.XpThreshold,
                 LevelId = 1,
                 UpdatedAt = DateTime.UtcNow
             };
 
             await walletRepository.CreateAsync(wallet);
             await bagRepository.CreateAsync(bag);
-            await workspaceRepository.CreateAsync(workspace);
             await userExperienceRepository.CreateAsync(userExperience);
 
             await unitOfWork.CommitAsync();

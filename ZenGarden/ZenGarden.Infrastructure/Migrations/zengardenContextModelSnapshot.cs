@@ -353,7 +353,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.TaskFocusSetting", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TaskFocusConfig", b =>
                 {
                     b.Property<int>("TaskFocusSettingId")
                         .ValueGeneratedOnAdd()
@@ -386,7 +386,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex("TaskId")
                         .IsUnique();
 
-                    b.ToTable("TaskFocusSetting");
+                    b.ToTable("TaskFocusConfig");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
@@ -566,7 +566,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.ToTable("Transactions");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeLevelConfig", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpConfig", b =>
                 {
                     b.Property<int>("Level")
                         .ValueGeneratedOnAdd()
@@ -579,7 +579,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasKey("Level");
 
-                    b.ToTable("TreeLevelConfig");
+                    b.ToTable("TreeXpConfig");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>
@@ -1027,7 +1027,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.TaskFocusSetting", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.TaskFocusConfig", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.FocusMethod", "FocusMethod")
                         .WithMany("TaskFocusSettings")
@@ -1036,8 +1036,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ZenGarden.Domain.Entities.Tasks", "Task")
-                        .WithOne("TaskFocusSetting")
-                        .HasForeignKey("ZenGarden.Domain.Entities.TaskFocusSetting", "TaskId")
+                        .WithOne("TaskFocusConfig")
+                        .HasForeignKey("ZenGarden.Domain.Entities.TaskFocusConfig", "TaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1274,7 +1274,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
                 {
-                    b.Navigation("TaskFocusSetting");
+                    b.Navigation("TaskFocusConfig");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>

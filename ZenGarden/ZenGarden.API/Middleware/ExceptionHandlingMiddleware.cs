@@ -32,24 +32,29 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         var response = context.Response;
         response.ContentType = "application/json";
 
-        var statusCode = exception switch
-        {
-            ArgumentNullException => (int)HttpStatusCode.BadRequest,
-            ValidationException => (int)HttpStatusCode.UnprocessableEntity,
-            KeyNotFoundException => (int)HttpStatusCode.NotFound,
-            InvalidOperationException => (int)HttpStatusCode.BadRequest,
-            UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-            DbException => (int)HttpStatusCode.ServiceUnavailable,
-            DbUpdateException => (int)HttpStatusCode.Conflict,
-            _ => (int)HttpStatusCode.InternalServerError
-        };
+        int statusCode;
 
-        response.StatusCode = statusCode;
+        if (exception.Message.Contains("OpenAI API request failed", StringComparison.OrdinalIgnoreCase))
+            statusCode = (int)HttpStatusCode.ServiceUnavailable;
+        else
+            statusCode = exception switch
+            {
+                ArgumentNullException => (int)HttpStatusCode.BadRequest,
+                ValidationException => (int)HttpStatusCode.UnprocessableEntity,
+                KeyNotFoundException => (int)HttpStatusCode.NotFound,
+                InvalidOperationException => (int)HttpStatusCode.BadRequest,
+                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+                DbException => (int)HttpStatusCode.ServiceUnavailable,
+                DbUpdateException => (int)HttpStatusCode.Conflict,
+                _ => (int)HttpStatusCode.InternalServerError
+            };
 
         var errorResponse = new ErrorResponse
         {
             StatusCode = statusCode,
-            Message = exception.Message,
+            Message = statusCode == (int)HttpStatusCode.ServiceUnavailable
+                ? "External AI service is unavailable. Please try again later."
+                : exception.Message,
             Details = statusCode == (int)HttpStatusCode.InternalServerError
                 ? "An unexpected error occurred. Please try again later."
                 : exception.InnerException?.Message

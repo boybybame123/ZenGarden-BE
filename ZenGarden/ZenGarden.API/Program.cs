@@ -28,7 +28,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IPackagesRepository, PackagesRepository>();
 builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
-builder.Services.AddScoped<IUserLevelConfigRepository, UserLevelConfigRepository>();
+builder.Services.AddScoped<IUserXpConfigRepository, UserXpConfigRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IPackagesService, PackagesService>();
@@ -142,8 +142,7 @@ builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidato
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
-builder.Services.AddScoped<IUserLevelConfigRepository, UserLevelConfigRepository>();
+builder.Services.AddScoped<IUserXpConfigRepository, UserXpConfigRepository>();
 builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();

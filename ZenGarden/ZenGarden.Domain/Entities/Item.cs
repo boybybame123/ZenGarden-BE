@@ -19,7 +19,8 @@ public partial class Item
 
     public bool? Limited { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual ICollection<BagItem> BagItem { get; set; } = new List<BagItem>();
     
@@ -27,5 +28,4 @@ public partial class Item
 
     public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
 
-    public virtual ICollection<WorkspaceItem> WorkspaceItem { get; set; } = new List<WorkspaceItem>();
 }

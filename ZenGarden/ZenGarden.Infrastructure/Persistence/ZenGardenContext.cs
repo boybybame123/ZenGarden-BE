@@ -30,22 +30,19 @@ public partial class ZenGardenContext : DbContext
     public virtual DbSet<Item> Item { get; set; }
 
     public virtual DbSet<ItemDetail> ItemDetail { get; set; }
-
-    public virtual DbSet<Leaderboard> Leaderboard { get; set; }
-
+    
     public virtual DbSet<PurchaseHistory> PurchaseHistory { get; set; }
-
     public virtual DbSet<Roles> Roles { get; set; }
 
-    public virtual DbSet<TaskFocusSetting> TaskFocusSetting { get; set; }
-
+    public virtual DbSet<TaskFocusConfig> TaskFocusSetting { get; set; }
     public virtual DbSet<Tasks> Tasks { get; set; }
+    public virtual DbSet<TaskType> TaskType { get; set; }
 
     public virtual DbSet<TradeHistory> TradeHistory { get; set; }
 
     public virtual DbSet<Transactions> Transactions { get; set; }
 
-    public virtual DbSet<TreeLevelConfig> TreeLevelConfig { get; set; }
+    public virtual DbSet<TreeXpConfig> TreeLevelConfig { get; set; }
 
     public virtual DbSet<TreeType> TreeType { get; set; }
 
@@ -53,8 +50,7 @@ public partial class ZenGardenContext : DbContext
 
     public virtual DbSet<UserExperience> UserExperience { get; set; }
 
-    public virtual DbSet<UserLevelConfig> UserLevelConfig { get; set; }
-
+    public virtual DbSet<UserXpConfig> UserXpConfig { get; set; }
     public virtual DbSet<Users> Users { get; set; }
 
     public virtual DbSet<UserTree> UserTree { get; set; }
@@ -62,10 +58,6 @@ public partial class ZenGardenContext : DbContext
     public virtual DbSet<UserXpLog> UserXpLog { get; set; }
 
     public virtual DbSet<Wallet> Wallet { get; set; }
-
-    public virtual DbSet<Workspace> Workspace { get; set; }
-
-    public virtual DbSet<WorkspaceItem> WorkspaceItem { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -124,9 +116,6 @@ public partial class ZenGardenContext : DbContext
             entity.HasIndex(e => e.ItemId, "ItemID");
 
             entity.Property(e => e.BagItemId).HasColumnName("BagItemID");
-            entity.Property(e => e.AddedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP"); 
 
             entity.Property(e => e.BagId).HasColumnName("BagID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
@@ -190,26 +179,6 @@ public partial class ZenGardenContext : DbContext
                 .WithOne(p => p.ItemDetail)
                 .HasForeignKey<ItemDetail>(d => d.ItemId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-
-
-        modelBuilder.Entity<Leaderboard>(entity =>
-        {
-            entity.HasKey(e => e.LeaderboardId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.UserId, "UserID1");
-
-            entity.Property(e => e.LeaderboardId).HasColumnName("LeaderboardID");
-            entity.Property(e => e.LastUpdated)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Leaderboard)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("leaderboard_ibfk_1");
         });
         
         modelBuilder.Entity<Packages>(entity =>
@@ -281,7 +250,6 @@ public partial class ZenGardenContext : DbContext
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
 
             entity.HasIndex(e => e.UserId, "idx_task_user");
-            entity.HasIndex(e => e.WorkspaceId, "idx_task_workspace");
             entity.HasIndex(e => e.UserTreeId, "idx_task_usertree");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
@@ -320,15 +288,31 @@ public partial class ZenGardenContext : DbContext
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.UserTreeId)
                 .HasConstraintName("tasks_ibfk_usertree");
-
-            entity.HasOne(d => d.Workspace)
-                .WithMany(p => p.Tasks)
-                .HasForeignKey(d => d.WorkspaceId)
-                .HasConstraintName("tasks_ibfk_workspace");
         });
 
 
+        modelBuilder.Entity<TaskType>(entity =>
+        {
+            entity.HasKey(t => t.TaskTypeId); 
 
+            entity.Property(t => t.TaskTypeName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(t => t.TaskTypeDescription)
+                .HasMaxLength(255); 
+
+            entity.Property(t => t.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(t => t.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            entity.HasMany(t => t.Tasks)
+                .WithOne(task => task.TaskType)
+                .HasForeignKey(task => task.TaskTypeId)
+                .OnDelete(DeleteBehavior.Cascade); 
+        });
 
 
         modelBuilder.Entity<TradeHistory>(entity =>
@@ -523,11 +507,6 @@ public partial class ZenGardenContext : DbContext
         .HasForeignKey<Wallet>(w => w.UserId)
         .OnDelete(DeleteBehavior.Cascade);
 
-    entity.HasOne(u => u.Workspace)
-        .WithOne(w => w.User)
-        .HasForeignKey<Workspace>(w => w.UserId)
-        .OnDelete(DeleteBehavior.Cascade);
-
     entity.HasOne(u => u.UserExperience)
         .WithOne(ue => ue.User)
         .HasForeignKey<UserExperience>(ue => ue.UserId)
@@ -590,64 +569,6 @@ public partial class ZenGardenContext : DbContext
                 .WithOne(p => p.Wallet)
                 .HasForeignKey<Wallet>(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-
-        modelBuilder.Entity<Workspace>(entity =>
-        {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
-
-            entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
-                .HasColumnName("UserID");
-
-            entity.Property(e => e.Configuration).HasColumnType("json");
-
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(e => e.UpdatedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
-            entity.HasOne(d => d.User)
-                .WithOne(p => p.Workspace)
-                .HasForeignKey<Workspace>(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-
-        modelBuilder.Entity<WorkspaceItem>(entity =>
-        {
-            entity.HasKey(e => e.WorkspaceItemId).HasName("PRIMARY");
-            
-            entity.HasIndex(e => e.ItemId, "ItemID3");
-
-            entity.HasIndex(e => e.WorkspaceId, "WorkspaceID");
-
-            entity.HasIndex(e => e.UserId, "idx_workspace_item_user");
-
-            entity.Property(e => e.WorkspaceItemId).HasColumnName("WorkspaceItemID");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Effect).HasColumnType("json");
-            entity.Property(e => e.ItemId).HasColumnName("ItemID");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.WorkspaceId).HasColumnName("WorkspaceID");
-
-            entity.HasOne(d => d.Item).WithMany(p => p.WorkspaceItem)
-                .HasForeignKey(d => d.ItemId)
-                .HasConstraintName("workspaceitem_ibfk_2");
-
-            entity.HasOne(d => d.User).WithMany(p => p.WorkspaceItem)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("workspaceitem_ibfk_3");
-
-            entity.HasOne(d => d.Workspace).WithMany(p => p.WorkspaceItem)
-                .HasForeignKey(d => d.WorkspaceId)
-                .HasConstraintName("workspaceitem_ibfk_1");
         });
 
         OnModelCreatingPartial(modelBuilder);

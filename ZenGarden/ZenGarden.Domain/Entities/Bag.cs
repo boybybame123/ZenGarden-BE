@@ -9,14 +9,12 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class Bag
 {
-    [Key, ForeignKey("User")]
+    public int BagId { get; set; }
     public int UserId { get; set; }
 
     public int? Capacity { get; set; } = 100;
-
-    public DateTime? CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual ICollection<BagItem> BagItem { get; set; } = new List<BagItem>();
 

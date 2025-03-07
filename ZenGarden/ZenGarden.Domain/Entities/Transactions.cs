@@ -12,15 +12,14 @@ public partial class Transactions
     public int? UserId { get; set; }
     public int? WalletId { get; set; }
     public int? PackageId { get; set; }
-
     public decimal? Amount { get; set; }
     public TransactionType Type { get; set; }
     public TransactionStatus Status { get; set; }
     public string PaymentMethod { get; set; } = "";
     public string TransactionRef { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
-
     public virtual Users User { get; set; }
     public virtual Wallet Wallet { get; set; }
     public virtual Packages Package { get; set; } 

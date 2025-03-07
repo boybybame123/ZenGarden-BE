@@ -99,7 +99,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
-                name: "TreeLevelConfig",
+                name: "TreeXpConfig",
                 columns: table => new
                 {
                     Level = table.Column<int>(type: "int", nullable: false)
@@ -629,7 +629,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
-                name: "TaskFocusSetting",
+                name: "TaskFocusConfig",
                 columns: table => new
                 {
                     TaskFocusSettingId = table.Column<int>(type: "int", nullable: false)
@@ -723,12 +723,12 @@ namespace ZenGarden.Infrastructure.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_TaskFocusSetting_FocusMethodId",
-                table: "TaskFocusSetting",
+                table: "TaskFocusConfig",
                 column: "FocusMethodId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TaskFocusSetting_TaskId",
-                table: "TaskFocusSetting",
+                table: "TaskFocusConfig",
                 column: "TaskId",
                 unique: true);
 
@@ -855,7 +855,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "PurchaseHistory");
 
             migrationBuilder.DropTable(
-                name: "TaskFocusSetting");
+                name: "TaskFocusConfig");
 
             migrationBuilder.DropTable(
                 name: "TradeHistory");
@@ -864,7 +864,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "Transactions");
 
             migrationBuilder.DropTable(
-                name: "TreeLevelConfig");
+                name: "TreeXpConfig");
 
             migrationBuilder.DropTable(
                 name: "TreeXpLog");
