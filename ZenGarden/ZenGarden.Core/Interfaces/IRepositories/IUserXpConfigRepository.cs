@@ -2,4 +2,4 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Interfaces.IRepositories;
 
-public interface IUserLevelConfigRepository : IGenericRepository<UserLevelConfig>;
+public interface IUserXpConfigRepository : IGenericRepository<UserXpConfig>;

@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
@@ -15,9 +16,10 @@ public partial class PurchaseHistory
 
     public decimal? TotalPrice { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public string Status { get; set; }
+    public PurchaseHistoryStatus Status { get; set; }
 
     public virtual Item Item { get; set; }
 

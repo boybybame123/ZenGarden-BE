@@ -9,7 +9,7 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class ItemDetail
 {
-    [Key, ForeignKey("Item")]
+    public int ItemDetailId { get; set; }
     public int? ItemId { get; set; }
 
     public string Description { get; set; }
@@ -32,7 +32,8 @@ public partial class ItemDetail
 
     public string Tags { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual Item Item { get; set; }
 }

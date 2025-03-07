@@ -9,28 +9,18 @@ namespace ZenGarden.Domain.Entities;
 public partial class TradeHistory
 {
     public int TradeId { get; set; }
-
     public int? UserAid { get; set; }
-
     public int? UserBid { get; set; }
-
     public int? UserTreeAid { get; set; }
-
     public int? UserTreeBid { get; set; }
-
     public decimal? TradeFee { get; set; }
-    
     public DateTime? RequestedAt { get; set; }
-
     public DateTime? CompletedAt { get; set; }
-
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public TradeStatus Status { get; set; }
-
     public virtual Users UserA { get; set; }
-
     public virtual Users UserB { get; set; }
-
     public virtual UserTree UserTreeA { get; set; }
-
     public virtual UserTree UserTreeB { get; set; }
 }

@@ -7,9 +7,12 @@ public class PerformanceMiddleware(RequestDelegate next, ILogger<PerformanceMidd
     public async Task Invoke(HttpContext context)
     {
         var stopwatch = Stopwatch.StartNew();
+
         await next(context);
         stopwatch.Stop();
-
+        if (stopwatch.ElapsedMilliseconds > 3000)
+            logger.LogWarning("Slow response from {Path}: {ElapsedMilliseconds}ms",
+                context.Request.Path, stopwatch.ElapsedMilliseconds);
         logger.LogInformation(
             "Request {Method} {Path} took {ElapsedMilliseconds} ms",
             context.Request.Method,

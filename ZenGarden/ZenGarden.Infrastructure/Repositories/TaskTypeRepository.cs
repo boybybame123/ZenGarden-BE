@@ -4,5 +4,4 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TaskFocusRepository(ZenGardenContext context)
-    : GenericRepository<TaskFocusConfig>(context), ITaskFocusRepository;
+public class TaskTypeRepository(ZenGardenContext context) : GenericRepository<TaskType>(context), ITaskTypeRepository;

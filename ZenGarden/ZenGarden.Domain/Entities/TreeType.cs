@@ -8,13 +8,10 @@ namespace ZenGarden.Domain.Entities;
 public partial class TreeType
 {
     public int TreeTypeId { get; set; }
-
     public string Name { get; set; }
-
     public string Rarity { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
-
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public decimal? BasePrice { get; set; }
 
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();

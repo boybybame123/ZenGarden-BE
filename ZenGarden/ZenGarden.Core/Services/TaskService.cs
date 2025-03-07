@@ -11,11 +11,11 @@ public class TaskService(
     ITaskRepository taskRepository,
     IFocusMethodRepository focusMethodRepository,
     ITaskFocusRepository taskFocusRepository,
-    IWorkspaceRepository workspaceRepository,
     IUnitOfWork unitOfWork,
     IUserTreeRepository userTreeRepository,
     ITreeXpLogRepository treeXpLogRepository,
     ITreeLevelConfigRepository treeLevelConfigRepository,
+    ITaskTypeRepository taskTypeRepository,
     IMapper mapper) : ITaskService
 {
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -42,7 +42,8 @@ public class TaskService(
         if (dto.Duration < selectedFocusMethod.MinDuration || dto.Duration > selectedFocusMethod.MaxDuration)
             throw new ArgumentException(
                 $"Duration must be between {selectedFocusMethod.MinDuration} and {selectedFocusMethod.MaxDuration}");
-
+        var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId)
+                       ?? throw new InvalidOperationException("Invalid Task Type selected.");
 
         var task = new Tasks
         {
@@ -52,46 +53,22 @@ public class TaskService(
             BaseXp = dto.BaseXp,
             TaskName = dto.TaskName,
             TaskDescription = dto.TaskDescription,
-            Type = dto.Type
+            TaskTypeId = taskType.TaskTypeId
         };
 
         await taskRepository.CreateAsync(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to create task.");
 
-        var taskFocusSetting = new TaskFocusSetting
+        var taskFocusConfig = new TaskFocusConfig
         {
             TaskId = task.TaskId,
-            Task = task,
             FocusMethodId = selectedFocusMethod.FocusMethodId,
-            FocusMethod = selectedFocusMethod,
-            SuggestedDuration = selectedFocusMethod.DefaultDuration ?? 25,
-            SuggestedBreak = selectedFocusMethod.DefaultBreak ?? 5,
-            CustomDuration = dto.CustomDuration,
-            CustomBreak = dto.CustomBreak
+            Duration = dto.Duration,
+            BreakTime = dto.BreakTime,
+            IsSuggested = dto.IsSuggested
         };
-
-        await taskFocusRepository.CreateAsync(taskFocusSetting);
-
-        var workspace = await workspaceRepository.GetByUserIdAsync(dto.UserId);
-        if (workspace != null)
-        {
-            workspace.Tasks.Add(task);
-            workspace.UpdatedAt = DateTime.UtcNow;
-            workspaceRepository.Update(workspace);
-        }
-        else
-        {
-            workspace = new Workspace
-            {
-                UserId = dto.UserId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                Tasks = new List<Tasks> { task }
-            };
-            await workspaceRepository.CreateAsync(workspace);
-        }
-
+        await taskFocusRepository.CreateAsync(taskFocusConfig);
         await unitOfWork.CommitAsync();
         return task;
     }
@@ -164,27 +141,26 @@ public class TaskService(
             var userTree = await userTreeRepository.GetByIdAsync(task.UserTreeId.Value);
             if (userTree != null)
             {
-                var xpGained = task.Type switch
+                var xpGained = task.TaskTypeId switch
                 {
-                    TaskType.InWorkspace => (int)(task.BaseXp * 1.2),
-                    TaskType.External => (int)(task.BaseXp * 0.8),
+                    1 => (int)(task.BaseXp * 1.2),
+                    2 => (int)(task.BaseXp * 0.8),
                     _ => task.BaseXp
                 };
-
                 userTree.TotalXp += xpGained;
 
                 await treeXpLogRepository.CreateAsync(new TreeXpLog
                 {
                     UserTreeId = userTree.UserTreeId,
                     TaskId = task.TaskId,
-                    ActivityType = ActivityType.TASK_XP,
+                    ActivityType = ActivityType.TaskXp,
                     XpAmount = xpGained,
                     UserTree = userTree,
                     Task = task
                 });
 
                 var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.TreeLevel + 1);
-                if (nextLevel != null && userTree.TotalXp >= nextLevel.XpRequired)
+                if (nextLevel != null && userTree.TotalXp >= nextLevel.XpThreshold)
                 {
                     userTree.TreeLevel += 1;
                     userTree.TotalXp = 0;
