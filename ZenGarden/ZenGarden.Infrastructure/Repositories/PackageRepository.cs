@@ -11,6 +11,8 @@ namespace ZenGarden.Infrastructure.Repositories
 {
     public class PackageRepository : GenericRepository<Packages>, IPackageRepository
     {
-        public PackageRepository(ZenGardenContext context) : base(context) { }
+        public PackageRepository(ZenGardenContext context) : base(context)
+        {
+        }
     }
 }

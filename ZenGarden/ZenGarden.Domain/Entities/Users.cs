@@ -32,6 +32,9 @@ public partial class Users
     public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();
     public virtual UserExperience? UserExperience { get; set; }
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
+    public virtual ICollection<UserXpLog> UserXpLog { get; set; } = new List<UserXpLog>();
+    public virtual ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
+    public virtual UserConfig? UserConfig { get; set; }
     public virtual Wallet? Wallet { get; set; }
 
 

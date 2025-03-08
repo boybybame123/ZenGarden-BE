@@ -812,7 +812,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("XpAmount"));
 
-                    b.Property<int>("ActivityType")
+                    b.Property<int>("XpSourceType")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1059,7 +1059,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("XpAmount"));
 
-                    b.Property<int>("ActivityType")
+                    b.Property<int>("XpSourceType")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
