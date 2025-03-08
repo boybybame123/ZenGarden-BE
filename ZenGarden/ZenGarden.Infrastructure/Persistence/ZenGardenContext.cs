@@ -569,6 +569,7 @@ public class ZenGardenContext : DbContext
 
             entity.HasOne(t => t.Tasks)
                 .WithMany(task => task.TreeXpLog)
+                .IsRequired()
                 .HasForeignKey(t => t.TaskId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
