@@ -156,13 +156,13 @@ public class TaskService(
                     ActivityType = ActivityType.TaskXp,
                     XpAmount = xpGained,
                     UserTree = userTree,
-                    Task = task
+                    Tasks = task
                 });
 
-                var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.TreeLevel + 1);
+                var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.LevelId + 1);
                 if (nextLevel != null && userTree.TotalXp >= nextLevel.XpThreshold)
                 {
-                    userTree.TreeLevel += 1;
+                    userTree.LevelId += 1;
                     userTree.TotalXp = 0;
                 }
 

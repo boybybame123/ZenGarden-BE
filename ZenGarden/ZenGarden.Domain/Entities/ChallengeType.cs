@@ -6,6 +6,5 @@ public class ChallengeType
     public string? ChallengeTypeName { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
     public ICollection<Challenge> Challenges { get; set; } = new List<Challenge>();
 }

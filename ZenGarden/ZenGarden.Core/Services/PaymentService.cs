@@ -29,7 +29,9 @@ namespace ZenGarden.Core.Services
             _walletRepository = walletRepository;
             _packageRepository = packageRepository;
             _unitOfWork = unitOfWork;
-            _stripeClient = new StripeClient("sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
+            _stripeClient =
+                new StripeClient(
+                    "sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
         }
 
         public async Task<string> CreatePaymentIntent(CreatePaymentRequest request)

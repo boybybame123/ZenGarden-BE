@@ -2,6 +2,7 @@ namespace ZenGarden.Domain.Entities;
 
 public class UserConfig
 {
+    public int UserConfigId { get; set; }
     public int UserId { get; set; }
     public string? BackgroundConfig { get; set; }
     public string? SoundConfig { get; set; }
