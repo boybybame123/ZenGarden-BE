@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Infrastructure.Persistence;
 
-public partial class ZenGardenContext : DbContext
+public class ZenGardenContext : DbContext
 {
     public ZenGardenContext()
     {
@@ -52,18 +49,19 @@ public partial class ZenGardenContext : DbContext
         if (!optionsBuilder.IsConfigured)
         {
             var connectionString = GetConnectionString();
-            optionsBuilder.UseMySql(connectionString ?? "server=localhost;database=zengarden;uid=root;pwd=10112003", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         }
     }
-
-    private string GetConnectionString()
+    
+    private static string GetConnectionString()
     {
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.Development.json", true, true)
             .Build();
 
-        return configuration.GetConnectionString("ZenGardenDB");
+        return configuration.GetConnectionString("ZenGardenDB") ??
+               "server=localhost;database=zengarden;uid=root;pwd=10112003";
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -74,10 +72,13 @@ public partial class ZenGardenContext : DbContext
 
         modelBuilder.Entity<Bag>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.BagId).HasName("PRIMARY");
+
+            entity.Property(e => e.BagId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("BagID");
 
             entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
                 .HasColumnName("UserID");
 
             entity.Property(e => e.CreatedAt)
@@ -88,11 +89,13 @@ public partial class ZenGardenContext : DbContext
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.HasOne(e => e.User)
+            modelBuilder.Entity<Bag>()
+                .HasOne(b => b.User)
                 .WithOne(u => u.Bag)
                 .HasForeignKey<Bag>(b => b.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
 
         modelBuilder.Entity<BagItem>(entity =>
         {
@@ -126,6 +129,7 @@ public partial class ZenGardenContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Name).HasMaxLength(100);
         });
+
         modelBuilder.Entity<Challenge>(entity =>
         {
             entity.HasKey(e => e.ChallengeId).HasName("PRIMARY");
@@ -176,32 +180,33 @@ public partial class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.ChallengeId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("challengetask_ibfk_1");
-
         });
 
-modelBuilder.Entity<ChallengeType>(entity =>
-{
-    entity.HasKey(e => e.ChallengeTypeId).HasName("PK_ChallengeType");
+        modelBuilder.Entity<ChallengeType>(entity =>
+        {
+            entity.HasKey(e => e.ChallengeTypeId).HasName("PK_ChallengeType");
 
-    entity.Property(e => e.ChallengeTypeId)
-        .HasColumnName("ChallengeTypeID")
-        .ValueGeneratedOnAdd();
+            entity.Property(e => e.ChallengeTypeId)
+                .HasColumnName("ChallengeTypeID")
+                .ValueGeneratedOnAdd();
 
-    entity.Property(e => e.ChallengeTypeName)
-        .HasMaxLength(255)
-        .HasColumnName("ChallengeTypeName");
+            entity.Property(e => e.ChallengeTypeName)
+                .HasMaxLength(255)
+                .HasColumnName("ChallengeTypeName");
 
-    entity.Property(e => e.CreatedAt)
-        .HasColumnType("timestamp")
-        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-    entity.Property(e => e.UpdatedAt)
-        .HasColumnType("timestamp")
-        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-});
-
-
-
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            modelBuilder.Entity<ChallengeType>()
+                .HasMany(ct => ct.Challenges)
+                .WithOne(c => c.ChallengeType)
+                .HasForeignKey(c => c.ChallengeTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
 
         modelBuilder.Entity<Item>(entity =>
@@ -224,7 +229,10 @@ modelBuilder.Entity<ChallengeType>(entity =>
         {
             entity.HasKey(e => e.ItemDetailId).HasName("PRIMARY");
 
-            entity.Property(e => e.ItemDetailId).HasColumnName("ItemDetailID");
+            entity.Property(e => e.ItemDetailId).ValueGeneratedOnAdd().HasColumnName("ItemDetailID");
+
+            entity.Property(e => e.ItemId)
+                .HasColumnName("ItemID");
 
             entity.Property(e => e.Description).HasColumnType("text");
             entity.Property(e => e.DurationType).HasMaxLength(50);
@@ -313,6 +321,14 @@ modelBuilder.Entity<ChallengeType>(entity =>
             entity.HasIndex(e => e.UserTreeId, "idx_tasks_usertree");
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.TaskTypeId).HasColumnName("TaskTypeID");
+
+            entity.Property(e => e.BaseXp)
+                .HasColumnType("int")
+                .HasDefaultValue(50)
+                .HasColumnName("BaseXP");
 
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp")
@@ -320,21 +336,16 @@ modelBuilder.Entity<ChallengeType>(entity =>
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.Property(e => e.TaskDescription).HasColumnType("text");
             entity.Property(e => e.TaskName).HasMaxLength(255);
-            entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Status)
                 .HasConversion<int>()
                 .HasColumnName("Status")
                 .IsRequired();
-
-            entity.Property(e => e.BaseXp)
-                .HasColumnType("int")
-                .HasDefaultValue(50)
-                .HasColumnName("BaseXP");
-
-            entity.Property(e => e.TaskTypeId);
 
             entity.HasOne(d => d.User)
                 .WithMany(p => p.Tasks)
@@ -345,8 +356,6 @@ modelBuilder.Entity<ChallengeType>(entity =>
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.UserTreeId)
                 .HasConstraintName("tasks_ibfk_usertree");
-
-
         });
 
         modelBuilder.Entity<TaskType>(entity =>
@@ -389,6 +398,11 @@ modelBuilder.Entity<ChallengeType>(entity =>
             entity.HasIndex(e => new { e.UserAid, e.UserBid }, "idx_tradehistory_user");
 
             entity.Property(e => e.TradeId).HasColumnName("TradeID");
+
+            entity.Property(e => e.Status)
+                .HasConversion<int>()
+                .IsRequired();
+
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
@@ -427,6 +441,20 @@ modelBuilder.Entity<ChallengeType>(entity =>
 
             entity.Property(e => e.TransactionId).HasColumnName("TransactionID");
             entity.Property(e => e.Amount).HasPrecision(10, 2);
+
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.WalletId).HasColumnName("WalletID");
+            entity.Property(e => e.PackageId).HasColumnName("PackageID");
+
+            entity.Property(e => e.Type)
+                .HasConversion<int>()
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .HasConversion<int>()
+                .IsRequired();
+
+
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -462,19 +490,38 @@ modelBuilder.Entity<ChallengeType>(entity =>
         modelBuilder.Entity<TreeType>(entity =>
         {
             entity.HasKey(e => e.TreeTypeId).HasName("PRIMARY");
-            entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
-            entity.Property(e => e.BasePrice).HasPrecision(10, 2);
+
+            entity.Property(e => e.TreeTypeId)
+                .HasColumnName("TreeTypeID");
+
+            entity.Property(e => e.Name)
+                .HasColumnName("Name")
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Rarity)
+                .HasColumnName("Rarity")
+                .HasConversion<int>();
+
+            entity.Property(e => e.BasePrice)
+                .HasPrecision(10, 2)
+                .HasColumnName("BasePrice");
+
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Name).HasMaxLength(100);
-            entity.Property(e => e.Rarity).HasMaxLength(50);
         });
+
         modelBuilder.Entity<TreeXpConfig>(entity =>
         {
-            entity.HasKey(e => e.XpThreshold).HasName("PRIMARY");
+            entity.HasKey(e => e.LevelId).HasName("PRIMARY");
 
-            entity.Property(e => e.XpThreshold).HasColumnName("XpThreshold");
+            entity.Property(e => e.LevelId)
+                .HasColumnName("LevelID")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.XpThreshold)
+                .HasColumnType("int")
+                .HasColumnName("XpThreshold");
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
@@ -486,9 +533,26 @@ modelBuilder.Entity<ChallengeType>(entity =>
         });
         modelBuilder.Entity<TreeXpLog>(entity =>
         {
-            entity.HasKey(e => e.XpAmount).HasName("PRIMARY");
+            entity.HasKey(e => e.LogId).HasName("PRIMARY");
 
-            entity.Property(e => e.XpAmount).HasColumnName("XpAmount");
+            entity.Property(e => e.LogId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("LogID");
+
+            entity.Property(e => e.UserTreeId)
+                .HasColumnName("UserTreeID");
+
+            entity.Property(e => e.TaskId)
+                .HasColumnName("TaskID")
+                .IsRequired(false);
+
+            entity.Property(e => e.ActivityType)
+                .HasConversion<int>()
+                .HasColumnName("ActivityType");
+
+            entity.Property(e => e.XpAmount)
+                .HasColumnType("int")
+                .HasColumnName("XpAmount");
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
@@ -498,22 +562,56 @@ modelBuilder.Entity<ChallengeType>(entity =>
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.HasOne(d => d.UserTree)
-                .WithMany(p => p.TreeXpLog) // Changed from TreeXpLog to TreeXpLogs
-                .HasForeignKey(d => d.UserTreeId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("treexplog_ibfk_1");
+            entity.HasOne(t => t.UserTree)
+                .WithMany(u => u.TreeXpLog)
+                .HasForeignKey(t => t.UserTreeId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(d => d.Task)
-                .WithMany(p => p.TreeXpLog) 
-                .HasForeignKey(d => d.TaskId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("treexplog_ibfk_2");
+            entity.HasOne(t => t.Tasks)
+                .WithMany(task => task.TreeXpLog)
+                .IsRequired()
+                .HasForeignKey(t => t.TaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UserChallenge>(entity =>
+        {
+            entity.HasKey(e => e.UserChallengeId).HasName("PRIMARY");
+
+            entity.Property(e => e.UserChallengeId).HasColumnName("UserChallengeID");
+            entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.Progress).HasColumnType("int").HasDefaultValue(0);
+            entity.Property(e => e.Status).HasConversion<int>().HasColumnName("Status").IsRequired();
+
+            entity.Property(e => e.JoinedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            entity.HasOne(uc => uc.Challenge)
+                .WithMany(c => c.UserChallenges)
+                .HasForeignKey(uc => uc.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(uc => uc.User)
+                .WithMany(t => t.UserChallenges)
+                .HasForeignKey(uc => uc.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UserConfig>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.UserConfigId).HasName("PRIMARY");
+
+            entity.Property(e => e.UserConfigId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("UserConfigID");
 
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
@@ -532,17 +630,21 @@ modelBuilder.Entity<ChallengeType>(entity =>
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
+            entity.HasOne(uc => uc.User)
+                .WithOne(u => u.UserConfig)
+                .HasForeignKey<UserConfig>(uc => uc.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
-
-
 
         modelBuilder.Entity<UserExperience>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.UserExperienceId).HasName("PRIMARY");
+
+            entity.Property(e => e.UserExperienceId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("UserExperienceID");
 
             entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
                 .HasColumnName("UserID");
 
             entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
@@ -555,97 +657,128 @@ modelBuilder.Entity<ChallengeType>(entity =>
                 .WithOne(u => u.UserExperience)
                 .HasForeignKey<UserExperience>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ue => ue.UserXpConfig)
+                .WithMany(ux => ux.UserExperiences)
+                .HasForeignKey(ue => ue.LevelId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
 
         modelBuilder.Entity<Users>(entity =>
         {
-        entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-        entity.HasIndex(e => e.Email, "Email").IsUnique();
+            entity.HasIndex(e => e.Email, "Email").IsUnique();
 
-        entity.HasIndex(e => e.RoleId, "RoleID");
+            entity.HasIndex(e => e.RoleId, "RoleID");
 
-        entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(u => u.UserId)
+                .HasColumnType("int")
+                .ValueGeneratedOnAdd()
+                .IsRequired();
 
-        entity.Property(e => e.CreatedAt)
-            .HasColumnType("timestamp")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        entity.Property(e => e.UpdatedAt)
-            .HasColumnType("timestamp")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-        entity.Property(e => e.Email)
-            .IsRequired()
-            .HasMaxLength(100);
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        entity.Property(e => e.UserName)
-            .IsRequired()
-            .HasMaxLength(100);
+            entity.Property(e => e.UserName)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        entity.Property(e => e.Password)
-            .IsRequired()
-            .HasMaxLength(255);
+            entity.Property(e => e.Password)
+                .IsRequired()
+                .HasMaxLength(255);
 
-        entity.Property(e => e.Phone)
-            .IsRequired()
-            .HasMaxLength(20);
+            entity.Property(e => e.Phone)
+                .IsRequired()
+                .HasMaxLength(20);
 
-        entity.Property(e => e.RoleId).HasColumnName("RoleID");
+            entity.Property(e => e.RoleId).HasColumnName("RoleID");
 
-        entity.Property(e => e.Status)
-            .HasConversion<int>()
-            .IsRequired();
+            entity.Property(e => e.Status)
+                .HasConversion<int>()
+                .IsRequired();
 
-        entity.Property(e => e.IsActive)
-            .HasDefaultValue(true);
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
 
-        entity.Property(e => e.RefreshTokenHash)
-            .HasMaxLength(255)
-            .IsUnicode(false);
+            entity.Property(e => e.RefreshTokenHash)
+                .HasMaxLength(255)
+                .IsUnicode(false);
 
-        entity.Property(e => e.RefreshTokenExpiry)
-            .HasColumnType("timestamp")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.RefreshTokenExpiry)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        entity.Property(e => e.OtpCodeHash)
-            .HasMaxLength(255)
-            .IsUnicode(false);
+            entity.Property(e => e.OtpCodeHash)
+                .HasMaxLength(255)
+                .IsUnicode(false);
 
-        entity.Property(e => e.OtpExpiry)
-            .HasColumnType("timestamp")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.OtpExpiry)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        entity.HasOne(u => u.Bag)
-            .WithOne(b => b.User)
-            .HasForeignKey<Bag>(b => b.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(u => u.Bag)
+                .WithOne(b => b.User)
+                .HasForeignKey<Bag>(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        entity.HasOne(u => u.Wallet)
-            .WithOne(w => w.User)
-            .HasForeignKey<Wallet>(w => w.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(u => u.Wallet)
+                .WithOne(w => w.User)
+                .HasForeignKey<Wallet>(w => w.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.Role)
                 .WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
                 .HasConstraintName("users_ibfk_1");
+            entity.HasMany(u => u.UserTree)
+                .WithOne(ut => ut.User)
+                .HasForeignKey(ut => ut.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UserTree>(entity =>
         {
             entity.HasKey(e => e.UserTreeId).HasName("PRIMARY");
 
-            entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
+            entity.Property(e => e.UserTreeId)
+                .HasColumnName("UserTreeID")
+                .ValueGeneratedOnAdd();
 
-            entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.UserId)
+                .HasColumnName("UserID");
 
-            entity.Property(e => e.FinalTreeId).HasColumnName("FinalTreeID");
+            entity.Property(e => e.LevelId)
+                .HasColumnName("LevelID");
+
+            entity.Property(e => e.FinalTreeId)
+                .HasColumnName("FinalTreeID");
+
+            entity.Property(e => e.TotalXp)
+                .HasColumnType("int")
+                .HasDefaultValue(0)
+                .IsRequired();
+
+            entity.Property(e => e.IsMaxLevel)
+                .HasColumnType("bit")
+                .HasDefaultValue(false)
+                .IsRequired();
 
             entity.Property(e => e.TreeStatus)
                 .HasConversion<int>()
                 .HasDefaultValue(TreeStatus.Growing);
+
+            entity.Property(e => e.FinalTreeRarity)
+                .HasConversion<int>();
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
@@ -660,12 +793,25 @@ modelBuilder.Entity<ChallengeType>(entity =>
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("usertree_ibfk_1");
+
+            entity.HasOne(d => d.FinalTree)
+                .WithMany()
+                .HasForeignKey(d => d.FinalTreeId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("usertree_ibfk_2");
+
+            entity.HasOne(d => d.TreeXpConfig)
+                .WithMany(p => p.UserTrees)
+                .HasForeignKey(d => d.LevelId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         modelBuilder.Entity<UserXpConfig>(entity =>
         {
-            entity.HasKey(e => e.XpThreshold).HasName("PRIMARY");
-            entity.Property(e => e.XpThreshold).HasColumnName("XpThreshold");
+            entity.HasKey(e => e.LevelId).HasName("PRIMARY");
+            entity.Property(e => e.LevelId).HasColumnName("LevelID");
+            entity.Property(e => e.XpThreshold).HasColumnName("XpThreshold").HasColumnType("int").IsRequired();
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -676,23 +822,42 @@ modelBuilder.Entity<ChallengeType>(entity =>
 
         modelBuilder.Entity<UserXpLog>(entity =>
         {
-            entity.HasKey(e => e.XpAmount).HasName("PRIMARY");
-            entity.Property(e => e.XpAmount).HasColumnName("XpAmount");
+            entity.HasKey(e => e.LogId).HasName("PRIMARY");
+
+            entity.Property(e => e.XpAmount)
+                .HasColumnType("int")
+                .HasDefaultValue(0)
+                .HasColumnName("XpAmount");
+
+            entity.Property(e => e.XpSource)
+                .HasColumnType("int")
+                .IsRequired()
+                .HasColumnName("XpSource");
+
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
+            entity.HasOne(xp => xp.User)
+                .WithMany(u => u.UserXpLog)
+                .HasForeignKey(xp => xp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
+
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
+            entity.HasKey(e => e.WalletId).HasName("PRIMARY");
+
+            entity.Property(e => e.WalletId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("WalletID");
 
             entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
                 .HasColumnName("UserID");
 
             entity.Property(e => e.Balance)
@@ -713,7 +878,7 @@ modelBuilder.Entity<ChallengeType>(entity =>
         {
             entity.HasKey(e => e.TaskFocusSettingId).HasName("PRIMARY");
 
-            entity.Property(e => e.TaskFocusSettingId).HasColumnName("TaskFocusSettingID");
+            entity.Property(e => e.TaskFocusSettingId).HasColumnName("TaskFocusSettingID").ValueGeneratedOnAdd();
 
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
 
@@ -733,13 +898,10 @@ modelBuilder.Entity<ChallengeType>(entity =>
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.FocusMethod)
-                .WithMany(p => p.TaskFocusSettings)
+                .WithMany(p => p.TaskFocusConfigs)
                 .HasForeignKey(d => d.FocusMethodId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-
-        OnModelCreatingPartial(modelBuilder);
+        base.OnModelCreating(modelBuilder);
     }
-
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

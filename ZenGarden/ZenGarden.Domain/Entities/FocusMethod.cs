@@ -19,5 +19,5 @@ public partial class FocusMethod
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public virtual ICollection<TaskFocusConfig> TaskFocusSettings { get; set; } = new List<TaskFocusConfig>();
+    public virtual ICollection<TaskFocusConfig> TaskFocusConfigs { get; set; } = new List<TaskFocusConfig>();
 }
