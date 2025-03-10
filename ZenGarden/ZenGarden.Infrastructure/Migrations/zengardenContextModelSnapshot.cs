@@ -288,16 +288,17 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<string>("Type")
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("ItemId")
                         .HasName("PRIMARY");
@@ -316,44 +317,33 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ItemDetailId"));
 
-                    b.Property<int?>("Cooldown")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("Duration")
-                        .HasColumnType("int");
+                    b.Property<string>("Duration")
+                        .HasColumnType("text");
 
-                    b.Property<string>("DurationType")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                    b.Property<string>("Effect")
+                        .HasColumnType("json");
 
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<int?>("ItemId")
+                    b.Property<int>("ItemId")
                         .HasColumnType("int")
                         .HasColumnName("ItemID");
 
-                    b.Property<int?>("MaxStack")
-                        .HasColumnType("int");
+                    b.Property<string>("MediaUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
-                    b.Property<string>("Requirements")
-                        .HasColumnType("json");
-
-                    b.Property<string>("SpecialEffects")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Stats")
-                        .HasColumnType("json");
-
-                    b.Property<string>("Tags")
-                        .HasColumnType("json");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -1336,7 +1326,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
                         .WithOne("ItemDetail")
                         .HasForeignKey("ZenGarden.Domain.Entities.ItemDetail", "ItemId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Item");
                 });
