@@ -293,7 +293,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("ItemId")
                         .HasName("PRIMARY");

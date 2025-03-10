@@ -12,7 +12,7 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    [Migration("20250308150257_InitialCreate")]
+    [Migration("20250310011703_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -296,7 +296,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("ItemId")
                         .HasName("PRIMARY");
