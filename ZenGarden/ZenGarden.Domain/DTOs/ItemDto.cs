@@ -1,4 +1,6 @@
-﻿namespace ZenGarden.Domain.DTOs;
+﻿using ZenGarden.Domain.Enums;
+
+namespace ZenGarden.Domain.DTOs;
 
 public class ItemDto
 {
@@ -11,6 +13,8 @@ public class ItemDto
     public string? Rarity { get; set; }
 
     public decimal? Cost { get; set; }
+
+    public ItemStatus? Status { get; set; }
 
     public bool? Limited { get; set; }
 

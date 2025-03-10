@@ -220,9 +220,16 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
             entity.Property(e => e.Type).HasMaxLength(50);
+            entity.Property(e => e.Status)
+                .HasConversion<int>()
+                .IsRequired();
         });
 
         modelBuilder.Entity<ItemDetail>(entity =>
@@ -235,12 +242,13 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("ItemID");
 
             entity.Property(e => e.Description).HasColumnType("text");
-            entity.Property(e => e.DurationType).HasMaxLength(50);
-            entity.Property(e => e.ImageUrl).HasMaxLength(255);
-            entity.Property(e => e.Requirements).HasColumnType("json");
-            entity.Property(e => e.SpecialEffects).HasColumnType("text");
-            entity.Property(e => e.Stats).HasColumnType("json");
-            entity.Property(e => e.Tags).HasColumnType("json");
+            entity.Property(e => e.Type).HasMaxLength(50);
+            entity.Property(e => e.MediaUrl).HasMaxLength(255);
+            entity.Property(e => e.Effect).HasColumnType("json");
+            entity.Property(e => e.Duration).HasColumnType("text");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
