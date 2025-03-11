@@ -26,6 +26,6 @@ public partial class UserTree
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeA { get; set; } = new List<TradeHistory>();
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeB { get; set; } = new List<TradeHistory>();
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
-    public virtual ICollection<TreeXpLog> TreeXpLog { get; set; } = new List<TreeXpLog>();
+
     public virtual required Users User { get; set; }
 }

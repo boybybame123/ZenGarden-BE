@@ -26,7 +26,6 @@ public partial class Users
     public virtual Bag? Bag { get; set; }
     public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
     public virtual Roles? Role { get; set; }
-    public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
     public virtual ICollection<TradeHistory> TradeHistoryUserA { get; set; } = new List<TradeHistory>();
     public virtual ICollection<TradeHistory> TradeHistoryUserB { get; set; } = new List<TradeHistory>();
     public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();

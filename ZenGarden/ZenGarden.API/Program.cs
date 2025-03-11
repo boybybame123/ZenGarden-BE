@@ -33,7 +33,7 @@ builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>(
 builder.Services.AddScoped<IUserXpConfigRepository, UserXpConfigRepository>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
-builder.Services.AddScoped<ITaskFocusRepository, TaskFocusRepository>();
+
 builder.Services.AddScoped<IItemDetailRepository, ItemDetailRepository>();
 builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
 builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
@@ -160,7 +160,7 @@ builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
-builder.Services.AddScoped<ITaskFocusRepository, TaskFocusRepository>();
+
 builder.Services.AddScoped<IItemService, ItemService>();
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();

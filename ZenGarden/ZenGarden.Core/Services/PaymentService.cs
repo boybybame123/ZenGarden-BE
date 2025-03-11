@@ -72,7 +72,7 @@ namespace ZenGarden.Core.Services
             if (transaction != null && transaction.Status == TransactionStatus.Pending)
             {
                 transaction.Status = TransactionStatus.Completed;
-                transaction.CompletedAt = DateTime.UtcNow;
+                transaction.TransactionTime = DateTime.UtcNow;
 
                 var wallet = await _walletRepository.GetByIdAsync(transaction.WalletId);
                 if (wallet != null)
