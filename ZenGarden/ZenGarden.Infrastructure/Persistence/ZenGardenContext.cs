@@ -32,7 +32,7 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<TaskType> TaskType { get; set; }
     public virtual DbSet<TradeHistory> TradeHistory { get; set; }
     public virtual DbSet<Transactions> Transactions { get; set; }
-    public virtual DbSet<TreeType> TreeType { get; set; }
+    public virtual DbSet<Tree> Tree { get; set; }
     public virtual DbSet<TreeXpConfig> TreeXpConfig { get; set; }
     public virtual DbSet<TreeXpLog> TreeXpLog { get; set; }
     public virtual DbSet<UserChallenge> UserChallenges { get; set; }
@@ -55,10 +55,11 @@ public class ZenGardenContext : DbContext
 
     private static string GetConnectionString()
     {
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../ZenGarden.API"))
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{environment}.json", optional: false, reloadOnChange: true)
             .Build();
 
         return configuration.GetConnectionString("ZenGardenDB") ?? throw new InvalidOperationException("Connection string 'ZenGardenDB' not found.");
@@ -536,12 +537,12 @@ public class ZenGardenContext : DbContext
                 .HasConstraintName("transactions_ibfk_3");
         });
 
-        modelBuilder.Entity<TreeType>(entity =>
+        modelBuilder.Entity<Tree>(entity =>
         {
-            entity.HasKey(e => e.TreeTypeId).HasName("PRIMARY");
+            entity.HasKey(e => e.TreeId).HasName("PRIMARY");
 
-            entity.Property(e => e.TreeTypeId)
-                .HasColumnName("TreeTypeID");
+            entity.Property(e => e.TreeId)
+                .HasColumnName("TreeID");
 
             entity.Property(e => e.Name)
                 .HasColumnName("Name")
@@ -551,9 +552,6 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("Rarity")
                 .HasConversion<int>();
 
-            entity.Property(e => e.BasePrice)
-                .HasPrecision(10, 2)
-                .HasColumnName("BasePrice");
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")

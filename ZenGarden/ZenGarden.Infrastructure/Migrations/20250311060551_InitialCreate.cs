@@ -144,21 +144,20 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
-                name: "TreeType",
+                name: "Tree",
                 columns: table => new
                 {
-                    TreeTypeID = table.Column<int>(type: "int", nullable: false)
+                    TreeID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Rarity = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    BasePrice = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.TreeTypeID);
+                    table.PrimaryKey("PRIMARY", x => x.TreeID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -491,22 +490,22 @@ namespace ZenGarden.Infrastructure.Migrations
                     FinalTreeRarity = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-                    TreeTypeId = table.Column<int>(type: "int", nullable: true)
+                    TreeId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.UserTreeID);
-                    table.ForeignKey(
-                        name: "FK_UserTree_TreeType_TreeTypeId",
-                        column: x => x.TreeTypeId,
-                        principalTable: "TreeType",
-                        principalColumn: "TreeTypeID");
                     table.ForeignKey(
                         name: "FK_UserTree_TreeXpConfig_LevelID",
                         column: x => x.LevelID,
                         principalTable: "TreeXpConfig",
                         principalColumn: "LevelID",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_UserTree_Tree_TreeId",
+                        column: x => x.TreeId,
+                        principalTable: "Tree",
+                        principalColumn: "TreeID");
                     table.ForeignKey(
                         name: "usertree_ibfk_1",
                         column: x => x.UserID,
@@ -516,8 +515,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "usertree_ibfk_2",
                         column: x => x.FinalTreeID,
-                        principalTable: "TreeType",
-                        principalColumn: "TreeTypeID",
+                        principalTable: "Tree",
+                        principalColumn: "TreeID",
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
@@ -951,9 +950,9 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "LevelID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserTree_TreeTypeId",
+                name: "IX_UserTree_TreeId",
                 table: "UserTree",
-                column: "TreeTypeId");
+                column: "TreeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserTree_UserID",
@@ -1055,10 +1054,10 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "ChallengeType");
 
             migrationBuilder.DropTable(
-                name: "TreeType");
+                name: "TreeXpConfig");
 
             migrationBuilder.DropTable(
-                name: "TreeXpConfig");
+                name: "Tree");
 
             migrationBuilder.DropTable(
                 name: "Users");

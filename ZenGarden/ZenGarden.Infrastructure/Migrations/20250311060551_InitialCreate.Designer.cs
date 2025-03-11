@@ -12,7 +12,7 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    [Migration("20250311050150_InitialCreate")]
+    [Migration("20250311060551_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -702,19 +702,14 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.ToTable("Transactions");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.Tree", b =>
                 {
-                    b.Property<int>("TreeTypeId")
+                    b.Property<int>("TreeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("TreeTypeID");
+                        .HasColumnName("TreeID");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TreeTypeId"));
-
-                    b.Property<decimal?>("BasePrice")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)")
-                        .HasColumnName("BasePrice");
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TreeId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -733,10 +728,10 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.HasKey("TreeTypeId")
+                    b.HasKey("TreeId")
                         .HasName("PRIMARY");
 
-                    b.ToTable("TreeType");
+                    b.ToTable("Tree");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.TreeXpConfig", b =>
@@ -980,13 +975,13 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<int?>("TreeId")
+                        .HasColumnType("int");
+
                     b.Property<int>("TreeStatus")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
-
-                    b.Property<int?>("TreeTypeId")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -1004,7 +999,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex("LevelId");
 
-                    b.HasIndex("TreeTypeId");
+                    b.HasIndex("TreeId");
 
                     b.HasIndex("UserId");
 
@@ -1481,7 +1476,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
                 {
-                    b.HasOne("ZenGarden.Domain.Entities.TreeType", "FinalTree")
+                    b.HasOne("ZenGarden.Domain.Entities.Tree", "FinalTree")
                         .WithMany()
                         .HasForeignKey("FinalTreeId")
                         .OnDelete(DeleteBehavior.SetNull)
@@ -1493,9 +1488,9 @@ namespace ZenGarden.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ZenGarden.Domain.Entities.TreeType", null)
+                    b.HasOne("ZenGarden.Domain.Entities.Tree", null)
                         .WithMany("UserTree")
-                        .HasForeignKey("TreeTypeId");
+                        .HasForeignKey("TreeId");
 
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
                         .WithMany("UserTree")
@@ -1611,7 +1606,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("TreeXpLog");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.TreeType", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.Tree", b =>
                 {
                     b.Navigation("UserTree");
                 });
