@@ -274,9 +274,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<bool?>("Limited")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
@@ -338,6 +335,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<string>("MediaUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<int>("Saled")
+                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()
