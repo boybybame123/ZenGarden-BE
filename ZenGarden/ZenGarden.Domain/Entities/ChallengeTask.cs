@@ -9,5 +9,5 @@ public class ChallengeTask
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual required Challenge Challenge { get; set; }
-    public virtual required Tasks Task { get; set; }
+    public virtual required Tasks Tasks { get; set; }
 }

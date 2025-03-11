@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Response;
 
-namespace ZenGarden.Core.Interfaces.IServices
+namespace ZenGarden.Core.Interfaces.IServices;
+
+public interface ITreeService
 {
-    public interface ITreeService
-    {
-        Task<List<TreeDto>> GetAllTreeAsync();
-    }
+    Task<IEnumerable<TreeResponse>> GetAllAsync();
+    Task<TreeResponse?> GetByIdAsync(int id);
+    Task AddAsync(TreeDto treeDto);
+    Task UpdateAsync(int id, TreeDto treeDto);
+    Task DeleteAsync(int id);
 }

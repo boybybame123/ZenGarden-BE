@@ -28,7 +28,7 @@ public partial class ItemDetail
 
     public int? Duration { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
 
-    public int Saled { get; set; } = 0; // Số lần bán 
+    public int Sold { get; set; } = 0; // Số lần bán 
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

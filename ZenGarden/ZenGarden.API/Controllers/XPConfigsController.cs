@@ -1,108 +1,88 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
-namespace ZenGarden.API.Controllers
+namespace ZenGarden.API.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class XPConfigsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class XPConfigsController : ControllerBase
+    private readonly ZenGardenContext _context;
+
+    public XPConfigsController(ZenGardenContext context)
     {
-        private readonly ZenGardenContext _context;
+        _context = context;
+    }
 
-        public XPConfigsController(ZenGardenContext context)
+    // GET: api/XPConfigs
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<XPConfig>>> GetXpConfigs()
+    {
+        return await _context.XpConfigs.ToListAsync();
+    }
+
+    // GET: api/XPConfigs/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<XPConfig>> GetXPConfig(int id)
+    {
+        var xPConfig = await _context.XpConfigs.FindAsync(id);
+
+        if (xPConfig == null) return NotFound();
+
+        return xPConfig;
+    }
+
+    // PUT: api/XPConfigs/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutXPConfig(int id, XPConfig xPConfig)
+    {
+        if (id != xPConfig.XPConfigId) return BadRequest();
+
+        _context.Entry(xPConfig).State = EntityState.Modified;
+
+        try
         {
-            _context = context;
-        }
-
-        // GET: api/XPConfigs
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<XPConfig>>> GetXpConfigs()
-        {
-            return await _context.XpConfigs.ToListAsync();
-        }
-
-        // GET: api/XPConfigs/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<XPConfig>> GetXPConfig(int id)
-        {
-            var xPConfig = await _context.XpConfigs.FindAsync(id);
-
-            if (xPConfig == null)
-            {
-                return NotFound();
-            }
-
-            return xPConfig;
-        }
-
-        // PUT: api/XPConfigs/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutXPConfig(int id, XPConfig xPConfig)
-        {
-            if (id != xPConfig.XPConfigId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(xPConfig).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!XPConfigExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/XPConfigs
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<XPConfig>> PostXPConfig(XPConfig xPConfig)
-        {
-            _context.XpConfigs.Add(xPConfig);
             await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetXPConfig", new { id = xPConfig.XPConfigId }, xPConfig);
         }
-
-        // DELETE: api/XPConfigs/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteXPConfig(int id)
+        catch (DbUpdateConcurrencyException)
         {
-            var xPConfig = await _context.XpConfigs.FindAsync(id);
-            if (xPConfig == null)
-            {
-                return NotFound();
-            }
+            if (!XPConfigExists(id)) return NotFound();
 
-            _context.XpConfigs.Remove(xPConfig);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            throw;
         }
 
-        private bool XPConfigExists(int id)
-        {
-            return _context.XpConfigs.Any(e => e.XPConfigId == id);
-        }
+        return NoContent();
+    }
+
+    // POST: api/XPConfigs
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPost]
+    public async Task<ActionResult<XPConfig>> PostXPConfig(XPConfig xPConfig)
+    {
+        _context.XpConfigs.Add(xPConfig);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetXPConfig", new { id = xPConfig.XPConfigId }, xPConfig);
+    }
+
+    // DELETE: api/XPConfigs/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteXPConfig(int id)
+    {
+        var xPConfig = await _context.XpConfigs.FindAsync(id);
+        if (xPConfig == null) return NotFound();
+
+        _context.XpConfigs.Remove(xPConfig);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private bool XPConfigExists(int id)
+    {
+        return _context.XpConfigs.Any(e => e.XPConfigId == id);
     }
 }

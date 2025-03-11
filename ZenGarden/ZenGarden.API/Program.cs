@@ -40,7 +40,7 @@ builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
 builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
 builder.Services.AddScoped<ITreeLevelConfigRepository, TreeLevelConfigRepository>();
 builder.Services.AddScoped<ITaskTypeRepository, TaskTypeRepository>();
-builder.Services.AddScoped<IBagService,BagService>();
+builder.Services.AddScoped<IBagService, BagService>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IPackagesService, PackagesService>();

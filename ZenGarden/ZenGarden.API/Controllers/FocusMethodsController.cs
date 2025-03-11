@@ -1,108 +1,88 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
-namespace ZenGarden.API.Controllers
+namespace ZenGarden.API.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class FocusMethodsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class FocusMethodsController : ControllerBase
+    private readonly ZenGardenContext _context;
+
+    public FocusMethodsController(ZenGardenContext context)
     {
-        private readonly ZenGardenContext _context;
+        _context = context;
+    }
 
-        public FocusMethodsController(ZenGardenContext context)
+    // GET: api/FocusMethods
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<FocusMethod>>> GetFocusMethod()
+    {
+        return await _context.FocusMethod.ToListAsync();
+    }
+
+    // GET: api/FocusMethods/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<FocusMethod>> GetFocusMethod(int id)
+    {
+        var focusMethod = await _context.FocusMethod.FindAsync(id);
+
+        if (focusMethod == null) return NotFound();
+
+        return focusMethod;
+    }
+
+    // PUT: api/FocusMethods/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutFocusMethod(int id, FocusMethod focusMethod)
+    {
+        if (id != focusMethod.FocusMethodId) return BadRequest();
+
+        _context.Entry(focusMethod).State = EntityState.Modified;
+
+        try
         {
-            _context = context;
-        }
-
-        // GET: api/FocusMethods
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<FocusMethod>>> GetFocusMethod()
-        {
-            return await _context.FocusMethod.ToListAsync();
-        }
-
-        // GET: api/FocusMethods/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<FocusMethod>> GetFocusMethod(int id)
-        {
-            var focusMethod = await _context.FocusMethod.FindAsync(id);
-
-            if (focusMethod == null)
-            {
-                return NotFound();
-            }
-
-            return focusMethod;
-        }
-
-        // PUT: api/FocusMethods/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutFocusMethod(int id, FocusMethod focusMethod)
-        {
-            if (id != focusMethod.FocusMethodId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(focusMethod).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!FocusMethodExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/FocusMethods
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<FocusMethod>> PostFocusMethod(FocusMethod focusMethod)
-        {
-            _context.FocusMethod.Add(focusMethod);
             await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetFocusMethod", new { id = focusMethod.FocusMethodId }, focusMethod);
         }
-
-        // DELETE: api/FocusMethods/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteFocusMethod(int id)
+        catch (DbUpdateConcurrencyException)
         {
-            var focusMethod = await _context.FocusMethod.FindAsync(id);
-            if (focusMethod == null)
-            {
-                return NotFound();
-            }
+            if (!FocusMethodExists(id)) return NotFound();
 
-            _context.FocusMethod.Remove(focusMethod);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            throw;
         }
 
-        private bool FocusMethodExists(int id)
-        {
-            return _context.FocusMethod.Any(e => e.FocusMethodId == id);
-        }
+        return NoContent();
+    }
+
+    // POST: api/FocusMethods
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPost]
+    public async Task<ActionResult<FocusMethod>> PostFocusMethod(FocusMethod focusMethod)
+    {
+        _context.FocusMethod.Add(focusMethod);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetFocusMethod", new { id = focusMethod.FocusMethodId }, focusMethod);
+    }
+
+    // DELETE: api/FocusMethods/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteFocusMethod(int id)
+    {
+        var focusMethod = await _context.FocusMethod.FindAsync(id);
+        if (focusMethod == null) return NotFound();
+
+        _context.FocusMethod.Remove(focusMethod);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private bool FocusMethodExists(int id)
+    {
+        return _context.FocusMethod.Any(e => e.FocusMethodId == id);
     }
 }

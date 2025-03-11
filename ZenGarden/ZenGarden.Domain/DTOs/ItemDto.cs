@@ -7,11 +7,11 @@ public class ItemDto
 {
     public int ItemId { get; set; }
 
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
-    public string Rarity { get; set; }
+    public string? Rarity { get; set; }
 
     public decimal? Cost { get; set; }
 
@@ -23,8 +23,7 @@ public class ItemDto
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
 
-
-    public virtual ItemDetail ItemDetail { get; set; }
+    public virtual required ItemDetail ItemDetail { get; set; }
 
     public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
 }

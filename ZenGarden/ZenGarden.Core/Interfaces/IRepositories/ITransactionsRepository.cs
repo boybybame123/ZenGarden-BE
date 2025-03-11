@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZenGarden.Domain.Entities;
+﻿using ZenGarden.Domain.Entities;
 
-namespace ZenGarden.Core.Interfaces.IRepositories
+namespace ZenGarden.Core.Interfaces.IRepositories;
+
+public interface ITransactionsRepository : IGenericRepository<Transactions>
 {
-    public interface ITransactionsRepository : IGenericRepository<Transactions>
-    {
-        Task<Transactions?> FindByRefAsync(string transactionRef);
-    }
+    Task<Transactions?> FindByRefAsync(string transactionRef);
 }
