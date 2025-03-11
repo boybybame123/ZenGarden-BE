@@ -21,11 +21,11 @@ public partial class UserTree
     public TreeRarity? FinalTreeRarity { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public virtual TreeType? FinalTree { get; set; }
+    public virtual Tree? FinalTree { get; set; }
     public virtual required TreeXpConfig TreeXpConfig { get; set; }
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeA { get; set; } = new List<TradeHistory>();
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeB { get; set; } = new List<TradeHistory>();
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
-    public virtual ICollection<TreeXpLog> TreeXpLog { get; set; } = new List<TreeXpLog>();
+
     public virtual required Users User { get; set; }
 }

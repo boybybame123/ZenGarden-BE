@@ -10,7 +10,7 @@ namespace ZenGarden.Core.Services;
 public class TaskService(
     ITaskRepository taskRepository,
     IFocusMethodRepository focusMethodRepository,
-    ITaskFocusRepository taskFocusRepository,
+    
     IUnitOfWork unitOfWork,
     IUserTreeRepository userTreeRepository,
     ITreeXpLogRepository treeXpLogRepository,
@@ -45,32 +45,32 @@ public class TaskService(
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId)
                        ?? throw new InvalidOperationException("Invalid Task Type selected.");
 
-        var task = new Tasks
-        {
-            UserId = dto.UserId,
-            Status = TasksStatus.NotStarted,
-            Duration = dto.Duration,
-            BaseXp = dto.BaseXp,
-            TaskName = dto.TaskName,
-            TaskDescription = dto.TaskDescription,
-            TaskTypeId = taskType.TaskTypeId
-        };
+        //var task = new Tasks
+        //{
+        //    UserId = dto.UserId,
+        //    Status = TasksStatus.NotStarted,
+        //    Duration = dto.Duration,
+        //    BaseXp = dto.BaseXp,
+        //    TaskName = dto.TaskName,
+        //    TaskDescription = dto.TaskDescription,
+        //    TaskTypeId = taskType.TaskTypeId
+        //};
 
-        await taskRepository.CreateAsync(task);
+        //await taskRepository.CreateAsync(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to create task.");
 
-        var taskFocusConfig = new TaskFocusConfig
-        {
-            TaskId = task.TaskId,
-            FocusMethodId = selectedFocusMethod.FocusMethodId,
-            Duration = dto.Duration,
-            BreakTime = dto.BreakTime,
-            IsSuggested = dto.IsSuggested
-        };
-        await taskFocusRepository.CreateAsync(taskFocusConfig);
+        //var taskFocusConfig = new TaskFocusConfig
+        //{
+        //    TaskId = task.TaskId,
+        //    FocusMethodId = selectedFocusMethod.FocusMethodId,
+        //    Duration = dto.Duration,
+        //    BreakTime = dto.BreakTime,
+        //    IsSuggested = dto.IsSuggested
+        //};
+        //await taskFocusRepository.CreateAsync(taskFocusConfig);
         await unitOfWork.CommitAsync();
-        return task;
+        return null ;
     }
 
 
@@ -109,13 +109,13 @@ public class TaskService(
         var task = await taskRepository.GetByIdAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        if (!task.UserId.HasValue)
-            throw new InvalidOperationException("Task must be associated with a valid user.");
+        //if (!task.UserId.HasValue)
+        //    throw new InvalidOperationException("Task must be associated with a valid user.");
 
-        var existingTaskInProgress = await taskRepository.GetUserTaskInProgressAsync(task.UserId.Value);
+        //var existingTaskInProgress = await taskRepository.GetUserTaskInProgressAsync(task.UserId.Value);
 
-        if (existingTaskInProgress != null)
-            throw new InvalidOperationException("You must complete your current task before starting a new one.");
+        //if (existingTaskInProgress != null)
+        //    throw new InvalidOperationException("You must complete your current task before starting a new one.");
 
         task.Status = TasksStatus.InProgress;
         taskRepository.Update(task);
@@ -141,23 +141,23 @@ public class TaskService(
             var userTree = await userTreeRepository.GetByIdAsync(task.UserTreeId.Value);
             if (userTree != null)
             {
-                var xpGained = task.TaskTypeId switch
-                {
-                    1 => (int)(task.BaseXp * 1.2),
-                    2 => (int)(task.BaseXp * 0.8),
-                    _ => task.BaseXp
-                };
-                userTree.TotalXp += xpGained;
+                //var xpGained = task.TaskTypeId switch
+                //{
+                //    1 => (int)(task.BaseXp * 1.2),
+                //    2 => (int)(task.BaseXp * 0.8),
+                //    _ => task.BaseXp
+                //};
+                //userTree.TotalXp += xpGained;
 
-                await treeXpLogRepository.CreateAsync(new TreeXpLog
-                {
-                    UserTreeId = userTree.UserTreeId,
-                    TaskId = task.TaskId,
-                    ActivityType = ActivityType.TaskXp,
-                    XpAmount = xpGained,
-                    UserTree = userTree,
-                    Tasks = task
-                });
+                //await treeXpLogRepository.CreateAsync(new TreeXpLog
+                //{
+                //    UserTreeId = userTree.UserTreeId,
+                //    TaskId = task.TaskId,
+                //    ActivityType = ActivityType.TaskXp,
+                //    XpAmount = xpGained,
+                //    UserTree = userTree,
+                //    Tasks = task
+                //});
 
                 var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.LevelId + 1);
                 if (nextLevel != null && userTree.TotalXp >= nextLevel.XpThreshold)

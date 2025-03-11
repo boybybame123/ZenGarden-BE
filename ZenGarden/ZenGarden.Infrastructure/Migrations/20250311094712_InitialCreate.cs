@@ -41,7 +41,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Description = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     DefaultDuration = table.Column<int>(type: "int", nullable: true),
                     DefaultBreak = table.Column<int>(type: "int", nullable: true),
@@ -51,7 +51,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     MaxBreak = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -73,9 +73,10 @@ namespace ZenGarden.Infrastructure.Migrations
                     Rarity = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Cost = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
-                    Limited = table.Column<bool>(type: "tinyint(1)", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.ComputedColumn)
                 },
                 constraints: table =>
                 {
@@ -142,21 +143,20 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
-                name: "TreeType",
+                name: "Tree",
                 columns: table => new
                 {
-                    TreeTypeID = table.Column<int>(type: "int", nullable: false)
+                    TreeID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Rarity = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    BasePrice = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PRIMARY", x => x.TreeTypeID);
+                    table.PrimaryKey("PRIMARY", x => x.TreeID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -196,30 +196,52 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
+                name: "Challenge",
+                columns: table => new
+                {
+                    ChallengeID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    ChallengeTypeID = table.Column<int>(type: "int", nullable: false),
+                    ChallengeName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ChallengeDescription = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    XpReward = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PRIMARY", x => x.ChallengeID);
+                    table.ForeignKey(
+                        name: "challenge_ibfk_1",
+                        column: x => x.ChallengeTypeID,
+                        principalTable: "ChallengeType",
+                        principalColumn: "ChallengeTypeID",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateTable(
                 name: "ItemDetail",
                 columns: table => new
                 {
                     ItemDetailID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ItemID = table.Column<int>(type: "int", nullable: true),
-                    Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    ItemID = table.Column<int>(type: "int", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    ImageUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Type = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Stats = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    MediaUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Requirements = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Effect = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    SpecialEffects = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Duration = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    DurationType = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Duration = table.Column<int>(type: "int", nullable: true),
-                    Cooldown = table.Column<int>(type: "int", nullable: true),
-                    MaxStack = table.Column<int>(type: "int", nullable: true),
-                    Tags = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Saled = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
@@ -274,6 +296,39 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
+                name: "XpConfigs",
+                columns: table => new
+                {
+                    XPConfigID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    FocusMethodID = table.Column<int>(type: "int", nullable: false),
+                    TaskTypeID = table.Column<int>(type: "int", nullable: false),
+                    BaseXP = table.Column<double>(type: "double", nullable: false),
+                    Multiplier = table.Column<double>(type: "double", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.ComputedColumn)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PRIMARY", x => x.XPConfigID);
+                    table.ForeignKey(
+                        name: "FK_XpConfigs_FocusMethod_FocusMethodID",
+                        column: x => x.FocusMethodID,
+                        principalTable: "FocusMethod",
+                        principalColumn: "FocusMethodID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_XpConfigs_TaskType_TaskTypeID",
+                        column: x => x.TaskTypeID,
+                        principalTable: "TaskType",
+                        principalColumn: "TaskTypeID",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateTable(
                 name: "Bag",
                 columns: table => new
                 {
@@ -292,41 +347,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
-
-            migrationBuilder.CreateTable(
-                name: "Challenge",
-                columns: table => new
-                {
-                    ChallengeID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    ChallengeTypeID = table.Column<int>(type: "int", nullable: false),
-                    ChallengeName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    ChallengeDescription = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    XpReward = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PRIMARY", x => x.ChallengeID);
-                    table.ForeignKey(
-                        name: "FK_Challenge_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "challenge_ibfk_1",
-                        column: x => x.ChallengeTypeID,
-                        principalTable: "ChallengeType",
-                        principalColumn: "ChallengeTypeID",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
@@ -358,6 +378,39 @@ namespace ZenGarden.Infrastructure.Migrations
                         column: x => x.ItemID,
                         principalTable: "Item",
                         principalColumn: "ItemID");
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+
+            migrationBuilder.CreateTable(
+                name: "UserChallenges",
+                columns: table => new
+                {
+                    UserChallengeID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    ChallengeID = table.Column<int>(type: "int", nullable: false),
+                    UserID = table.Column<int>(type: "int", nullable: false),
+                    Progress = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    JoinedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PRIMARY", x => x.UserChallengeID);
+                    table.ForeignKey(
+                        name: "FK_UserChallenges_Challenge_ChallengeID",
+                        column: x => x.ChallengeID,
+                        principalTable: "Challenge",
+                        principalColumn: "ChallengeID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserChallenges_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -437,22 +490,22 @@ namespace ZenGarden.Infrastructure.Migrations
                     FinalTreeRarity = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-                    TreeTypeId = table.Column<int>(type: "int", nullable: true)
+                    TreeId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.UserTreeID);
-                    table.ForeignKey(
-                        name: "FK_UserTree_TreeType_TreeTypeId",
-                        column: x => x.TreeTypeId,
-                        principalTable: "TreeType",
-                        principalColumn: "TreeTypeID");
                     table.ForeignKey(
                         name: "FK_UserTree_TreeXpConfig_LevelID",
                         column: x => x.LevelID,
                         principalTable: "TreeXpConfig",
                         principalColumn: "LevelID",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_UserTree_Tree_TreeId",
+                        column: x => x.TreeId,
+                        principalTable: "Tree",
+                        principalColumn: "TreeID");
                     table.ForeignKey(
                         name: "usertree_ibfk_1",
                         column: x => x.UserID,
@@ -462,8 +515,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "usertree_ibfk_2",
                         column: x => x.FinalTreeID,
-                        principalTable: "TreeType",
-                        principalColumn: "TreeTypeID",
+                        principalTable: "Tree",
+                        principalColumn: "TreeID",
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
@@ -552,62 +605,36 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
-                name: "UserChallenges",
-                columns: table => new
-                {
-                    UserChallengeID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ChallengeID = table.Column<int>(type: "int", nullable: false),
-                    UserID = table.Column<int>(type: "int", nullable: false),
-                    Progress = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    JoinedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PRIMARY", x => x.UserChallengeID);
-                    table.ForeignKey(
-                        name: "FK_UserChallenges_Challenge_ChallengeID",
-                        column: x => x.ChallengeID,
-                        principalTable: "Challenge",
-                        principalColumn: "ChallengeID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserChallenges_Users_UserID",
-                        column: x => x.UserID,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
-
-            migrationBuilder.CreateTable(
                 name: "Tasks",
                 columns: table => new
                 {
                     TaskID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    UserID = table.Column<int>(type: "int", nullable: true),
                     TaskTypeID = table.Column<int>(type: "int", nullable: false),
                     UserTreeID = table.Column<int>(type: "int", nullable: true),
-                    TaskFocusConfigId = table.Column<int>(type: "int", nullable: false),
-                    TaskName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    FocusMethodID = table.Column<int>(type: "int", nullable: true),
+                    TaskName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     TaskDescription = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Duration = table.Column<int>(type: "int", nullable: true),
-                    BaseXP = table.Column<int>(type: "int", nullable: false, defaultValue: 50),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-                    Status = table.Column<int>(type: "int", nullable: false)
+                    StartedAt = table.Column<DateTime>(type: "timestamp", nullable: true),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    BreakTime = table.Column<int>(type: "int", nullable: false, defaultValue: 5),
+                    IsSuggested = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.TaskID);
+                    table.ForeignKey(
+                        name: "FK_Tasks_FocusMethod_FocusMethodID",
+                        column: x => x.FocusMethodID,
+                        principalTable: "FocusMethod",
+                        principalColumn: "FocusMethodID",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Tasks_TaskType_TaskTypeID",
                         column: x => x.TaskTypeID,
@@ -615,15 +642,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "TaskTypeID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "tasks_ibfk_1",
-                        column: x => x.UserID,
-                        principalTable: "Users",
-                        principalColumn: "UserId");
-                    table.ForeignKey(
-                        name: "tasks_ibfk_usertree",
+                        name: "FK_Tasks_UserTree_UserTreeID",
                         column: x => x.UserTreeID,
                         principalTable: "UserTree",
-                        principalColumn: "UserTreeID");
+                        principalColumn: "UserTreeID",
+                        onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -689,9 +712,9 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     TransactionRef = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    TransactionTime = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -747,45 +770,11 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
 
             migrationBuilder.CreateTable(
-                name: "TaskFocusConfigs",
-                columns: table => new
-                {
-                    TaskFocusSettingID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TaskID = table.Column<int>(type: "int", nullable: false),
-                    FocusMethodID = table.Column<int>(type: "int", nullable: false),
-                    Duration = table.Column<int>(type: "int", nullable: false),
-                    BreakTime = table.Column<int>(type: "int", nullable: false),
-                    IsSuggested = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PRIMARY", x => x.TaskFocusSettingID);
-                    table.ForeignKey(
-                        name: "FK_TaskFocusConfigs_FocusMethod_FocusMethodID",
-                        column: x => x.FocusMethodID,
-                        principalTable: "FocusMethod",
-                        principalColumn: "FocusMethodID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_TaskFocusConfigs_Tasks_TaskID",
-                        column: x => x.TaskID,
-                        principalTable: "Tasks",
-                        principalColumn: "TaskID",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
-
-            migrationBuilder.CreateTable(
                 name: "TreeXpLog",
                 columns: table => new
                 {
                     LogID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    UserTreeID = table.Column<int>(type: "int", nullable: false),
                     TaskID = table.Column<int>(type: "int", nullable: true),
                     ActivityType = table.Column<int>(type: "int", nullable: false),
                     XpAmount = table.Column<int>(type: "int", nullable: false),
@@ -801,12 +790,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalTable: "Tasks",
                         principalColumn: "TaskID",
                         onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_TreeXpLog_UserTree_UserTreeID",
-                        column: x => x.UserTreeID,
-                        principalTable: "UserTree",
-                        principalColumn: "UserTreeID",
-                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
@@ -831,11 +814,6 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "IX_Challenge_ChallengeTypeID",
                 table: "Challenge",
                 column: "ChallengeTypeID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Challenge_UserId",
-                table: "Challenge",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChallengeTask_ChallengeID",
@@ -869,30 +847,19 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TaskFocusConfigs_FocusMethodID",
-                table: "TaskFocusConfigs",
+                name: "IX_Tasks_FocusMethodID",
+                table: "Tasks",
                 column: "FocusMethodID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TaskFocusConfigs_TaskID",
-                table: "TaskFocusConfigs",
-                column: "TaskID",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "idx_tasks_user",
-                table: "Tasks",
-                column: "UserID");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_tasks_usertree",
-                table: "Tasks",
-                column: "UserTreeID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tasks_TaskTypeID",
                 table: "Tasks",
                 column: "TaskTypeID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tasks_UserTreeID",
+                table: "Tasks",
+                column: "UserTreeID");
 
             migrationBuilder.CreateIndex(
                 name: "idx_tradehistory_user",
@@ -933,11 +900,6 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "IX_TreeXpLog_TaskID",
                 table: "TreeXpLog",
                 column: "TaskID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TreeXpLog_UserTreeID",
-                table: "TreeXpLog",
-                column: "UserTreeID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserChallenges_ChallengeID",
@@ -988,9 +950,9 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "LevelID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserTree_TreeTypeId",
+                name: "IX_UserTree_TreeId",
                 table: "UserTree",
-                column: "TreeTypeId");
+                column: "TreeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserTree_UserID",
@@ -1007,6 +969,16 @@ namespace ZenGarden.Infrastructure.Migrations
                 table: "Wallet",
                 column: "UserID",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_XpConfigs_FocusMethodID",
+                table: "XpConfigs",
+                column: "FocusMethodID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_XpConfigs_TaskTypeID",
+                table: "XpConfigs",
+                column: "TaskTypeID");
         }
 
         /// <inheritdoc />
@@ -1023,9 +995,6 @@ namespace ZenGarden.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "PurchaseHistory");
-
-            migrationBuilder.DropTable(
-                name: "TaskFocusConfigs");
 
             migrationBuilder.DropTable(
                 name: "TradeHistory");
@@ -1049,13 +1018,13 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "UserXpLog");
 
             migrationBuilder.DropTable(
+                name: "XpConfigs");
+
+            migrationBuilder.DropTable(
                 name: "Bag");
 
             migrationBuilder.DropTable(
                 name: "Item");
-
-            migrationBuilder.DropTable(
-                name: "FocusMethod");
 
             migrationBuilder.DropTable(
                 name: "Wallet");
@@ -1073,6 +1042,9 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "UserXpConfig");
 
             migrationBuilder.DropTable(
+                name: "FocusMethod");
+
+            migrationBuilder.DropTable(
                 name: "TaskType");
 
             migrationBuilder.DropTable(
@@ -1082,10 +1054,10 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "ChallengeType");
 
             migrationBuilder.DropTable(
-                name: "TreeType");
+                name: "TreeXpConfig");
 
             migrationBuilder.DropTable(
-                name: "TreeXpConfig");
+                name: "Tree");
 
             migrationBuilder.DropTable(
                 name: "Users");

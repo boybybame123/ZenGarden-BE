@@ -12,20 +12,21 @@ public partial class Tasks
 {
     
     public int TaskId { get; set; }
-    public int? UserId { get; set; }
     public int TaskTypeId { get; set; }  
     public int? UserTreeId { get; set; }
-    public int TaskFocusConfigId { get; set; }
+    public int? FocusMethodId { get; set; }
     public string TaskName { get; set; }
     public string TaskDescription { get; set; }
     public int? Duration { get; set; }
-    public int BaseXp { get; set; } = 50;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public TasksStatus Status { get; set; }
-    public virtual Users User { get; set; }
-    public virtual TaskFocusConfig TaskFocusConfig { get; set; }
+    public int BreakTime { get; set; }
+    public bool IsSuggested { get; set; } = true;
+
+    public virtual FocusMethod FocusMethod { get; set; }
     public virtual TaskType TaskType { get; set; }
     public virtual UserTree UserTree { get; set; }
     public virtual ICollection<TreeXpLog> TreeXpLog { get; set; }

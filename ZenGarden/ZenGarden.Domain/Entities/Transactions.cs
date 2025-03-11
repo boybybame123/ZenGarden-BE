@@ -17,9 +17,10 @@ public partial class Transactions
     public TransactionStatus Status { get; set; }
     public string PaymentMethod { get; set; } = "";
     public string TransactionRef { get; set; } = "";
+    public DateTime TransactionTime { get; set; } = DateTime.UtcNow;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? CompletedAt { get; set; }
+    
     public virtual Users User { get; set; }
     public virtual Wallet Wallet { get; set; }
     public virtual Packages Package { get; set; } 
