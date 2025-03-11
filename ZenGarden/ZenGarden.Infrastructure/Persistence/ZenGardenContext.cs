@@ -27,12 +27,12 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<Packages> Packages { get; set; }
     public virtual DbSet<PurchaseHistory> PurchaseHistory { get; set; }
     public virtual DbSet<Roles> Roles { get; set; }
-    public virtual DbSet<TaskFocusConfig> TaskFocusConfigs { get; set; }
+    public virtual DbSet<XPConfig> XpConfigs { get; set; }
     public virtual DbSet<Tasks> Tasks { get; set; }
     public virtual DbSet<TaskType> TaskType { get; set; }
     public virtual DbSet<TradeHistory> TradeHistory { get; set; }
     public virtual DbSet<Transactions> Transactions { get; set; }
-    public virtual DbSet<TreeType> TreeType { get; set; }
+    public virtual DbSet<Tree> Tree { get; set; }
     public virtual DbSet<TreeXpConfig> TreeXpConfig { get; set; }
     public virtual DbSet<TreeXpLog> TreeXpLog { get; set; }
     public virtual DbSet<UserChallenge> UserChallenges { get; set; }
@@ -52,16 +52,17 @@ public class ZenGardenContext : DbContext
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         }
     }
-    
+
     private static string GetConnectionString()
     {
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.Development.json", true, true)
+            .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../ZenGarden.API"))
+            .AddJsonFile($"appsettings.{environment}.json", optional: false, reloadOnChange: true)
             .Build();
 
-        return configuration.GetConnectionString("ZenGardenDB") ??
-               "server=localhost;database=zengarden;uid=root;pwd=10112003";
+        return configuration.GetConnectionString("ZenGardenDB") ?? throw new InvalidOperationException("Connection string 'ZenGardenDB' not found.");
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -83,6 +84,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
+                
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(e => e.UpdatedAt)
@@ -122,12 +124,20 @@ public class ZenGardenContext : DbContext
         modelBuilder.Entity<FocusMethod>(entity =>
         {
             entity.HasKey(e => e.FocusMethodId).HasName("PRIMARY");
-
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasColumnType("text");
             entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Name).HasMaxLength(100);
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.HasMany(d => d.Tasks)
+                .WithOne(t => t.FocusMethod)
+                .HasForeignKey(t => t.FocusMethodId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Challenge>(entity =>
@@ -155,6 +165,7 @@ public class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.ChallengeTypeId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("challenge_ibfk_1");
+            
         });
 
         modelBuilder.Entity<ChallengeTask>(entity =>
@@ -219,11 +230,12 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Cost).HasPrecision(10, 2);
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                .ValueGeneratedOnAddOrUpdate();
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
             entity.Property(e => e.Type).HasMaxLength(50);
@@ -325,46 +337,72 @@ public class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
 
-            entity.HasIndex(e => e.UserId, "idx_tasks_user");
-            entity.HasIndex(e => e.UserTreeId, "idx_tasks_usertree");
+            entity.Property(e => e.TaskId)
+                .HasColumnName("TaskID")
+                .ValueGeneratedOnAdd();
 
-            entity.Property(e => e.TaskId).HasColumnName("TaskID");
-            entity.Property(e => e.UserTreeId).HasColumnName("UserTreeID");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.TaskTypeId).HasColumnName("TaskTypeID");
+            entity.Property(e => e.TaskTypeId)
+                .HasColumnName("TaskTypeID");
 
-            entity.Property(e => e.BaseXp)
-                .HasColumnType("int")
-                .HasDefaultValue(50)
-                .HasColumnName("BaseXP");
+            entity.Property(e => e.UserTreeId)
+                .HasColumnName("UserTreeID");
 
-            entity.Property(e => e.CompletedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.Property(e => e.FocusMethodId)
+                .HasColumnName("FocusMethodID");
+
+            entity.Property(e => e.TaskName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.TaskDescription)
+                .HasColumnType("text");
+
+            entity.Property(e => e.Duration)
+                .HasColumnName("Duration");
+
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.TaskDescription).HasColumnType("text");
-            entity.Property(e => e.TaskName).HasMaxLength(255);
+            entity.Property(e => e.StartedAt)
+                .HasColumnType("timestamp");
+
+            entity.Property(e => e.CompletedAt)
+                .HasColumnType("timestamp");
+
             entity.Property(e => e.Status)
                 .HasConversion<int>()
-                .HasColumnName("Status")
                 .IsRequired();
 
-            entity.HasOne(d => d.User)
+            entity.Property(e => e.BreakTime)
+                .HasDefaultValue(5)
+                .IsRequired();
+
+            entity.Property(e => e.IsSuggested)
+                .HasDefaultValue(true)
+                .IsRequired();
+
+            entity.HasOne(d => d.FocusMethod)
                 .WithMany(p => p.Tasks)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("tasks_ibfk_1");
+                .HasForeignKey(d => d.FocusMethodId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.TaskType)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(d => d.TaskTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.UserTree)
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.UserTreeId)
-                .HasConstraintName("tasks_ibfk_usertree");
+                .OnDelete(DeleteBehavior.SetNull);
         });
+
+
 
         modelBuilder.Entity<TaskType>(entity =>
         {
@@ -389,6 +427,10 @@ public class ZenGardenContext : DbContext
             entity.HasMany(e => e.Tasks)
                 .WithOne(t => t.TaskType)
                 .HasForeignKey(t => t.TaskTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.XPConfigs)
+                .WithOne(x => x.TaskType)
+                .HasForeignKey(x => x.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -467,7 +509,7 @@ public class ZenGardenContext : DbContext
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.CompletedAt)
+            entity.Property(e => e.TransactionTime)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
@@ -495,12 +537,12 @@ public class ZenGardenContext : DbContext
                 .HasConstraintName("transactions_ibfk_3");
         });
 
-        modelBuilder.Entity<TreeType>(entity =>
+        modelBuilder.Entity<Tree>(entity =>
         {
-            entity.HasKey(e => e.TreeTypeId).HasName("PRIMARY");
+            entity.HasKey(e => e.TreeId).HasName("PRIMARY");
 
-            entity.Property(e => e.TreeTypeId)
-                .HasColumnName("TreeTypeID");
+            entity.Property(e => e.TreeId)
+                .HasColumnName("TreeID");
 
             entity.Property(e => e.Name)
                 .HasColumnName("Name")
@@ -510,9 +552,6 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("Rarity")
                 .HasConversion<int>();
 
-            entity.Property(e => e.BasePrice)
-                .HasPrecision(10, 2)
-                .HasColumnName("BasePrice");
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
@@ -547,8 +586,6 @@ public class ZenGardenContext : DbContext
                 .ValueGeneratedOnAdd()
                 .HasColumnName("LogID");
 
-            entity.Property(e => e.UserTreeId)
-                .HasColumnName("UserTreeID");
 
             entity.Property(e => e.TaskId)
                 .HasColumnName("TaskID")
@@ -570,10 +607,6 @@ public class ZenGardenContext : DbContext
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.HasOne(t => t.UserTree)
-                .WithMany(u => u.TreeXpLog)
-                .HasForeignKey(t => t.UserTreeId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(t => t.Tasks)
                 .WithMany(task => task.TreeXpLog)
@@ -882,34 +915,48 @@ public class ZenGardenContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<TaskFocusConfig>(entity =>
+        modelBuilder.Entity<XPConfig>(entity =>
         {
-            entity.HasKey(e => e.TaskFocusSettingId).HasName("PRIMARY");
+            entity.HasKey(e => e.XPConfigId).HasName("PRIMARY");
 
-            entity.Property(e => e.TaskFocusSettingId).HasColumnName("TaskFocusSettingID").ValueGeneratedOnAdd();
+            entity.Property(e => e.XPConfigId)
+                .HasColumnName("XPConfigID")
+                .ValueGeneratedOnAdd();
 
-            entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.FocusMethodId)
+                .HasColumnName("FocusMethodID");
 
-            entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
+            entity.Property(e => e.TaskTypeId)
+                .HasColumnName("TaskTypeID");
+
+            entity.Property(e => e.BaseXP)
+                .HasColumnType("double");
+
+            entity.Property(e => e.Multiplier)
+                .HasColumnType("double");
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
+                .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
-            entity.HasOne(d => d.Tasks)
-                .WithOne(p => p.TaskFocusConfig)
-                .HasForeignKey<TaskFocusConfig>(d => d.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
-
+                
             entity.HasOne(d => d.FocusMethod)
-                .WithMany(p => p.TaskFocusConfigs)
+                .WithMany(p => p.XPConfigs)
                 .HasForeignKey(d => d.FocusMethodId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.TaskType)
+                .WithMany(p => p.XPConfigs)
+                .HasForeignKey(d => d.TaskTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
+
+
         base.OnModelCreating(modelBuilder);
     }
 }

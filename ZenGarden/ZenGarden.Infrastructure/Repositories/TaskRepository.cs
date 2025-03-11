@@ -10,10 +10,10 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
 {
     private readonly ZenGardenContext _context = context;
 
-    public async Task<Tasks?> GetUserTaskInProgressAsync(int userId)
-    {
-        return await _context.Tasks
-            .Where(t => t.UserId == userId && t.Status == TasksStatus.InProgress)
-            .FirstOrDefaultAsync();
-    }
+    //public async Task<Tasks?> GetUserTaskInProgressAsync(int userId)
+    //{
+    //    return await _context.Tasks
+    //        .Where(t => t.UserId == userId && t.Status == TasksStatus.InProgress)
+    //        .FirstOrDefaultAsync();
+    //}
 }
