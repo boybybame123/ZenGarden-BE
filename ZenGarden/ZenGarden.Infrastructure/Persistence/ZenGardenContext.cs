@@ -239,6 +239,7 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
             entity.Property(e => e.Type).HasMaxLength(50);
+
             entity.Property(e => e.Status)
                 .HasConversion<int>()
                 .IsRequired();
@@ -264,7 +265,7 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
+            entity.Property(e => e.Saled).HasColumnType("int");
             entity.HasOne(d => d.Item)
                 .WithOne(p => p.ItemDetail)
                 .HasForeignKey<ItemDetail>(d => d.ItemId)

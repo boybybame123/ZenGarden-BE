@@ -18,7 +18,7 @@ public partial class Item
 
     public decimal? Cost { get; set; }
 
-    public bool? Limited { get; set; }
+    
 
     public ItemStatus Status { get; set; }
 
