@@ -33,7 +33,8 @@ builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>(
 builder.Services.AddScoped<IUserXpConfigRepository, UserXpConfigRepository>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
-
+builder.Services.AddScoped<ITreeRepository, TreeRepository>();
+builder.Services.AddScoped<ITreeService, TreeService>();
 builder.Services.AddScoped<IItemDetailRepository, ItemDetailRepository>();
 builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
 builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
