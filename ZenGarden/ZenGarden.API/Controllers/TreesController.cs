@@ -1,29 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Core.Services;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/trees")]
 public class TreesController(ITreeService treeService) : ControllerBase
 {
-    private readonly ITreeService _treeService = treeService ?? throw new ArgumentNullException(nameof(treeService));
-
     [HttpGet]
-    public async Task<IActionResult> GetItems()
+    public async Task<IActionResult> GetAll()
     {
-        var items = await _treeService.GetAllTreeAsync();
-        return Ok(items);
+        var trees = await treeService.GetAllAsync();
+        return Ok(trees);
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var tree = await treeService.GetByIdAsync(id);
+        return Ok(tree);
+    }
 
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] TreeDto treeDto)
+    {
+        await treeService.AddAsync(treeDto);
+        return Ok(new { message = "Tree created successfully" });
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] TreeDto treeDto)
+    {
+        await treeService.UpdateAsync(id, treeDto);
+        return Ok(new { message = "Tree updated successfully" });
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await treeService.DeleteAsync(id);
+        return Ok(new { message = "Tree deleted successfully" });
+    }
 }

@@ -718,12 +718,15 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("Name");
 
-                    b.Property<int?>("Rarity")
-                        .HasColumnType("int")
+                    b.Property<string>("Rarity")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("Rarity");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
+                        .ValueGeneratedOnUpdate()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
                     b.HasKey("TreeId")
                         .HasName("PRIMARY");
@@ -955,9 +958,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("FinalTreeID");
 
-                    b.Property<int?>("FinalTreeRarity")
-                        .HasColumnType("int");
-
                     b.Property<ulong>("IsMaxLevel")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -972,18 +972,17 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
-                    b.Property<int?>("TreeId")
-                        .HasColumnType("int");
-
                     b.Property<int>("TreeStatus")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int")
@@ -995,8 +994,6 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex("FinalTreeId");
 
                     b.HasIndex("LevelId");
-
-                    b.HasIndex("TreeId");
 
                     b.HasIndex("UserId");
 
@@ -1474,7 +1471,7 @@ namespace ZenGarden.Infrastructure.Migrations
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Tree", "FinalTree")
-                        .WithMany()
+                        .WithMany("UserTree")
                         .HasForeignKey("FinalTreeId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("usertree_ibfk_2");
@@ -1484,10 +1481,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasForeignKey("LevelId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("ZenGarden.Domain.Entities.Tree", null)
-                        .WithMany("UserTree")
-                        .HasForeignKey("TreeId");
 
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
                         .WithMany("UserTree")

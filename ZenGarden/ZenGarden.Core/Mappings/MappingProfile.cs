@@ -1,6 +1,7 @@
 using AutoMapper;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Response;
 using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Mappings;
@@ -16,6 +17,8 @@ public class MappingProfile : Profile
         CreateMap<Item, ItemDto>().ReverseMap();
         CreateMap<ItemDetail, ItemDetailDto>().ReverseMap();
         CreateMap<Packages, PackageDto>().ReverseMap();
-        CreateMap<Tree, TreeDto>().ReverseMap();
+        CreateMap<UserTree, UserTreeDto>().ReverseMap();
+        CreateMap<Tree, TreeResponse>();
+        CreateMap<TreeDto, Tree>();
     }
 }

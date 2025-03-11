@@ -10,7 +10,6 @@ namespace ZenGarden.Core.Services;
 public class TaskService(
     ITaskRepository taskRepository,
     IFocusMethodRepository focusMethodRepository,
-    
     IUnitOfWork unitOfWork,
     IUserTreeRepository userTreeRepository,
     ITreeXpLogRepository treeXpLogRepository,
@@ -70,7 +69,7 @@ public class TaskService(
         //};
         //await taskFocusRepository.CreateAsync(taskFocusConfig);
         await unitOfWork.CommitAsync();
-        return null ;
+        return null;
     }
 
 

@@ -2,9 +2,9 @@ using System.Security.Claims;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ZenGarden.API.Response;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Response;
 
 namespace ZenGarden.API.Controllers;
 
