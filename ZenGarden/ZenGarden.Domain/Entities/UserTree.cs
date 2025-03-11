@@ -18,7 +18,6 @@ public partial class UserTree
     
     public bool IsMaxLevel { get; set; } = false;
     public TreeStatus TreeStatus { get; set; } = TreeStatus.Growing;
-    public TreeRarity? FinalTreeRarity { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Tree? FinalTree { get; set; }
@@ -26,6 +25,5 @@ public partial class UserTree
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeA { get; set; } = new List<TradeHistory>();
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeB { get; set; } = new List<TradeHistory>();
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
-
     public virtual required Users User { get; set; }
 }

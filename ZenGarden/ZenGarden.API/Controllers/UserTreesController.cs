@@ -1,108 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
+﻿using Microsoft.AspNetCore.Mvc;
+using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Enums;
 
-namespace ZenGarden.API.Controllers
+namespace ZenGarden.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UserTreesController(IUserTreeService userTreeService) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UserTreesController : ControllerBase
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
-        private readonly ZenGardenContext _context;
+        var userTrees = await userTreeService.GetAllAsync();
+        return Ok(userTrees);
+    }
 
-        public UserTreesController(ZenGardenContext context)
-        {
-            _context = context;
-        }
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var userTree = await userTreeService.GetByIdAsync(id);
+        return Ok(userTree);
+    }
 
-        // GET: api/UserTrees
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserTree>>> GetUserTree()
-        {
-            return await _context.UserTree.ToListAsync();
-        }
+    [HttpPost]
+    public async Task<IActionResult> Add([FromBody] UserTreeDto userTreeDto)
+    {
+        await userTreeService.AddAsync(userTreeDto);
+        return CreatedAtAction(nameof(GetById), new { id = userTreeDto.UserId },
+            new { message = "UserTree created successfully" });
+    }
 
-        // GET: api/UserTrees/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UserTree>> GetUserTree(int id)
-        {
-            var userTree = await _context.UserTree.FindAsync(id);
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UserTreeDto userTreeDto)
+    {
+        await userTreeService.UpdateAsync(id, userTreeDto);
+        return Ok(new { message = "UserTree updated successfully" });
+    }
 
-            if (userTree == null)
-            {
-                return NotFound();
-            }
-
-            return userTree;
-        }
-
-        // PUT: api/UserTrees/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUserTree(int id, UserTree userTree)
-        {
-            if (id != userTree.UserTreeId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(userTree).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserTreeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/UserTrees
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<UserTree>> PostUserTree(UserTree userTree)
-        {
-            _context.UserTree.Add(userTree);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetUserTree", new { id = userTree.UserTreeId }, userTree);
-        }
-
-        // DELETE: api/UserTrees/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUserTree(int id)
-        {
-            var userTree = await _context.UserTree.FindAsync(id);
-            if (userTree == null)
-            {
-                return NotFound();
-            }
-
-            _context.UserTree.Remove(userTree);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool UserTreeExists(int id)
-        {
-            return _context.UserTree.Any(e => e.UserTreeId == id);
-        }
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> ChangeStatus(int id, [FromBody] TreeStatus newStatus)
+    {
+        await userTreeService.ChangeStatusAsync(id, newStatus);
+        return Ok(new { message = "UserTree status updated successfully" });
     }
 }

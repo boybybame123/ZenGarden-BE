@@ -35,9 +35,9 @@ public static class JwtHelper
             claims.Add(new Claim("role", user.Role.RoleName));
 
         var token = new JwtSecurityToken(
-            issuer: jwtSettings.Issuer,
-            audience: jwtSettings.Audience,
-            claims: claims,
+            jwtSettings.Issuer,
+            jwtSettings.Audience,
+            claims,
             expires: now.AddMinutes(expiresInMinutes),
             signingCredentials: credentials
         );

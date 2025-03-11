@@ -30,4 +30,5 @@ public partial class Tasks
     public virtual TaskType TaskType { get; set; }
     public virtual UserTree UserTree { get; set; }
     public virtual ICollection<TreeXpLog> TreeXpLog { get; set; }
+    public virtual ICollection<ChallengeTask> ChallengeTasks { get; set; } = new List<ChallengeTask>();
 }

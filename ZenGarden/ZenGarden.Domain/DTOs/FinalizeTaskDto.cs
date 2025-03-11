@@ -9,6 +9,6 @@ public class FinalizeTaskDto
     public int TaskTypeId { get; set; }
     public int FocusMethodId { get; set; }
     public int Duration { get; set; }
-    public int BreakTime { get; set; } 
-    public bool IsSuggested { get; set; } 
+    public int BreakTime { get; set; }
+    public bool IsSuggested { get; set; }
 }
