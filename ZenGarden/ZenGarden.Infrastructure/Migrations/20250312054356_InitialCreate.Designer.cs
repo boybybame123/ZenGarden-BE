@@ -12,7 +12,7 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    [Migration("20250312052707_InitialCreate")]
+    [Migration("20250312054356_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -1086,6 +1086,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
