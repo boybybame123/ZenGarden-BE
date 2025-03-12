@@ -26,6 +26,7 @@ builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddScoped<ITradeHistoryRepository, TradeHistoryRepository>();
 builder.Services.AddScoped<IBagRepository, BagRepository>();
 builder.Services.AddScoped<IPackagesRepository, PackagesRepository>();
@@ -45,6 +46,7 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IPackagesService, PackagesService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IItemDetailService, ItemDetailService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();

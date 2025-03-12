@@ -10,16 +10,15 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class ItemDetail
 {
-    [Key]
+
     public int ItemDetailId { get; set; }
 
-    [ForeignKey("Item")]
     public int ItemId { get; set; } // Liên kết với bảng Item
 
-    [Required]
+ 
     public string Description { get; set; } // Mô tả item
 
-    [Required]
+
     public string Type { get; set; } // Loại item (background, music, xp_boost, xp_protect)
 
     public string MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
@@ -35,11 +34,6 @@ public partial class ItemDetail
 
     public virtual Item Item { get; set; }
 
-    [NotMapped]
-    public EffectData EffectData
-    {
-        get => string.IsNullOrEmpty(Effect) ? null : JsonConvert.DeserializeObject<EffectData>(Effect);
-        set => Effect = JsonConvert.SerializeObject(value);
-    }
+
 
 }
