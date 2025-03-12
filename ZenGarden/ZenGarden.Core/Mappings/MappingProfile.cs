@@ -15,15 +15,18 @@ public class MappingProfile : Profile
         CreateMap<RegisterDto, Users>()
             .ForMember(dest => dest.Password, opt => opt.Ignore())
             .AfterMap((src, dest) => dest.Password = PasswordHasher.HashPassword(src.Password));
-        CreateMap<Item, ItemDto>().ReverseMap();
+        CreateMap<Item, ItemDto>()
+            
+            .ReverseMap();
+
+
+
         CreateMap<ItemDetail, ItemDetailDto>()
-            .ForMember(dest => dest.EffectData, opt => opt.MapFrom(src =>
-                !string.IsNullOrEmpty(src.Effect)
-                ? JsonConvert.DeserializeObject<EffectData>(src.Effect)
-                : new EffectData())) // Nếu `Effect` rỗng, gán object trống
-            .ReverseMap()
-            .ForMember(dest => dest.Effect, opt => opt.MapFrom(src =>
-                src.EffectData != null ? JsonConvert.SerializeObject(src.EffectData) : null));
+            .ReverseMap();
+
+
+
+
         CreateMap<Packages, PackageDto>().ReverseMap();
         CreateMap<UserTree, UserTreeDto>().ReverseMap();
         CreateMap<Tree, TreeResponse>();
