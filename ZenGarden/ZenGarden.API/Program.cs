@@ -27,6 +27,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<ITradeHistoryRepository, TradeHistoryRepository>();
 builder.Services.AddScoped<IBagRepository, BagRepository>();
 builder.Services.AddScoped<IPackagesRepository, PackagesRepository>();
 builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
@@ -45,9 +46,11 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IPackagesService, PackagesService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IItemDetailService, ItemDetailService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITradeHistoryService, TradeHistoryService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));

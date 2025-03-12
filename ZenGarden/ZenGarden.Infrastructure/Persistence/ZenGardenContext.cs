@@ -758,6 +758,9 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Phone)
                 .IsRequired()
                 .HasMaxLength(20);
+            entity.Property(e=> e.ImageUrl)
+                .IsRequired()
+                .HasMaxLength(255);
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
 

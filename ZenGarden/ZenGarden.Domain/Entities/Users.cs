@@ -21,6 +21,7 @@ public partial class Users
     public DateTime? RefreshTokenExpiry { get; set; }
     public string? OtpCodeHash { get; set; }
     public DateTime? OtpExpiry { get; set; }
+    public string? ImageUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Bag? Bag { get; set; }
