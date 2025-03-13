@@ -42,7 +42,10 @@ public class UserService(
         var user = await GetUserByIdAsync(userId);
         if (user != null)
         {
-            user.IsActive = false;
+            if (user.IsActive == false)
+                user.IsActive = true;
+            else
+                user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
             userRepository.Update(user);
         }
@@ -87,6 +90,8 @@ public class UserService(
             userUpdate.RoleId = user.RoleId;
         if (user.IsActive != userUpdate.IsActive)
             userUpdate.IsActive = user.IsActive;
+        if(user.Status != userUpdate.Status && user.Status != null)
+            userUpdate.Status = user.Status;
 
         if (!string.IsNullOrEmpty(user.ImageUrl))
             userUpdate.ImageUrl = user.ImageUrl;
