@@ -1,7 +1,7 @@
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
-namespace ZenGarden.Domain.DTOs.Response;
+namespace ZenGarden.Domain.DTOs;
 
 public class TaskResponse(Tasks task)
 {

@@ -8,5 +8,5 @@ public class TaskType
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
-    public virtual ICollection<XPConfig> XpConfigs { get; set; } = new List<XPConfig>();
+    public virtual ICollection<XpConfig> XpConfigs { get; set; } = new List<XpConfig>();
 }

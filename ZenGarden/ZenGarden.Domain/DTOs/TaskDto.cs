@@ -13,16 +13,27 @@ public class TaskDto
 
     public string? TaskDescription { get; set; }
 
-    public int? Duration { get; set; }
+    public int? WorkDuration { get; set; } 
 
-    public string? AiProcessedDescription { get; set; }
-
-    public int? TimeOverdue { get; set; }
+    public int? BreakTime { get; set; }
+    
     public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
 
+    public DateTime? StartDate { get; set; }  
+
+    public DateTime? EndDate { get; set; }
+
     public TasksStatus Status { get; set; }
 
-    public virtual Users? User { get; set; }
+    public string? TaskNote { get; set; }  
+
+    public string? TaskResult { get; set; } 
+    
+    public bool? IsSuggested { get; set; }
+
+    public Users? User { get; set; }
 }

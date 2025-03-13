@@ -22,7 +22,7 @@ public partial class Tasks
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
-    public DateTime? StartDate { get; set; }  
+    public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public TasksStatus Status { get; set; }
     public int BreakTime { get; set; }

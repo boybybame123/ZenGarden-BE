@@ -15,7 +15,7 @@ public partial class UserTree
     public int? FinalTreeId { get; set; }
     public required string Name { get; set; }
     public int LevelId { get; set; } = 1;
-    public int TotalXp { get; set; } = 0;
+    public double TotalXp { get; set; } = 0;
     public bool IsMaxLevel { get; set; } = false;
     public TreeStatus TreeStatus { get; set; } = TreeStatus.Growing;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

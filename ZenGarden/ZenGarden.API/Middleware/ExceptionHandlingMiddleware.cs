@@ -3,7 +3,7 @@ using System.Data.Common;
 using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.DTOs.Response;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Middleware;
 

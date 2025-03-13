@@ -40,7 +40,12 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
         var existingUserTree = await userTreeRepository.GetByIdAsync(id);
         if (existingUserTree == null) throw new KeyNotFoundException("UserTree not found");
 
-        mapper.Map(userTreeDto, existingUserTree);
+        if (!string.IsNullOrWhiteSpace(userTreeDto.Name))
+            existingUserTree.Name = userTreeDto.Name;
+
+        if (userTreeDto.TreeStatus != default) 
+            existingUserTree.TreeStatus = userTreeDto.TreeStatus;
+
         existingUserTree.UpdatedAt = DateTime.UtcNow;
 
         if (existingUserTree is { IsMaxLevel: true, FinalTreeId: null })
@@ -51,7 +56,7 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
         userTreeRepository.Update(existingUserTree);
         await unitOfWork.CommitAsync();
     }
-
+    
     public async Task ChangeStatusAsync(int id, TreeStatus newStatus)
     {
         var existingUserTree = await userTreeRepository.GetByIdAsync(id);

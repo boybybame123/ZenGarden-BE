@@ -12,15 +12,13 @@ public class TaskService(
     IFocusMethodRepository focusMethodRepository,
     IUnitOfWork unitOfWork,
     IUserTreeRepository userTreeRepository,
-    ITreeXpLogRepository treeXpLogRepository,
-    ITreeLevelConfigRepository treeLevelConfigRepository,
+    IXpConfigRepository xpConfigRepository,
     ITaskTypeRepository taskTypeRepository,
     IMapper mapper) : ITaskService
 {
-    public async Task<List<TaskDto>> GetAllTaskAsync()
+    public async Task<List<Tasks>> GetAllTaskAsync()
     {
-        var tasks = await taskRepository.GetAllAsync();
-        return mapper.Map<List<TaskDto>>(tasks);
+        return await taskRepository.GetAllAsync(); 
     }
 
     public async Task<Tasks?> GetTaskByIdAsync(int taskId)
@@ -28,65 +26,83 @@ public class TaskService(
         return await taskRepository.GetByIdAsync(taskId)
                ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
     }
+    
 
-    public async Task<Tasks> CreateTaskAsync(FinalizeTaskDto dto)
+    public async Task<Tasks> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
-        // var suggestedMethod = await focusMethodRepository.GetRecommendedMethodAsync(dto.TaskName, dto.TaskDescription);
+        if (dto.FocusMethodId == null)
+            throw new ArgumentException("FocusMethodId is required. Please call SuggestFocusMethod first.");
 
-        // var selectedFocusMethod = suggestedMethod?.FocusMethodId == dto.FocusMethodId
-        //     ? suggestedMethod
-        //     : await focusMethodRepository.GetByIdAsync(dto.FocusMethodId)
-        //       ?? throw new InvalidOperationException("Invalid Focus Method selected.");
+        var existingMethod = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
+        if (existingMethod == null)
+            throw new KeyNotFoundException("FocusMethod not found.");
+        
+        var existingTaskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
+        if (existingTaskType == null)
+            throw new KeyNotFoundException("TaskType not found.");
 
-        // if (dto.Duration < selectedFocusMethod.MinDuration || dto.Duration > selectedFocusMethod.MaxDuration)
-        //     throw new ArgumentException(
-        //         $"Duration must be between {selectedFocusMethod.MinDuration} and {selectedFocusMethod.MaxDuration}");
-        // var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId)
-        //                ?? throw new InvalidOperationException("Invalid Task Type selected.");
+        var workDuration = dto.WorkDuration ?? existingMethod.DefaultDuration ?? 25;
+        var breakTime = dto.BreakTime ?? existingMethod.DefaultBreak ?? 5;
 
-        //var task = new Tasks
-        //{
-        //    UserId = dto.UserId,
-        //    Status = TasksStatus.NotStarted,
-        //    Duration = dto.Duration,
-        //    BaseXp = dto.BaseXp,
-        //    TaskName = dto.TaskName,
-        //    TaskDescription = dto.TaskDescription,
-        //    TaskTypeId = taskType.TaskTypeId
-        //};
+        var newTask = new Tasks
+        {
+            TaskTypeId = dto.TaskTypeId,
+            UserTreeId = dto.UserTreeId,
+            FocusMethodId = existingMethod.FocusMethodId,
+            TaskName = dto.TaskName,
+            TaskDescription = dto.TaskDescription,
+            WorkDuration = workDuration,
+            BreakTime = breakTime,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            CreatedAt = DateTime.UtcNow,
+            Status = TasksStatus.NotStarted,
+            IsSuggested = dto.WorkDuration == null && dto.BreakTime == null
+        };
 
-        //await taskRepository.CreateAsync(task);
-        if (await unitOfWork.CommitAsync() == 0)
-            throw new InvalidOperationException("Failed to create task.");
-
-        //var taskFocusConfig = new TaskFocusConfig
-        //{
-        //    TaskId = task.TaskId,
-        //    FocusMethodId = selectedFocusMethod.FocusMethodId,
-        //    Duration = dto.Duration,
-        //    BreakTime = dto.BreakTime,
-        //    IsSuggested = dto.IsSuggested
-        //};
-        //await taskFocusRepository.CreateAsync(taskFocusConfig);
-        await unitOfWork.CommitAsync();
-        return null;
+        await taskRepository.CreateAsync(newTask);
+        return newTask;
     }
 
-
-    public async Task UpdateTaskAsync(TaskDto task)
+    
+    public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
     {
-        var updateTask = await GetTaskByIdAsync(task.TaskId);
-        if (updateTask == null)
-            throw new KeyNotFoundException($"Task with ID {task.TaskId} not found.");
+        var existingTask = await GetTaskByIdAsync(updateTaskDto.TaskId);
+        if (existingTask == null)
+            throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
 
-        mapper.Map(task, updateTask);
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskName))
+            existingTask.TaskName = updateTaskDto.TaskName;
 
-        taskRepository.Update(updateTask);
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription))
+            existingTask.TaskDescription = updateTaskDto.TaskDescription;
+        
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
+            existingTask.TaskNote = updateTaskDto.TaskNote;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
+            existingTask.TaskResult = updateTaskDto.TaskResult;
+
+        if (updateTaskDto.WorkDuration.HasValue)
+            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
+
+        if (updateTaskDto.BreakTime.HasValue)
+            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+
+        if (updateTaskDto.StartDate.HasValue)
+            existingTask.StartDate = updateTaskDto.StartDate.Value;
+
+        if (updateTaskDto.EndDate.HasValue)
+            existingTask.EndDate = updateTaskDto.EndDate.Value;
+
+        existingTask.UpdatedAt = DateTime.UtcNow;
+
+        taskRepository.Update(existingTask);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update task.");
     }
 
-
+    
     public async Task DeleteTaskAsync(int taskId)
     {
         var task = await GetTaskByIdAsync(taskId);
@@ -98,80 +114,69 @@ public class TaskService(
             throw new InvalidOperationException("Failed to delete task.");
     }
 
-    public async Task<FocusMethod?> GetSuggestedFocusMethodsAsync(string taskName, string? taskDescription)
-    {
-        // return await focusMethodRepository.GetRecommendedMethodAsync(taskName, taskDescription);
-        return null;
-    }
-
-    public async Task StartTaskAsync(int taskId)
+    public async Task StartTaskAsync(int taskId, int userId)
     {
         var task = await taskRepository.GetByIdAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        //if (!task.UserId.HasValue)
-        //    throw new InvalidOperationException("Task must be associated with a valid user.");
+        if (task.Status != TasksStatus.NotStarted)
+            throw new InvalidOperationException("Only not started tasks can be started.");
 
-        //var existingTaskInProgress = await taskRepository.GetUserTaskInProgressAsync(task.UserId.Value);
-
-        //if (existingTaskInProgress != null)
-        //    throw new InvalidOperationException("You must complete your current task before starting a new one.");
+        var existingInProgressTask = await taskRepository.GetUserTaskInProgressAsync(userId);
+        if (existingInProgressTask != null)
+            throw new InvalidOperationException($"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
 
         task.Status = TasksStatus.InProgress;
+        task.StartedAt = DateTime.UtcNow;
         taskRepository.Update(task);
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
     }
 
+
     public async Task CompleteTaskAsync(int taskId)
     {
-        var task = await taskRepository.GetByIdAsync(taskId)
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         if (task.Status != TasksStatus.InProgress)
             throw new InvalidOperationException("Only in-progress tasks can be completed.");
 
+        if (task.UserTree == null)
+            throw new InvalidOperationException("Task is not linked to any UserTree.");
+
+        if (task.FocusMethodId == null)
+            throw new InvalidOperationException("Task does not have an assigned FocusMethod.");
+        var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
+                       ?? throw new KeyNotFoundException("XP configuration not found for this task.");
+
+        var standardDuration = task.FocusMethod?.MinDuration ?? 25;
+        var workDuration = (double)(task.WorkDuration ?? 25);
+        var xpEarned = workDuration / standardDuration * xpConfig.BaseXp * xpConfig.Multiplier;
+
+        task.UserTree.TotalXp += xpEarned;
         task.Status = TasksStatus.Completed;
         task.CompletedAt = DateTime.UtcNow;
+
         taskRepository.Update(task);
-
-        if (task.UserTreeId.HasValue)
-        {
-            var userTree = await userTreeRepository.GetByIdAsync(task.UserTreeId.Value);
-            if (userTree != null)
-            {
-                //var xpGained = task.TaskTypeId switch
-                //{
-                //    1 => (int)(task.BaseXp * 1.2),
-                //    2 => (int)(task.BaseXp * 0.8),
-                //    _ => task.BaseXp
-                //};
-                //userTree.TotalXp += xpGained;
-
-                //await treeXpLogRepository.CreateAsync(new TreeXpLog
-                //{
-                //    UserTreeId = userTree.UserTreeId,
-                //    TaskId = task.TaskId,
-                //    ActivityType = ActivityType.TaskXp,
-                //    XpAmount = xpGained,
-                //    UserTree = userTree,
-                //    Tasks = task
-                //});
-
-                var nextLevel = await treeLevelConfigRepository.GetByIdAsync(userTree.LevelId + 1);
-                if (nextLevel != null && userTree.TotalXp >= nextLevel.XpThreshold)
-                {
-                    userTree.LevelId += 1;
-                    userTree.TotalXp = 0;
-                }
-
-                userTree.UpdatedAt = DateTime.UtcNow;
-                userTreeRepository.Update(userTree);
-            }
-        }
+        userTreeRepository.Update(task.UserTree);
 
         if (await unitOfWork.CommitAsync() == 0)
-            throw new InvalidOperationException("Failed to complete the task.");
+            throw new InvalidOperationException("Failed to complete task.");
     }
+    public async Task UpdateOverdueTasksAsync()
+    {
+        var overdueTasks = await taskRepository.GetOverdueTasksAsync();
+
+        foreach (var task in overdueTasks)
+        {
+            task.Status = TasksStatus.Overdue;
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+
+        if (overdueTasks.Count != 0)
+            await unitOfWork.CommitAsync();
+    }
+
 }

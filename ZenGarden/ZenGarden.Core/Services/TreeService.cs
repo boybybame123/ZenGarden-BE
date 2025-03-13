@@ -3,7 +3,6 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Domain.DTOs.Response;
 
 namespace ZenGarden.Core.Services;
 

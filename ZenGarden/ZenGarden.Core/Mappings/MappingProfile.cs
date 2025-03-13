@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Domain.DTOs.Response;
 using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Mappings;
@@ -22,6 +21,8 @@ public class MappingProfile : Profile
         CreateMap<UserTree, UserTreeDto>().ReverseMap();
         CreateMap<Tree, TreeResponse>();
         CreateMap<TreeDto, Tree>();
-        CreateMap<FocusMethod, SuggestFocusMethodResponse>();
+        CreateMap<FocusMethod, FocusMethodDto>();
+        CreateMap<FocusMethod, FocusMethodDto>()
+            .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.Name));
     }
 }
