@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Response;
+using ZenGarden.Domain.DTOs.Response;
 
 namespace ZenGarden.API.Controllers;
 

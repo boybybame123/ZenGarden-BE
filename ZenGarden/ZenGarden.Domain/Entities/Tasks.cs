@@ -17,15 +17,18 @@ public partial class Tasks
     public int? FocusMethodId { get; set; }
     public string TaskName { get; set; }
     public string TaskDescription { get; set; }
-    public int? Duration { get; set; }
+    public int? WorkDuration { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public DateTime? StartDate { get; set; }  
+    public DateTime? EndDate { get; set; }
     public TasksStatus Status { get; set; }
     public int BreakTime { get; set; }
     public bool IsSuggested { get; set; } = true;
-
+    public string TaskNote { get; set; } 
+    public string TaskResult { get; set; } 
     public virtual FocusMethod FocusMethod { get; set; }
     public virtual TaskType TaskType { get; set; }
     public virtual UserTree UserTree { get; set; }

@@ -7,7 +7,7 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTreeRepository, IMapper mapper)
+public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTreeRepository, ITreeRepository treeRepository, IMapper mapper)
     : IUserTreeService
 {
     public async Task<IEnumerable<UserTree>> GetAllAsync()
@@ -26,10 +26,14 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
         var userTree = mapper.Map<UserTree>(userTreeDto);
         userTree.CreatedAt = DateTime.UtcNow;
         userTree.UpdatedAt = DateTime.UtcNow;
+        userTree.LevelId = 1;
+        userTree.TotalXp = 0;
+        userTree.IsMaxLevel = false;
 
         await userTreeRepository.CreateAsync(userTree);
         await unitOfWork.CommitAsync();
     }
+
 
     public async Task UpdateAsync(int id, UserTreeDto userTreeDto)
     {
@@ -38,6 +42,11 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
 
         mapper.Map(userTreeDto, existingUserTree);
         existingUserTree.UpdatedAt = DateTime.UtcNow;
+
+        if (existingUserTree is { IsMaxLevel: true, FinalTreeId: null })
+        {
+            existingUserTree.FinalTreeId = await AssignRandomFinalTreeIdAsync();
+        }
 
         userTreeRepository.Update(existingUserTree);
         await unitOfWork.CommitAsync();
@@ -53,5 +62,13 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
 
         userTreeRepository.Update(existingUserTree);
         await unitOfWork.CommitAsync();
+    }
+
+    private async Task<int?> AssignRandomFinalTreeIdAsync()
+    {
+        var treeIds = await treeRepository.GetAllTreeIdsAsync();
+        if (treeIds.Count == 0) return null;
+        var random = new Random();
+        return treeIds[random.Next(treeIds.Count)];
     }
 }

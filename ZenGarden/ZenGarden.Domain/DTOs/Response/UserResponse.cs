@@ -1,7 +1,7 @@
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
-namespace ZenGarden.Domain.Response;
+namespace ZenGarden.Domain.DTOs.Response;
 
 public class UserResponse(Users user)
 {

@@ -1,5 +1,5 @@
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Response;
+using ZenGarden.Domain.DTOs.Response;
 
 namespace ZenGarden.Core.Interfaces.IServices;
 

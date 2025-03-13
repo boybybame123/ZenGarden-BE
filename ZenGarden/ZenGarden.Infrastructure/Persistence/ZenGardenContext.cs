@@ -368,10 +368,16 @@ public class ZenGardenContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.TaskDescription)
-                .HasColumnType("text");
+                        .HasMaxLength(1000);
+            
+                    entity.Property(e => e.TaskNote)
+                        .HasMaxLength(500);
+            
+                    entity.Property(e => e.TaskResult)
+                        .HasMaxLength(2083);
 
-            entity.Property(e => e.Duration)
-                .HasColumnName("Duration");
+            entity.Property(e => e.WorkDuration)
+                        .HasDefaultValue(25);
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
@@ -385,6 +391,12 @@ public class ZenGardenContext : DbContext
                 .HasColumnType("timestamp");
 
             entity.Property(e => e.CompletedAt)
+                .HasColumnType("timestamp");
+            
+            entity.Property(e => e.StartDate)
+                .HasColumnType("timestamp");
+            
+            entity.Property(e => e.EndDate)
                 .HasColumnType("timestamp");
 
             entity.Property(e => e.Status)
@@ -440,7 +452,7 @@ public class ZenGardenContext : DbContext
                 .WithOne(t => t.TaskType)
                 .HasForeignKey(t => t.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.XPConfigs)
+            entity.HasMany(e => e.XpConfigs)
                 .WithOne(x => x.TaskType)
                 .HasForeignKey(x => x.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -823,6 +835,10 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.FinalTreeId)
                 .HasColumnName("FinalTreeID");
+            
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsRequired();
 
             entity.Property(e => e.TotalXp)
                 .HasColumnType("int")
@@ -970,7 +986,7 @@ public class ZenGardenContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.TaskType)
-                .WithMany(p => p.XPConfigs)
+                .WithMany(p => p.XpConfigs)
                 .HasForeignKey(d => d.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

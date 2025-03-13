@@ -31,18 +31,18 @@ public class TaskService(
 
     public async Task<Tasks> CreateTaskAsync(FinalizeTaskDto dto)
     {
-        var suggestedMethod = await focusMethodRepository.GetRecommendedMethodAsync(dto.TaskName, dto.TaskDescription);
+        // var suggestedMethod = await focusMethodRepository.GetRecommendedMethodAsync(dto.TaskName, dto.TaskDescription);
 
-        var selectedFocusMethod = suggestedMethod?.FocusMethodId == dto.FocusMethodId
-            ? suggestedMethod
-            : await focusMethodRepository.GetByIdAsync(dto.FocusMethodId)
-              ?? throw new InvalidOperationException("Invalid Focus Method selected.");
+        // var selectedFocusMethod = suggestedMethod?.FocusMethodId == dto.FocusMethodId
+        //     ? suggestedMethod
+        //     : await focusMethodRepository.GetByIdAsync(dto.FocusMethodId)
+        //       ?? throw new InvalidOperationException("Invalid Focus Method selected.");
 
-        if (dto.Duration < selectedFocusMethod.MinDuration || dto.Duration > selectedFocusMethod.MaxDuration)
-            throw new ArgumentException(
-                $"Duration must be between {selectedFocusMethod.MinDuration} and {selectedFocusMethod.MaxDuration}");
-        var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId)
-                       ?? throw new InvalidOperationException("Invalid Task Type selected.");
+        // if (dto.Duration < selectedFocusMethod.MinDuration || dto.Duration > selectedFocusMethod.MaxDuration)
+        //     throw new ArgumentException(
+        //         $"Duration must be between {selectedFocusMethod.MinDuration} and {selectedFocusMethod.MaxDuration}");
+        // var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId)
+        //                ?? throw new InvalidOperationException("Invalid Task Type selected.");
 
         //var task = new Tasks
         //{
@@ -100,7 +100,8 @@ public class TaskService(
 
     public async Task<FocusMethod?> GetSuggestedFocusMethodsAsync(string taskName, string? taskDescription)
     {
-        return await focusMethodRepository.GetRecommendedMethodAsync(taskName, taskDescription);
+        // return await focusMethodRepository.GetRecommendedMethodAsync(taskName, taskDescription);
+        return null;
     }
 
     public async Task StartTaskAsync(int taskId)

@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Domain.Response;
+using ZenGarden.Domain.DTOs.Response;
 using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Mappings;
@@ -20,13 +20,14 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.EffectData, opt => opt.MapFrom(src =>
                 !string.IsNullOrEmpty(src.Effect)
                 ? JsonConvert.DeserializeObject<EffectData>(src.Effect)
-                : new EffectData())) // Nếu `Effect` rỗng, gán object trống
+                : new EffectData()))
             .ReverseMap()
             .ForMember(dest => dest.Effect, opt => opt.MapFrom(src =>
-                src.EffectData != null ? JsonConvert.SerializeObject(src.EffectData) : null));
+                JsonConvert.SerializeObject(src.EffectData)));
         CreateMap<Packages, PackageDto>().ReverseMap();
         CreateMap<UserTree, UserTreeDto>().ReverseMap();
         CreateMap<Tree, TreeResponse>();
         CreateMap<TreeDto, Tree>();
+        CreateMap<FocusMethod, SuggestFocusMethodResponse>();
     }
 }
