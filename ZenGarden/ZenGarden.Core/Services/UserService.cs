@@ -166,7 +166,7 @@ public class UserService(
             {
                 UserId = newUser.UserId,
                 TotalXp = 0,
-                CurrentLevel = 1,
+                
                 XpToNextLevel = levelOneConfig.XpThreshold,
                 LevelId = 1,
                 UpdatedAt = DateTime.UtcNow
