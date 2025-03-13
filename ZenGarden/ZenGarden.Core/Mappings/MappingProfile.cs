@@ -17,11 +17,12 @@ public class MappingProfile : Profile
             .ReverseMap();
         CreateMap<ItemDetail, ItemDetailDto>()
             .ReverseMap();
+        CreateMap<UserXpConfig, UserXpConfigDto>()
+            .ReverseMap();
         CreateMap<Packages, PackageDto>().ReverseMap();
         CreateMap<UserTree, UserTreeDto>().ReverseMap();
         CreateMap<Tree, TreeResponse>();
         CreateMap<TreeDto, Tree>();
-        CreateMap<FocusMethod, FocusMethodDto>();
         CreateMap<FocusMethod, FocusMethodDto>()
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.Name));
     }

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using AspNetCoreRateLimit;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -23,7 +24,11 @@ var builder = WebApplication.CreateBuilder(args);
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
 builder.Services.AddControllers()
-    .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter());
+    .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
+    .AddJsonOptions(options =>
+     {
+         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -156,6 +161,7 @@ builder.Services.AddScoped<ITradeHistoryService, TradeHistoryService>();
 builder.Services.AddScoped<ITreeService, TreeService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserTreeService, UserTreeService>();
+builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 

@@ -12,7 +12,6 @@ public partial class UserExperience
     public  int UserExperienceId { get; set; }
     public int UserId { get; set; }
     public long TotalXp { get; set; } = 0;
-    public int CurrentLevel { get; set; } = 1;
     public int XpToNextLevel { get; set; } = 100; 
     public int LevelId { get; set; } 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

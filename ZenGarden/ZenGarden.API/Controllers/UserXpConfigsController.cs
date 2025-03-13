@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Core.Services;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
@@ -7,82 +10,48 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserXpConfigsController : ControllerBase
+public class UserXpConfigsController(IUserXpConfigService userXpConfigService) : ControllerBase
 {
-    private readonly ZenGardenContext _context;
+    private readonly IUserXpConfigService _UserXpConfigService = userXpConfigService ?? throw new ArgumentNullException(nameof(userXpConfigService));
 
-    public UserXpConfigsController(ZenGardenContext context)
-    {
-        _context = context;
-    }
-
-    // GET: api/UserXpConfigs
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserXpConfig>>> GetUserXpConfig()
+    public async Task<IActionResult> GetUserXpConfigs()
     {
-        return await _context.UserXpConfig.ToListAsync();
+        var UserXpConfigs = await _UserXpConfigService.GetAllUserXpConfigsAsync();
+        return Ok(UserXpConfigs);
     }
 
-    // GET: api/UserXpConfigs/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<UserXpConfig>> GetUserXpConfig(int id)
+    [HttpGet("{UserXpConfigId}")]
+    public async Task<IActionResult> GetUserXpConfigById(int UserXpConfigId)
     {
-        var userXpConfig = await _context.UserXpConfig.FindAsync(id);
-
-        if (userXpConfig == null) return NotFound();
-
-        return userXpConfig;
+        var UserXpConfig = await _UserXpConfigService.GetUserXpConfigByIdAsync(UserXpConfigId);
+        if (UserXpConfig == null) return NotFound();
+        return Ok(UserXpConfig);
     }
 
-    // PUT: api/UserXpConfigs/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutUserXpConfig(int id, UserXpConfig userXpConfig)
+    [HttpDelete("{UserXpConfigId}")]
+    [Produces("application/json")]
+    public async Task<IActionResult> DeleteUserXpConfig(int UserXpConfigId)
     {
-        if (id != userXpConfig.LevelId) return BadRequest();
-
-        _context.Entry(userXpConfig).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!UserXpConfigExists(id)) return NotFound();
-
-            throw;
-        }
-
-        return NoContent();
+        await _UserXpConfigService.DeleteUserXpConfigAsync(UserXpConfigId);
+        return Ok(new { message = "UserXpConfig deleted successfully" });
     }
 
-    // POST: api/UserXpConfigs
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("update-UserXpConfig")]
+    [Produces("application/json")]
+    public async Task<IActionResult> UpdateUserXpConfig(UserXpConfigDto UserXpConfig)
+    {
+        await _UserXpConfigService.UpdateUserXpConfigAsync(UserXpConfig);
+        var i = await _UserXpConfigService.GetUserXpConfigByIdAsync(UserXpConfig.LevelId);
+        return Ok(new { message = "UserXpConfig updated successfully",i });
+    }
     [HttpPost]
-    public async Task<ActionResult<UserXpConfig>> PostUserXpConfig(UserXpConfig userXpConfig)
+    public async Task<IActionResult> PostUserConfig(UserXpConfigDto userConfig)
     {
-        _context.UserXpConfig.Add(userXpConfig);
-        await _context.SaveChangesAsync();
+        await _UserXpConfigService.CreateUserXpConfigAsync(userConfig);
+        var i = await _UserXpConfigService.GetUserXpConfigByIdAsync(userConfig.LevelId);
 
-        return CreatedAtAction("GetUserXpConfig", new { id = userXpConfig.LevelId }, userXpConfig);
+        return Ok(new { message = "UserXpConfig updated successfully", i });
     }
 
-    // DELETE: api/UserXpConfigs/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteUserXpConfig(int id)
-    {
-        var userXpConfig = await _context.UserXpConfig.FindAsync(id);
-        if (userXpConfig == null) return NotFound();
-
-        _context.UserXpConfig.Remove(userXpConfig);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private bool UserXpConfigExists(int id)
-    {
-        return _context.UserXpConfig.Any(e => e.LevelId == id);
-    }
 }
