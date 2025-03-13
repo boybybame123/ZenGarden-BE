@@ -17,5 +17,6 @@ namespace ZenGarden.Domain.DTOs
         public string Phone { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public string? ImageUrl { get; set; }
+        public UserStatus Status { get; set; }
     }
 }

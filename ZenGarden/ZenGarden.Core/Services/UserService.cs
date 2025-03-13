@@ -90,6 +90,8 @@ public class UserService(
             userUpdate.RoleId = user.RoleId;
         if (user.IsActive != userUpdate.IsActive)
             userUpdate.IsActive = user.IsActive;
+        if(user.Status != userUpdate.Status && user.Status != null)
+            userUpdate.Status = user.Status;
 
         if (!string.IsNullOrEmpty(user.ImageUrl))
             userUpdate.ImageUrl = user.ImageUrl;
