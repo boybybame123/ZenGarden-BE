@@ -50,7 +50,7 @@ public class UserController(IUserService userService) : ControllerBase
 
     [HttpPut("update-user")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateUser(UserDto user)
+    public async Task<IActionResult> UpdateUser(UpdateUserDTO user)
     {
         await _userService.UpdateUserAsync(user);
         return Ok(new { message = "User updated successfully" });
