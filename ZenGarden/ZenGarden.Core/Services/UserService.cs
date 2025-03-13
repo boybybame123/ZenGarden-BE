@@ -69,12 +69,29 @@ public class UserService(
     }
 
 
-    public async Task UpdateUserAsync(UserDto user)
+    public async Task UpdateUserAsync(UpdateUserDTO user)
     {
         var userUpdate = await GetUserByIdAsync(user.UserId);
         if (userUpdate == null)
             throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
-        mapper.Map(user, userUpdate);
+        
+        if(!string.IsNullOrEmpty(user.Password))
+            userUpdate.Password = PasswordHasher.HashPassword(user.Password);
+        if(!string.IsNullOrEmpty(user.Email))
+            userUpdate.Email = user.Email;
+        if (!string.IsNullOrEmpty(user.Phone))
+            userUpdate.Phone = user.Phone;
+        if (!string.IsNullOrEmpty(user.UserName))
+            userUpdate.UserName = user.UserName;
+        if (user.RoleId != null && user.RoleId != 0)
+            userUpdate.RoleId = user.RoleId;
+        if (user.IsActive != userUpdate.IsActive)
+            userUpdate.IsActive = user.IsActive;
+
+        if (!string.IsNullOrEmpty(user.ImageUrl))
+            userUpdate.ImageUrl = user.ImageUrl;
+
+
         userRepository.Update(userUpdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
