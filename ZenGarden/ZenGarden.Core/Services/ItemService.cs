@@ -11,6 +11,17 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
     public async Task<List<ItemDto>> GetAllItemsAsync()
     {
         var items = await itemRepository.GetAllItemAsync();
+        try
+        {
+            var i = mapper.Map<List<ItemDto>>(items);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        
+
         return mapper.Map<List<ItemDto>>(items);
     }
 

@@ -142,6 +142,7 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
         newUser.IsActive = true;
+        newUser.ImageUrl = "";
 
         await unitOfWork.BeginTransactionAsync();
         try
