@@ -46,6 +46,7 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IPackagesService, PackagesService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IItemDetailService, ItemDetailService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
