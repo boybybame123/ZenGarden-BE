@@ -25,7 +25,8 @@ public class MappingProfile : Profile
             .ReverseMap();
 
 
-
+        CreateMap<UserXpConfig, UserXpConfigDto>()
+            .ReverseMap();
 
         CreateMap<Packages, PackageDto>().ReverseMap();
         CreateMap<UserTree, UserTreeDto>().ReverseMap();
