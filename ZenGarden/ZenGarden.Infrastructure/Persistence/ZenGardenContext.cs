@@ -27,7 +27,7 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<Packages> Packages { get; set; }
     public virtual DbSet<PurchaseHistory> PurchaseHistory { get; set; }
     public virtual DbSet<Roles> Roles { get; set; }
-    public virtual DbSet<XPConfig> XpConfigs { get; set; }
+    public virtual DbSet<XpConfig> XpConfigs { get; set; }
     public virtual DbSet<Tasks> Tasks { get; set; }
     public virtual DbSet<TaskType> TaskType { get; set; }
     public virtual DbSet<TradeHistory> TradeHistory { get; set; }
@@ -368,23 +368,37 @@ public class ZenGardenContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.TaskDescription)
-                .HasColumnType("text");
+                        .HasMaxLength(1000);
+            
+                    entity.Property(e => e.TaskNote)
+                        .HasMaxLength(500);
+            
+                    entity.Property(e => e.TaskResult)
+                        .HasMaxLength(2083);
 
-            entity.Property(e => e.Duration)
-                .HasColumnName("Duration");
+            entity.Property(e => e.WorkDuration)
+                        .HasDefaultValue(25);
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
+                .ValueGeneratedOnUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.Property(e => e.StartedAt)
                 .HasColumnType("timestamp");
 
             entity.Property(e => e.CompletedAt)
+                .HasColumnType("timestamp");
+            
+            entity.Property(e => e.StartDate)
+                .HasColumnType("timestamp");
+            
+            entity.Property(e => e.EndDate)
                 .HasColumnType("timestamp");
 
             entity.Property(e => e.Status)
@@ -440,7 +454,7 @@ public class ZenGardenContext : DbContext
                 .WithOne(t => t.TaskType)
                 .HasForeignKey(t => t.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.XPConfigs)
+            entity.HasMany(e => e.XpConfigs)
                 .WithOne(x => x.TaskType)
                 .HasForeignKey(x => x.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -822,9 +836,13 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.FinalTreeId)
                 .HasColumnName("FinalTreeID");
+            
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsRequired();
 
             entity.Property(e => e.TotalXp)
-                .HasColumnType("int")
+                .HasColumnType("double")
                 .HasDefaultValue(0)
                 .IsRequired();
 
@@ -933,11 +951,11 @@ public class ZenGardenContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<XPConfig>(entity =>
+        modelBuilder.Entity<XpConfig>(entity =>
         {
-            entity.HasKey(e => e.XPConfigId).HasName("PRIMARY");
+            entity.HasKey(e => e.XpConfigId).HasName("PRIMARY");
 
-            entity.Property(e => e.XPConfigId)
+            entity.Property(e => e.XpConfigId)
                 .HasColumnName("XPConfigID")
                 .ValueGeneratedOnAdd();
 
@@ -947,7 +965,7 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.TaskTypeId)
                 .HasColumnName("TaskTypeID");
 
-            entity.Property(e => e.BaseXP)
+            entity.Property(e => e.BaseXp)
                 .HasColumnType("double");
 
             entity.Property(e => e.Multiplier)
@@ -969,7 +987,7 @@ public class ZenGardenContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.TaskType)
-                .WithMany(p => p.XPConfigs)
+                .WithMany(p => p.XpConfigs)
                 .HasForeignKey(d => d.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

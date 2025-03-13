@@ -40,27 +40,16 @@ builder.Services.AddScoped<IUserXpConfigRepository, UserXpConfigRepository>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
 builder.Services.AddScoped<ITreeRepository, TreeRepository>();
-builder.Services.AddScoped<ITreeService, TreeService>();
 builder.Services.AddScoped<IItemDetailRepository, ItemDetailRepository>();
 builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
 builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
 builder.Services.AddScoped<ITreeLevelConfigRepository, TreeLevelConfigRepository>();
 builder.Services.AddScoped<ITaskTypeRepository, TaskTypeRepository>();
-builder.Services.AddScoped<IBagService, BagService>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
-builder.Services.AddScoped<IPackagesService, PackagesService>();
-builder.Services.AddScoped<ITaskService, TaskService>();
-builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
-builder.Services.AddScoped<IItemDetailService, ItemDetailService>();
-builder.Services.AddScoped<IItemService, ItemService>();
-builder.Services.AddScoped<ITaskService, TaskService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ITradeHistoryService, TradeHistoryService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IXpConfigRepository, XpConfigRepository>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", false, true)
@@ -151,27 +140,28 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
         }
     ];
 });
+
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
 builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
+builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IBagRepository, BagRepository>();
-builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IUserXpConfigRepository, UserXpConfigRepository>();
-builder.Services.AddScoped<IUserExperienceRepository, UserExperienceRepository>();
-builder.Services.AddScoped<IItemRepository, ItemRepository>();
-builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<IFocusMethodService, FocusMethodService>();
+builder.Services.AddScoped<IBagService, BagService>();
+builder.Services.AddScoped<IPackagesService, PackagesService>();
+builder.Services.AddScoped<IItemDetailService, ItemDetailService>();
+builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IFocusMethodRepository, FocusMethodRepository>();
-
-builder.Services.AddScoped<IItemService, ItemService>();
+builder.Services.AddScoped<ITradeHistoryService, TradeHistoryService>();
+builder.Services.AddScoped<ITreeService, TreeService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserTreeService, UserTreeService>();
+builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
@@ -184,8 +174,13 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
 builder.Services.AddHttpClient<FocusMethodRepository>();
 
-var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey ?? string.Empty; });
+var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+                   ?? builder.Configuration["OpenAI:ApiKey"];
+
+if (string.IsNullOrEmpty(openAiApiKey))
+    throw new InvalidOperationException("OpenAI API Key is missing.");
+
+builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey; });
 
 
 var app = builder.Build();
@@ -195,6 +190,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowAll");
 
+app.UseMiddleware<UserContextMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
 app.UseMiddleware<ValidationMiddleware>();

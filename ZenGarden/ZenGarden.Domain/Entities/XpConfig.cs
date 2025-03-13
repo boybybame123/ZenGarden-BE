@@ -1,8 +1,8 @@
 ﻿namespace ZenGarden.Domain.Entities;
 
-public class XPConfig
+public class XpConfig
 {
-    public int XPConfigId { get; set; }
+    public int XpConfigId { get; set; }
 
 
     public int FocusMethodId { get; set; }
@@ -10,7 +10,7 @@ public class XPConfig
 
     public int TaskTypeId { get; set; }
 
-    public double BaseXP { get; set; }
+    public double BaseXp { get; set; }
     public double Multiplier { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

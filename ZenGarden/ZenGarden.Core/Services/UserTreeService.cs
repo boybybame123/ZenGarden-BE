@@ -7,7 +7,7 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTreeRepository, IMapper mapper)
+public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTreeRepository, ITreeRepository treeRepository, IMapper mapper)
     : IUserTreeService
 {
     public async Task<IEnumerable<UserTree>> GetAllAsync()
@@ -26,23 +26,37 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
         var userTree = mapper.Map<UserTree>(userTreeDto);
         userTree.CreatedAt = DateTime.UtcNow;
         userTree.UpdatedAt = DateTime.UtcNow;
+        userTree.LevelId = 1;
+        userTree.TotalXp = 0;
+        userTree.IsMaxLevel = false;
 
         await userTreeRepository.CreateAsync(userTree);
         await unitOfWork.CommitAsync();
     }
+
 
     public async Task UpdateAsync(int id, UserTreeDto userTreeDto)
     {
         var existingUserTree = await userTreeRepository.GetByIdAsync(id);
         if (existingUserTree == null) throw new KeyNotFoundException("UserTree not found");
 
-        mapper.Map(userTreeDto, existingUserTree);
+        if (!string.IsNullOrWhiteSpace(userTreeDto.Name))
+            existingUserTree.Name = userTreeDto.Name;
+
+        if (userTreeDto.TreeStatus != default) 
+            existingUserTree.TreeStatus = userTreeDto.TreeStatus;
+
         existingUserTree.UpdatedAt = DateTime.UtcNow;
+
+        if (existingUserTree is { IsMaxLevel: true, FinalTreeId: null })
+        {
+            existingUserTree.FinalTreeId = await AssignRandomFinalTreeIdAsync();
+        }
 
         userTreeRepository.Update(existingUserTree);
         await unitOfWork.CommitAsync();
     }
-
+    
     public async Task ChangeStatusAsync(int id, TreeStatus newStatus)
     {
         var existingUserTree = await userTreeRepository.GetByIdAsync(id);
@@ -53,5 +67,13 @@ public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTre
 
         userTreeRepository.Update(existingUserTree);
         await unitOfWork.CommitAsync();
+    }
+
+    private async Task<int?> AssignRandomFinalTreeIdAsync()
+    {
+        var treeIds = await treeRepository.GetAllTreeIdsAsync();
+        if (treeIds.Count == 0) return null;
+        var random = new Random();
+        return treeIds[random.Next(treeIds.Count)];
     }
 }

@@ -18,14 +18,14 @@ public class XPConfigsController : ControllerBase
 
     // GET: api/XPConfigs
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<XPConfig>>> GetXpConfigs()
+    public async Task<ActionResult<IEnumerable<XpConfig>>> GetXpConfigs()
     {
         return await _context.XpConfigs.ToListAsync();
     }
 
     // GET: api/XPConfigs/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<XPConfig>> GetXPConfig(int id)
+    public async Task<ActionResult<XpConfig>> GetXPConfig(int id)
     {
         var xPConfig = await _context.XpConfigs.FindAsync(id);
 
@@ -37,9 +37,9 @@ public class XPConfigsController : ControllerBase
     // PUT: api/XPConfigs/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutXPConfig(int id, XPConfig xPConfig)
+    public async Task<IActionResult> PutXPConfig(int id, XpConfig xPConfig)
     {
-        if (id != xPConfig.XPConfigId) return BadRequest();
+        if (id != xPConfig.XpConfigId) return BadRequest();
 
         _context.Entry(xPConfig).State = EntityState.Modified;
 
@@ -60,12 +60,12 @@ public class XPConfigsController : ControllerBase
     // POST: api/XPConfigs
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<XPConfig>> PostXPConfig(XPConfig xPConfig)
+    public async Task<ActionResult<XpConfig>> PostXPConfig(XpConfig xPConfig)
     {
         _context.XpConfigs.Add(xPConfig);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction("GetXPConfig", new { id = xPConfig.XPConfigId }, xPConfig);
+        return CreatedAtAction("GetXPConfig", new { id = xPConfig.XpConfigId }, xPConfig);
     }
 
     // DELETE: api/XPConfigs/5
@@ -83,6 +83,6 @@ public class XPConfigsController : ControllerBase
 
     private bool XPConfigExists(int id)
     {
-        return _context.XpConfigs.Any(e => e.XPConfigId == id);
+        return _context.XpConfigs.Any(e => e.XpConfigId == id);
     }
 }
