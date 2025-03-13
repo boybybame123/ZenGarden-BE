@@ -42,7 +42,10 @@ public class UserService(
         var user = await GetUserByIdAsync(userId);
         if (user != null)
         {
-            user.IsActive = false;
+            if (user.IsActive == false)
+                user.IsActive = true;
+            else
+                user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
             userRepository.Update(user);
         }
