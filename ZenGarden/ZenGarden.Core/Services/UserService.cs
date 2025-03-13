@@ -37,19 +37,7 @@ public class UserService(
                ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
     }
 
-    public async Task ChangeUserisActiveAsync(int userId)
-    {
-        var user = await GetUserByIdAsync(userId);
-        if (user != null)
-        {
-            user.IsActive = false;
-            user.UpdatedAt = DateTime.UtcNow;
-            userRepository.Update(user);
-        }
 
-        if (await unitOfWork.CommitAsync() == 0)
-            throw new InvalidOperationException("Failed to update user.");
-    }
 
 
     public async Task<Users?> GetUserByEmailAsync(string email)
@@ -69,12 +57,30 @@ public class UserService(
     }
 
 
-    public async Task UpdateUserAsync(UserDto user)
+    public async Task UpdateUserAsync(UpdateUserDTO user)
     {
         var userUpdate = await GetUserByIdAsync(user.UserId);
         if (userUpdate == null)
             throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
-        mapper.Map(user, userUpdate);
+        
+        if(!string.IsNullOrEmpty(user.Password))
+            userUpdate.Password = PasswordHasher.HashPassword(user.Password);
+        if(!string.IsNullOrEmpty(user.Email))
+            userUpdate.Email = user.Email;
+        if (!string.IsNullOrEmpty(user.Phone))
+            userUpdate.Phone = user.Phone;
+        if (!string.IsNullOrEmpty(user.UserName))
+            userUpdate.UserName = user.UserName;
+        if (user.RoleId != null && user.RoleId != 0)
+            userUpdate.RoleId = user.RoleId;
+
+        if(user.Status != userUpdate.Status && user.Status != null)
+            userUpdate.Status = user.Status;
+
+        if (!string.IsNullOrEmpty(user.ImageUrl))
+            userUpdate.ImageUrl = user.ImageUrl;
+
+
         userRepository.Update(userUpdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
@@ -141,7 +147,8 @@ public class UserService(
         newUser.Password = PasswordHasher.HashPassword(dto.Password);
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
-        newUser.IsActive = true;
+
+        newUser.ImageUrl = "";
 
         await unitOfWork.BeginTransactionAsync();
         try

@@ -780,8 +780,7 @@ public class ZenGardenContext : DbContext
                 .HasConversion<int>()
                 .IsRequired();
 
-            entity.Property(e => e.IsActive)
-                .HasDefaultValue(true);
+
 
             entity.Property(e => e.RefreshTokenHash)
                 .HasMaxLength(255)

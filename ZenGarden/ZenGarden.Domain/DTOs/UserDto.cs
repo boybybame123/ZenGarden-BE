@@ -11,7 +11,7 @@ public class UserDto
     public string Password { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public UserStatus Status { get; set; }
-    public bool IsActive { get; set; } = true;
+
     public string? RefreshTokenHash { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
     public string? OtpCodeHash { get; set; }

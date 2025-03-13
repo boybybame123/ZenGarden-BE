@@ -40,17 +40,12 @@ public class UserController(IUserService userService) : ControllerBase
         return Ok(new { message = "User deleted successfully" });
     }
 
-    [HttpGet("change-active/{userId:int}")]
-    [Produces("application/json")]
-    public async Task<IActionResult> ChangeUserIsActive(int userId)
-    {
-        await _userService.ChangeUserisActiveAsync(userId);
-        return Ok(new { message = "User active status changed successfully" });
-    }
+
+
 
     [HttpPut("update-user")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateUser(UserDto user)
+    public async Task<IActionResult> UpdateUser(UpdateUserDTO user)
     {
         await _userService.UpdateUserAsync(user);
         return Ok(new { message = "User updated successfully" });
