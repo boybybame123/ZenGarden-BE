@@ -19,7 +19,7 @@ public partial class PurchaseHistory
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public PurchaseHistoryStatus Status { get; set; }
+    public PurchaseHistoryStatus Status { get; set; } 
 
     public virtual Item Item { get; set; }
 

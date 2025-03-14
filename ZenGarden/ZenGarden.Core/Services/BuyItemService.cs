@@ -16,9 +16,9 @@ namespace ZenGarden.Core.Services
         IItemRepository itemRepository,
         IBagItemRepository bagItemRepository,
         IBagRepository bagRepository,
-        ITradeHistoryRepository tradeHistoryRepository,
+        IPurchaseHistoryRepository purchaseHistoryRepository,
         IItemDetailRepository itemDetailRepository,
-        ITransactionsRepository transactionsRepository,
+        
         IWalletRepository walletRepository,
         IMapper mapper
         ) : IBuyItemService
@@ -35,6 +35,9 @@ namespace ZenGarden.Core.Services
             var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(buyItem.ItemId);
             var bag = await bagRepository.GetByIdAsync(buyItem.UserId);
             var bagItem = await bagItemRepository.GetByIdAsync(bag.BagId);
+
+            var purchaseId = await purchaseHistoryRepository.CountAsync();
+            
             if (bagItem == null)
             {
                 await bagItemRepository.CreateAsync(new BagItem
@@ -55,23 +58,24 @@ namespace ZenGarden.Core.Services
 
                 bagItem.Quantity += 1;
 
-                var transaction = new Transactions
+
+
+                await purchaseHistoryRepository.CreateAsync(new PurchaseHistory
                 {
-                    TransactionId = new Random().Next(1, int.MaxValue),
+
+                    PurchaseId = purchaseId +1,
+                    ItemId = item.ItemId,
                     UserId = buyItem.UserId,
-                    WalletId = wallet.WalletId,
-                    Amount = item.Cost,
+                    TotalPrice = item.Cost,
+                    Status = (Domain.Enums.PurchaseHistoryStatus)1,
                     
-                     Type = (Domain.Enums.TransactionType)1,
-                   
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+
+                });
 
 
 
 
-                await transactionsRepository.CreateAsync(transaction);
+                
                 bagItemRepository.Update(bagItem);
                 walletRepository.Update(wallet);
                 await unitOfWork.CommitAsync();
