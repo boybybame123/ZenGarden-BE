@@ -30,7 +30,7 @@ namespace ZenGarden.Core.Services
                 throw new ArgumentNullException(nameof(buyItem));
             }
 
-
+            
             var item = await itemRepository.GetByIdAsync(buyItem.ItemId);
             var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(buyItem.ItemId);
             var bag = await bagRepository.GetByIdAsync(buyItem.UserId);
@@ -54,6 +54,24 @@ namespace ZenGarden.Core.Services
                 bagItem.ItemId = item.ItemId;
 
                 bagItem.Quantity += 1;
+
+                var transaction = new Transactions
+                {
+                    TransactionId = new Random().Next(1, int.MaxValue),
+                    UserId = buyItem.UserId,
+                    WalletId = wallet.WalletId,
+                    Amount = item.Cost,
+                    
+                     Type = (Domain.Enums.TransactionType)1,
+                   
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+
+
+
+                await transactionsRepository.CreateAsync(transaction);
                 bagItemRepository.Update(bagItem);
                 walletRepository.Update(wallet);
                 await unitOfWork.CommitAsync();
