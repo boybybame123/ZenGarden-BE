@@ -27,7 +27,7 @@ builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
     .AddJsonOptions(options =>
      {
-         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
      });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -49,6 +49,7 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IXpConfigRepository, XpConfigRepository>();
+builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -162,7 +163,7 @@ builder.Services.AddScoped<ITreeService, TreeService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
-
+builder.Services.AddScoped<IChallengeService,ChallengeService>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 
