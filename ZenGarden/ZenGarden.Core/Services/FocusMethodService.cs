@@ -121,10 +121,14 @@ public class FocusMethodService : IFocusMethodService
 
             var requestBody = new
             {
-                model = "gpt-4o",
-                messages = new[] { new { role = "user", content = prompt } },
+                model = "gpt-3.5-turbo",
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
                 max_tokens = 40
             };
+
 
             var jsonPayload = JsonSerializer.Serialize(requestBody);
             Console.WriteLine($"[ZenGarden] OpenAI Request: {jsonPayload}");
