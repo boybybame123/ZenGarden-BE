@@ -1,4 +1,4 @@
-namespace ZenGarden.Domain.Response;
+namespace ZenGarden.Domain.DTOs;
 
 public class ErrorResponse
 {

@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Middleware;
 
@@ -10,12 +12,16 @@ public class ValidationMiddleware(RequestDelegate next)
             !HttpMethods.IsHead(context.Request.Method) &&
             !HttpMethods.IsDelete(context.Request.Method) &&
             !HttpMethods.IsOptions(context.Request.Method))
+        {
             if (!context.Request.HasJsonContentType())
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = "Invalid Content-Type" }));
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                context.Response.ContentType = "application/json";
+                var errorResponse = new ErrorResponse("Invalid Content-Type", "Content-Type must be application/json.");
+                await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
                 return;
             }
+        }
 
         await next(context);
     }
@@ -25,7 +31,9 @@ public static class HttpRequestExtensions
 {
     public static bool HasJsonContentType(this HttpRequest request)
     {
-        return request.ContentType != null &&
-               request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(request.ContentType))
+            return false;
+
+        return request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
     }
 }

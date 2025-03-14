@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -26,42 +27,37 @@ public class TaskController(ITaskService taskService) : ControllerBase
     }
 
     [HttpDelete("{taskId:int}")]
-    [Produces("application/json")]
     public async Task<IActionResult> DeleteTask(int taskId)
     {
         await _taskService.DeleteTaskAsync(taskId);
         return Ok(new { message = "task deleted successfully" });
     }
 
-    [HttpPut("Update-Task")]
-    [Produces("application/json")]
-    public async Task<IActionResult> UpdateTask(TaskDto task)
+    [HttpPut("Update-Task")] 
+    public async Task<IActionResult> UpdateTask(UpdateTaskDto task)
     {
         await _taskService.UpdateTaskAsync(task);
         return Ok(new { message = "task updated successfully" });
     }
 
     [HttpPost("create-task")]
-    public async Task<IActionResult> CreateTask([FromBody] FinalizeTaskDto dto)
+    public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
     {
-        var task = await _taskService.CreateTaskAsync(dto);
-        return CreatedAtAction(nameof(GetTaskById), new { id = task.TaskId }, task);
+        var createdTask = await _taskService.CreateTaskWithSuggestedMethodAsync(dto);
+        return Ok(createdTask);
     }
 
-    [HttpPost("suggest-focus-methods")]
-    public async Task<IActionResult> GetSuggestedFocusMethods([FromBody] CreateTaskDto dto)
-    {
-        var result = await _taskService.GetSuggestedFocusMethodsAsync(dto.TaskName, dto.TaskDescription);
-
-        return Ok(result);
-    }
-
+    [Authorize]
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
     {
-        await _taskService.StartTaskAsync(taskId);
+        if (HttpContext.Items["UserId"] is not int userId)
+            return Unauthorized(new { message = "User authentication required." });
+
+        await _taskService.StartTaskAsync(taskId, userId);
         return Ok(new { message = "Task started successfully." });
     }
+
 
     [HttpPost("complete-task/{taskId:int}")]
     public async Task<IActionResult> CompleteTask(int taskId)
@@ -69,4 +65,11 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.CompleteTaskAsync(taskId);
         return Ok(new { message = "Task completed successfully." });
     }
+    [HttpPost("update-overdue")]
+    public async Task<IActionResult> UpdateOverdueTasks()
+    {
+        await _taskService.UpdateOverdueTasksAsync();
+        return Ok(new { message = "Overdue tasks updated successfully." });
+    }
+
 }
