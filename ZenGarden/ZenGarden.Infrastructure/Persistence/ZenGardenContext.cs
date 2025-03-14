@@ -657,8 +657,14 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Progress).HasColumnType("int").HasDefaultValue(0);
-            entity.Property(e => e.Status).HasConversion<int>().HasColumnName("Status").IsRequired();
-   
+            entity.Property(e => e.Status)
+            .HasConversion<int>()
+            .HasColumnName("Status")
+            .IsRequired();
+            entity.Property(e => e.ChallengeRole)
+            .HasConversion<int>()
+            .HasColumnName("ChallengeRole")
+            .IsRequired();
             entity.Property(e => e.JoinedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
