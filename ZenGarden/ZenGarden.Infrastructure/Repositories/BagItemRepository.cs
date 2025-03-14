@@ -1,5 +1,9 @@
-﻿namespace ZenGarden.Infrastructure.Repositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Domain.Entities;
+using ZenGarden.Infrastructure.Persistence;
 
-public class BagItemRepository
+namespace ZenGarden.Infrastructure.Repositories;
+
+public class BagItemRepository(ZenGardenContext context) : GenericRepository<BagItem>(context), IBagItemRepository
 {
 }
