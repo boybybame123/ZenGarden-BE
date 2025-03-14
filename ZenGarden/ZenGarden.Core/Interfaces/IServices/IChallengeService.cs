@@ -10,8 +10,8 @@ namespace ZenGarden.Core.Interfaces.IServices
 {
     public interface IChallengeService
     {
-        Task<List<ChallengeDto>> GetAllChallengeAsync();
-        Task<ChallengeDto> GetChallengeByIdAsync(int ChallengeId);
+        Task<List<Challenge>> GetAllChallengeAsync();
+        Task<Challenge> GetChallengeByIdAsync(int ChallengeId);
         Task CreateChallengeAsync(ChallengeDto Challenge);
         Task UpdateChallengeAsync(ChallengeDto Challenge);
         Task DeleteChallengeAsync(int ChallengeId);

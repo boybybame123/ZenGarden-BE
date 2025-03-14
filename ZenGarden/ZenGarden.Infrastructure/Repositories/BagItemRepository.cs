@@ -1,5 +1,5 @@
 ﻿namespace ZenGarden.Infrastructure.Repositories;
 
-internal class BagItemRepository
+public class BagItemRepository
 {
 }

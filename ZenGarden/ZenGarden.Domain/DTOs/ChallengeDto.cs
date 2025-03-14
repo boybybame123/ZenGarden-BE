@@ -20,8 +20,6 @@ namespace ZenGarden.Domain.DTOs
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public virtual required ChallengeType ChallengeType { get; set; }
-        public virtual ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
-        public virtual ICollection<ChallengeTask> ChallengeTasks { get; set; } = new List<ChallengeTask>();
+
     }
 }
