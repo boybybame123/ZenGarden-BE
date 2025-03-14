@@ -33,16 +33,16 @@ namespace ZenGarden.Core.Services
             throw new NotImplementedException();
         }
 
-        public async Task<List<ChallengeDto>> GetAllChallengeAsync()
+        public async Task<List<Challenge>> GetAllChallengeAsync()
         {
-           var Challenges = await challengeRepository.GetAllAsync();
-            return mapper.Map<List<ChallengeDto>>(Challenges);
+            var challenges = await challengeRepository.GetCallengeAll();
+            return challenges;
         }
 
-        public async Task<ChallengeDto?> GetChallengeByIdAsync(int ChallengeId)
+        public async Task<Challenge?> GetChallengeByIdAsync(int ChallengeId)
         {
-           var Challenges = await challengeRepository.GetByIdAsync(ChallengeId);
-            return mapper.Map<ChallengeDto>(Challenges);
+           var Challenges = await challengeRepository.GetByIdChallengeAsync(ChallengeId);
+            return Challenges;
 
         }
 
@@ -70,6 +70,8 @@ namespace ZenGarden.Core.Services
                 existingChallenge.status = Challenge.status;
             }
 
+            await challengeRepository.CreateAsync(existingChallenge);
+            await unitOfWork.CommitAsync();
 
         }
     }

@@ -27,7 +27,7 @@ builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
     .AddJsonOptions(options =>
      {
-         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
      });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -178,10 +178,10 @@ builder.Services.AddHttpClient<FocusMethodRepository>();
 var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
                    ?? builder.Configuration["OpenAI:ApiKey"];
 
-//if (string.IsNullOrEmpty(openAiApiKey))
-//    throw new InvalidOperationException("OpenAI API Key is missing.");
+if (string.IsNullOrEmpty(openAiApiKey))
+    throw new InvalidOperationException("OpenAI API Key is missing.");
 
-//builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey; });
+builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey; });
 
 
 var app = builder.Build();
