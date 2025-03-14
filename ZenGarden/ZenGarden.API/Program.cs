@@ -49,6 +49,7 @@ builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IXpConfigRepository, XpConfigRepository>();
+builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -162,7 +163,7 @@ builder.Services.AddScoped<ITreeService, TreeService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
-
+builder.Services.AddScoped<IChallengeService,ChallengeService>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 
@@ -177,10 +178,10 @@ builder.Services.AddHttpClient<FocusMethodRepository>();
 var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
                    ?? builder.Configuration["OpenAI:ApiKey"];
 
-if (string.IsNullOrEmpty(openAiApiKey))
-    throw new InvalidOperationException("OpenAI API Key is missing.");
+//if (string.IsNullOrEmpty(openAiApiKey))
+//    throw new InvalidOperationException("OpenAI API Key is missing.");
 
-builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey; });
+//builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey; });
 
 
 var app = builder.Build();
