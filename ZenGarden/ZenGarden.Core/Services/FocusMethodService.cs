@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
@@ -17,13 +18,18 @@ public class FocusMethodService : IFocusMethodService
     private readonly IFocusMethodRepository _focusMethodRepository;
     private readonly HttpClient _httpClient;
     private readonly IMapper _mapper;
+    private readonly IMemoryCache _cache;
+    private static readonly SemaphoreSlim RateLimitSemaphore = new(1, 1);
+    private static readonly TimeSpan RateLimitInterval = TimeSpan.FromSeconds(2);
+    private static DateTime _lastRequestTime = DateTime.MinValue;
 
     public FocusMethodService(IFocusMethodRepository focusMethodRepository, HttpClient httpClient, IMapper mapper,
-        IOptions<OpenAiSettings> openAiSettings)
+        IOptions<OpenAiSettings> openAiSettings, IMemoryCache cache)
     {
         _focusMethodRepository = focusMethodRepository;
         _httpClient = httpClient;
         _mapper = mapper;
+        _cache = cache;
 
         var apiKey = openAiSettings.Value.ApiKey;
         if (string.IsNullOrEmpty(apiKey))
@@ -33,83 +39,141 @@ public class FocusMethodService : IFocusMethodService
     }
 
     public async Task<FocusMethodDto> SuggestFocusMethodAsync(SuggestFocusMethodDto dto)
-{
-    try
     {
-        var availableMethodNames = await _focusMethodRepository.GetMethodNamesAsync();
-        var isDatabaseEmpty = availableMethodNames.Count == 0;
-
-        var prompt = isDatabaseEmpty
-            ? $"Given the task '{dto.TaskName}', suggest a **new unique focus method** with MinDuration, MaxDuration, MinBreak, MaxBreak, DefaultDuration, DefaultBreak. " +
-              $"Return in format: Name - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak."
-            : $"Given the task '{dto.TaskName}', choose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}. " +
-              $"If none are suitable, suggest a new one. " +
-              $"Return in format: Name - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.";
-
-        var aiResponse = await CallOpenAiApi(prompt);
-        if (string.IsNullOrWhiteSpace(aiResponse))
-            throw new InvalidOperationException("OpenAI returned an empty response.");
-
-        var parts = aiResponse.Split('-').Select(p => p.Trim()).ToArray();
-        if (parts.Length != 7)
-            throw new InvalidDataException($"Invalid AI response format: {aiResponse}");
-
-        var suggestedMethodName = parts[0];
-
-        var existingMethod = await _focusMethodRepository.GetByNameAsync(suggestedMethodName);
-        if (existingMethod != null) return _mapper.Map<FocusMethodDto>(existingMethod);
-
-        var newMethod = new FocusMethod
+        try
         {
-            Name = suggestedMethodName,
-            MinDuration = int.TryParse(parts[1], out var minDur) ? minDur : 15,
-            MaxDuration = int.TryParse(parts[2], out var maxDur) ? maxDur : 120,
-            MinBreak = int.TryParse(parts[3], out var minBrk) ? minBrk : 5,
-            MaxBreak = int.TryParse(parts[4], out var maxBrk) ? maxBrk : 30,
-            DefaultDuration = int.TryParse(parts[5], out var defDur) ? defDur : 45,
-            DefaultBreak = int.TryParse(parts[6], out var defBrk) ? defBrk : 10,
-            IsActive = true
-        };
+            var availableMethodNames = await _focusMethodRepository.GetMethodNamesAsync();
+            var isDatabaseEmpty = availableMethodNames.Count == 0;
 
-        await _focusMethodRepository.CreateAsync(newMethod);
-        return _mapper.Map<FocusMethodDto>(newMethod);
-    }
-    catch (HttpRequestException ex)
-    {
-        throw new InvalidOperationException("Failed to connect to OpenAI API. Please try again later.", ex);
-    }
-    catch (JsonException ex)
-    {
-        throw new InvalidOperationException("Failed to parse OpenAI response. The API returned unexpected data.", ex);
-    }
-    catch (DbUpdateException ex)
-    {
-        throw new InvalidOperationException($"Failed to save new focus method to database: {ex.InnerException?.Message}", ex);
-    }
-    catch (Exception ex)
-    {
-        throw new InvalidOperationException("An unexpected error occurred.", ex);
-    }
-}
-    
-    private async Task<string> CallOpenAiApi(string prompt)
-    {
-        var requestBody = new
+            var prompt = isDatabaseEmpty
+                ? $"Given the task '{dto.TaskName}', suggest a *new unique focus method* with MinDuration, MaxDuration, MinBreak, MaxBreak, DefaultDuration, DefaultBreak. " +
+                  $"Return in format: Name - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak."
+                : $"Given the task '{dto.TaskName}', choose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}. " +
+                  $"If none are suitable, suggest a new one. " +
+                  $"Return in format: Name - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.";
+
+            var aiResponse = await CallOpenAiApi(prompt);
+            if (string.IsNullOrWhiteSpace(aiResponse))
+                throw new InvalidOperationException("OpenAI returned an empty response.");
+
+            var parts = aiResponse.Split('-').Select(p => p.Trim()).ToArray();
+            if (parts.Length != 7)
+                throw new InvalidDataException($"Invalid AI response format: {aiResponse}");
+
+            var suggestedMethodName = parts[0];
+
+            var existingMethod = await _focusMethodRepository.GetByNameAsync(suggestedMethodName);
+            if (existingMethod != null) return _mapper.Map<FocusMethodDto>(existingMethod);
+
+            var newMethod = new FocusMethod
+            {
+                Name = suggestedMethodName,
+                MinDuration = int.TryParse(parts[1], out var minDur) ? minDur : 15,
+                MaxDuration = int.TryParse(parts[2], out var maxDur) ? maxDur : 120,
+                MinBreak = int.TryParse(parts[3], out var minBrk) ? minBrk : 5,
+                MaxBreak = int.TryParse(parts[4], out var maxBrk) ? maxBrk : 30,
+                DefaultDuration = int.TryParse(parts[5], out var defDur) ? defDur : 45,
+                DefaultBreak = int.TryParse(parts[6], out var defBrk) ? defBrk : 10,
+                IsActive = true
+            };
+
+            await _focusMethodRepository.CreateAsync(newMethod);
+            return _mapper.Map<FocusMethodDto>(newMethod);
+        }
+        catch (HttpRequestException ex)
         {
-            model = "gpt-4o",
-            messages = new[] { new { role = "user", content = prompt } },
-            max_tokens = 100
-        };
+            throw new InvalidOperationException("Failed to connect to OpenAI API. Please try again later.", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException("Failed to parse OpenAI response. The API returned unexpected data.", ex);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException($"Failed to save new focus method to database: {ex.InnerException?.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("An unexpected error occurred.", ex);
+        }
+    }
 
-        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
-        response.EnsureSuccessStatusCode();
+    private async Task<string?> CallOpenAiApi(string prompt)
+    {
+        if (_cache.TryGetValue(prompt, out string? cachedResponse))
+        {
+            return cachedResponse;
+        }
 
-        var responseBody = await response.Content.ReadAsStringAsync();
-        using var jsonDoc = JsonDocument.Parse(responseBody);
-        return jsonDoc.RootElement.GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString()?.Trim() ?? "";
+        const int maxRetries = 3;
+        int attempt = 0;
+
+        while (attempt < maxRetries)
+        {
+            await RateLimitSemaphore.WaitAsync();
+            try
+            {
+                var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+                if (timeSinceLastRequest < RateLimitInterval)
+                {
+                    await Task.Delay(RateLimitInterval - timeSinceLastRequest);
+                }
+
+                var requestBody = new
+                {
+                    model = "gpt-4o",
+                    messages = new[] { new { role = "user", content = prompt } },
+                    max_tokens = 40
+                };
+
+                var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+
+                _lastRequestTime = DateTime.UtcNow;
+
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    if (attempt == maxRetries - 1)
+                        throw new InvalidOperationException("The OpenAI API is currently overloaded. Please try again later.");
+
+                    attempt++;
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                using var jsonDoc = JsonDocument.Parse(responseBody);
+                var result = jsonDoc.RootElement.GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString()?.Trim() ?? "";
+
+                _cache.Set(prompt, result, TimeSpan.FromMinutes(10));
+
+                return result;
+            }
+            catch (HttpRequestException ex)
+            {
+                if (attempt == maxRetries - 1)
+                    throw new InvalidOperationException("Failed to connect to OpenAI API. Please check your network connection and try again.", ex);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("Failed to parse OpenAI API response. Unexpected data format.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("An unexpected error occurred while calling OpenAI API.", ex);
+            }
+            finally
+            {
+                RateLimitSemaphore.Release();
+            }
+
+            attempt++;
+        }
+
+        throw new InvalidOperationException("The OpenAI API request failed after multiple attempts.");
     }
 }
