@@ -99,81 +99,95 @@ public class FocusMethodService : IFocusMethodService
     }
 
     private async Task<string?> CallOpenAiApi(string prompt)
+{
+    if (_cache.TryGetValue(prompt, out string? cachedResponse))
     {
-        if (_cache.TryGetValue(prompt, out string? cachedResponse))
-        {
-            return cachedResponse;
-        }
-
-        const int maxRetries = 3;
-        int attempt = 0;
-
-        while (attempt < maxRetries)
-        {
-            await RateLimitSemaphore.WaitAsync();
-            try
-            {
-                var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
-                if (timeSinceLastRequest < RateLimitInterval)
-                {
-                    await Task.Delay(RateLimitInterval - timeSinceLastRequest);
-                }
-
-                var requestBody = new
-                {
-                    model = "gpt-4o",
-                    messages = new[] { new { role = "user", content = prompt } },
-                    max_tokens = 40
-                };
-
-                var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
-
-                _lastRequestTime = DateTime.UtcNow;
-
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    if (attempt == maxRetries - 1)
-                        throw new InvalidOperationException("The OpenAI API is currently overloaded. Please try again later.");
-
-                    attempt++;
-                    continue;
-                }
-
-                response.EnsureSuccessStatusCode();
-
-                var responseBody = await response.Content.ReadAsStringAsync();
-                using var jsonDoc = JsonDocument.Parse(responseBody);
-                var result = jsonDoc.RootElement.GetProperty("choices")[0]
-                    .GetProperty("message")
-                    .GetProperty("content")
-                    .GetString()?.Trim() ?? "";
-
-                _cache.Set(prompt, result, TimeSpan.FromMinutes(10));
-
-                return result;
-            }
-            catch (HttpRequestException ex)
-            {
-                if (attempt == maxRetries - 1)
-                    throw new InvalidOperationException("Failed to connect to OpenAI API. Please check your network connection and try again.", ex);
-            }
-            catch (JsonException ex)
-            {
-                throw new InvalidOperationException("Failed to parse OpenAI API response. Unexpected data format.", ex);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException("An unexpected error occurred while calling OpenAI API.", ex);
-            }
-            finally
-            {
-                RateLimitSemaphore.Release();
-            }
-
-            attempt++;
-        }
-
-        throw new InvalidOperationException("The OpenAI API request failed after multiple attempts.");
+        return cachedResponse;
     }
+
+    const int maxRetries = 3;
+    int attempt = 0;
+
+    while (attempt < maxRetries)
+    {
+        await RateLimitSemaphore.WaitAsync();
+        try
+        {
+            var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+            if (timeSinceLastRequest < RateLimitInterval)
+            {
+                await Task.Delay(RateLimitInterval - timeSinceLastRequest);
+            }
+
+            var requestBody = new
+            {
+                model = "gpt-3.5-turbo",
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                max_tokens = 40
+            };
+
+
+            var jsonPayload = JsonSerializer.Serialize(requestBody);
+            Console.WriteLine($"[ZenGarden] OpenAI Request: {jsonPayload}");
+
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+
+            _lastRequestTime = DateTime.UtcNow;
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[ZenGarden] OpenAI Response: {responseBody}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                Console.WriteLine($"[ZenGarden] OpenAI Rate Limit hit. Retrying... Attempt {attempt + 1}/{maxRetries}");
+                if (attempt == maxRetries - 1)
+                    throw new InvalidOperationException("The OpenAI API is currently overloaded. Please try again later.");
+
+                attempt++;
+                await Task.Delay(2000); 
+                continue;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            using var jsonDoc = JsonDocument.Parse(responseBody);
+            var result = jsonDoc.RootElement.GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString()?.Trim() ?? "";
+
+            _cache.Set(prompt, result, TimeSpan.FromMinutes(10));
+
+            return result;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"[ZenGarden] OpenAI Request Failed: {ex.Message}");
+            if (attempt == maxRetries - 1)
+                throw new InvalidOperationException("Failed to connect to OpenAI API. Please check your network connection and try again.", ex);
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"[ZenGarden] OpenAI Response Parse Error: {ex.Message}");
+            throw new InvalidOperationException("Failed to parse OpenAI API response. Unexpected data format.", ex);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ZenGarden] Unexpected OpenAI API Error: {ex.Message}");
+            throw new InvalidOperationException("An unexpected error occurred while calling OpenAI API.", ex);
+        }
+        finally
+        {
+            RateLimitSemaphore.Release();
+        }
+
+        attempt++;
+    }
+
+    throw new InvalidOperationException("The OpenAI API request failed after multiple attempts.");
+}
 }
