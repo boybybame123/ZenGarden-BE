@@ -1,6 +1,6 @@
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -13,7 +13,7 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Services;
 
-public class FocusMethodService : IFocusMethodService
+public partial class FocusMethodService : IFocusMethodService
 {
     private readonly IFocusMethodRepository _focusMethodRepository;
     private readonly HttpClient _httpClient;
@@ -35,7 +35,7 @@ public class FocusMethodService : IFocusMethodService
         if (string.IsNullOrEmpty(apiKey))
             throw new InvalidOperationException("OpenAI API Key is missing.");
 
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
     }
 
     public async Task<FocusMethodDto> SuggestFocusMethodAsync(SuggestFocusMethodDto dto)
@@ -46,11 +46,8 @@ public class FocusMethodService : IFocusMethodService
             var isDatabaseEmpty = availableMethodNames.Count == 0;
 
             var prompt = isDatabaseEmpty
-                ? $"Given the task '{dto.TaskName}', suggest a *new unique focus method* with MinDuration, MaxDuration, MinBreak, MaxBreak, DefaultDuration, DefaultBreak. " +
-                  $"Return in format: Name - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak."
-                : $"Given the task '{dto.TaskName}', choose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}. " +
-                  $"If none are suitable, suggest a new one. " +
-                  $"Return in format: Name - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.";
+                ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a *new unique focus method* optimized for this task. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nDo not explain, just return the result."
+                : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest a new one. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nDo not explain, just return the result.";
 
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
@@ -68,12 +65,12 @@ public class FocusMethodService : IFocusMethodService
             var newMethod = new FocusMethod
             {
                 Name = suggestedMethodName,
-                MinDuration = int.TryParse(parts[1], out var minDur) ? minDur : 15,
-                MaxDuration = int.TryParse(parts[2], out var maxDur) ? maxDur : 120,
-                MinBreak = int.TryParse(parts[3], out var minBrk) ? minBrk : 5,
-                MaxBreak = int.TryParse(parts[4], out var maxBrk) ? maxBrk : 30,
-                DefaultDuration = int.TryParse(parts[5], out var defDur) ? defDur : 45,
-                DefaultBreak = int.TryParse(parts[6], out var defBrk) ? defBrk : 10,
+                MinDuration = ExtractNumber(parts[1], 15),
+                MaxDuration = ExtractNumber(parts[2], 120),
+                MinBreak = ExtractNumber(parts[3], 5),
+                MaxBreak = ExtractNumber(parts[4], 30),
+                DefaultDuration = ExtractNumber(parts[5], 45),
+                DefaultBreak = ExtractNumber(parts[6], 10),
                 IsActive = true
             };
 
@@ -90,7 +87,8 @@ public class FocusMethodService : IFocusMethodService
         }
         catch (DbUpdateException ex)
         {
-            throw new InvalidOperationException($"Failed to save new focus method to database: {ex.InnerException?.Message}", ex);
+            throw new InvalidOperationException(
+                $"Failed to save new focus method to database: {ex.InnerException?.Message}", ex);
         }
         catch (Exception ex)
         {
@@ -99,95 +97,106 @@ public class FocusMethodService : IFocusMethodService
     }
 
     private async Task<string?> CallOpenAiApi(string prompt)
-{
-    if (_cache.TryGetValue(prompt, out string? cachedResponse))
     {
-        return cachedResponse;
-    }
-
-    const int maxRetries = 3;
-    int attempt = 0;
-
-    while (attempt < maxRetries)
-    {
-        await RateLimitSemaphore.WaitAsync();
-        try
+        if (_cache.TryGetValue(prompt, out string? cachedResponse))
         {
-            var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
-            if (timeSinceLastRequest < RateLimitInterval)
-            {
-                await Task.Delay(RateLimitInterval - timeSinceLastRequest);
-            }
+            return cachedResponse;
+        }
 
-            var requestBody = new
+        const int maxRetries = 3;
+        int attempt = 0;
+
+        while (attempt < maxRetries)
+        {
+            await RateLimitSemaphore.WaitAsync();
+            try
             {
-                model = "gpt-3.5-turbo",
-                messages = new[]
+                var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+                if (timeSinceLastRequest < RateLimitInterval)
                 {
-                    new { role = "user", content = prompt }
-                },
-                max_tokens = 40
-            };
+                    await Task.Delay(RateLimitInterval - timeSinceLastRequest);
+                }
 
+                var requestBody = new
+                {
+                    model = "google/gemma-3-27b-it",
+                    messages = new[]
+                    {
+                        new { role = "user", content = prompt }
+                    },
+                    max_tokens = 100
+                };
 
-            var jsonPayload = JsonSerializer.Serialize(requestBody);
-            Console.WriteLine($"[ZenGarden] OpenAI Request: {jsonPayload}");
+                var jsonPayload = JsonSerializer.Serialize(requestBody);
+                Console.WriteLine($"[ZenGarden] OpenAI Request: {jsonPayload}");
 
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                var response =
+                    await _httpClient.PostAsync("https://api.deepinfra.com/v1/openai/chat/completions", content);
 
-            _lastRequestTime = DateTime.UtcNow;
+                _lastRequestTime = DateTime.UtcNow;
 
-            var responseBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"[ZenGarden] OpenAI Response: {responseBody}");
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    Console.WriteLine(
+                        $"[ZenGarden] OpenAI Rate Limit hit. Retrying... Attempt {attempt + 1}/{maxRetries}");
+                    if (attempt == maxRetries - 1)
+                        throw new HttpRequestException("OpenAI API is overloaded. Try again later.");
 
-            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-            {
-                Console.WriteLine($"[ZenGarden] OpenAI Rate Limit hit. Retrying... Attempt {attempt + 1}/{maxRetries}");
-                if (attempt == maxRetries - 1)
-                    throw new InvalidOperationException("The OpenAI API is currently overloaded. Please try again later.");
+                    attempt++;
+                    await Task.Delay(2000);
+                    continue;
+                }
 
-                attempt++;
-                await Task.Delay(2000); 
-                continue;
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException($"OpenAI API error: {response.StatusCode} - {errorMessage}");
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[ZenGarden] OpenAI Response: {responseBody}");
+
+                using var jsonDoc = JsonDocument.Parse(responseBody);
+                var result = jsonDoc.RootElement.GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString()?.Trim() ?? "";
+
+                _cache.Set(prompt, result, TimeSpan.FromMinutes(10));
+                return result;
             }
-
-            response.EnsureSuccessStatusCode();
-
-            using var jsonDoc = JsonDocument.Parse(responseBody);
-            var result = jsonDoc.RootElement.GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString()?.Trim() ?? "";
-
-            _cache.Set(prompt, result, TimeSpan.FromMinutes(10));
-
-            return result;
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"[ZenGarden] OpenAI Request Failed: {ex.Message}");
-            if (attempt == maxRetries - 1)
-                throw new InvalidOperationException("Failed to connect to OpenAI API. Please check your network connection and try again.", ex);
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine($"[ZenGarden] OpenAI Response Parse Error: {ex.Message}");
-            throw new InvalidOperationException("Failed to parse OpenAI API response. Unexpected data format.", ex);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ZenGarden] Unexpected OpenAI API Error: {ex.Message}");
-            throw new InvalidOperationException("An unexpected error occurred while calling OpenAI API.", ex);
-        }
-        finally
-        {
-            RateLimitSemaphore.Release();
+            catch (HttpRequestException ex) when (attempt < maxRetries - 1)
+            {
+                Console.WriteLine($"[ZenGarden] OpenAI Request Failed (Attempt {attempt + 1}): {ex.Message}");
+                attempt++;
+                await Task.Delay(2000);
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"[ZenGarden] OpenAI Response Parse Error: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ZenGarden] Unexpected OpenAI API Error: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                RateLimitSemaphore.Release();
+            }
         }
 
-        attempt++;
+        throw new HttpRequestException("The OpenAI API request failed after multiple attempts.");
+    }
+    
+    private static int ExtractNumber(string input, int defaultValue)
+    {
+        var match = MyRegex().Match(input);
+        return match.Success ? int.Parse(match.Value) : defaultValue;
     }
 
-    throw new InvalidOperationException("The OpenAI API request failed after multiple attempts.");
-}
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex MyRegex();
 }
