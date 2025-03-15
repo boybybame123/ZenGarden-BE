@@ -15,6 +15,7 @@ public class ItemRepository(ZenGardenContext context) : GenericRepository<Item>(
             .Include(u => u.ItemDetail)
             .ToListAsync();
     }
+
     public async Task<Item?> GetItemByIdAsync(int id)
     {
         return await _context.Item

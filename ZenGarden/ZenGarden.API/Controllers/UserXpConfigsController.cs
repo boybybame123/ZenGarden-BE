@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Core.Services;
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.API.Controllers;
 
@@ -12,7 +8,8 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class UserXpConfigsController(IUserXpConfigService userXpConfigService) : ControllerBase
 {
-    private readonly IUserXpConfigService _UserXpConfigService = userXpConfigService ?? throw new ArgumentNullException(nameof(userXpConfigService));
+    private readonly IUserXpConfigService _UserXpConfigService =
+        userXpConfigService ?? throw new ArgumentNullException(nameof(userXpConfigService));
 
     [HttpGet]
     public async Task<IActionResult> GetUserXpConfigs()
@@ -43,8 +40,9 @@ public class UserXpConfigsController(IUserXpConfigService userXpConfigService) :
     {
         await _UserXpConfigService.UpdateUserXpConfigAsync(UserXpConfig);
         var i = await _UserXpConfigService.GetUserXpConfigByIdAsync(UserXpConfig.LevelId);
-        return Ok(new { message = "UserXpConfig updated successfully",i });
+        return Ok(new { message = "UserXpConfig updated successfully", i });
     }
+
     [HttpPost]
     public async Task<IActionResult> PostUserConfig(UserXpConfigDto userConfig)
     {
@@ -53,5 +51,4 @@ public class UserXpConfigsController(IUserXpConfigService userXpConfigService) :
 
         return Ok(new { message = "UserXpConfig updated successfully", i });
     }
-
 }

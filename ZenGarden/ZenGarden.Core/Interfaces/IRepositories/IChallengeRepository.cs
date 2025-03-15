@@ -1,19 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZenGarden.Domain.Entities;
+﻿using ZenGarden.Domain.Entities;
 
-namespace ZenGarden.Core.Interfaces.IRepositories
+namespace ZenGarden.Core.Interfaces.IRepositories;
+
+public interface IChallengeRepository : IGenericRepository<Challenge>
 {
-    public interface IChallengeRepository : IGenericRepository<Challenge>
-    {
-        Task<List<Challenge>> GetCallengeAll();
+    Task<List<Challenge>> GetCallengeAll();
 
 
-
-
-         Task<Challenge?> GetByIdChallengeAsync(int id);
-    }
+    Task<Challenge?> GetByIdChallengeAsync(int id);
 }

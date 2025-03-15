@@ -21,25 +21,27 @@ public class MappingProfile : Profile
             .ReverseMap();
         CreateMap<Packages, PackageDto>().ReverseMap();
         CreateMap<UserTree, CreateUserTreeDto>().ReverseMap();
-        CreateMap<Tree, TreeResponse>();
-        CreateMap<TreeDto, Tree>();
+        CreateMap<Tree, TreeDto>();
         CreateMap<Challenge, ChallengeDto>().ReverseMap();
         CreateMap<FocusMethod, FocusMethodDto>()
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.Name));
         CreateMap<UserTree, UserTreeDto>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName))
             .ForMember(dest => dest.TreeStatus, opt => opt.MapFrom(src => src.TreeStatus.ToString()))
-            .ForMember(dest => dest.FinalTreeName, opt => opt.MapFrom(src => src.FinalTree != null ? src.FinalTree.Name : null))
-            .ForMember(dest => dest.FinalTreeRarity, opt => opt.MapFrom(src => src.FinalTree != null ? src.FinalTree.Rarity : null))
+            .ForMember(dest => dest.FinalTreeName,
+                opt => opt.MapFrom(src => src.FinalTree != null ? src.FinalTree.Name : null))
+            .ForMember(dest => dest.FinalTreeRarity,
+                opt => opt.MapFrom(src => src.FinalTree != null ? src.FinalTree.Rarity : null))
             .ForMember(dest => dest.XpToNextLevel, opt => opt.MapFrom(src => CalculateXpToNextLevel(src)));
+        CreateMap<Tasks, TaskDto>()
+            .ForMember(dest => dest.TaskTypeName, opt => opt.MapFrom(src => src.TaskType.TaskTypeName))
+            .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.FocusMethod.Name))
+            .ForMember(dest => dest.UserTreeName, opt => opt.MapFrom(src => src.UserTree.Name));
     }
-    
+
     private static double CalculateXpToNextLevel(UserTree userTree)
     {
-        if (userTree.IsMaxLevel)
-        {
-            return 0;
-        }
+        if (userTree.IsMaxLevel) return 0;
 
         return userTree.TreeXpConfig.XpThreshold - userTree.TotalXp;
     }

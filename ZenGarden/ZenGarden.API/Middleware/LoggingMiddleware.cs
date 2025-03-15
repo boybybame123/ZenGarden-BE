@@ -4,20 +4,20 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
 {
     private static async Task<string> ReadRequestBody(HttpRequest request, int maxLength = 1000)
     {
-        if (request.Body == null || !request.Body.CanRead) 
+        if (request.Body == null || !request.Body.CanRead)
             return "[Empty Body]";
 
-        request.EnableBuffering(); 
+        request.EnableBuffering();
         request.Body.Position = 0;
 
         using var reader = new StreamReader(request.Body, leaveOpen: true);
         var bodyText = await reader.ReadToEndAsync();
         request.Body.Position = 0;
 
-        return string.IsNullOrWhiteSpace(bodyText) 
-            ? "[Empty Body]" 
-            : bodyText.Length > maxLength 
-                ? string.Concat(bodyText.AsSpan(0, maxLength), "...") 
+        return string.IsNullOrWhiteSpace(bodyText)
+            ? "[Empty Body]"
+            : bodyText.Length > maxLength
+                ? string.Concat(bodyText.AsSpan(0, maxLength), "...")
                 : bodyText;
     }
 

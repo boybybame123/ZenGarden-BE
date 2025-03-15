@@ -63,4 +63,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         ArgumentNullException.ThrowIfNull(entity);
         await Task.Run(() => _dbSet.Remove(entity));
     }
+
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.AnyAsync(predicate);
+    }
 }

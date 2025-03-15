@@ -44,6 +44,7 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
         await _context.SaveChangesAsync();
     }
+
     public async Task<Users?> GetByIdAsync(int userId)
     {
         return await _context.Users
@@ -51,10 +52,8 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
             .Include(u => u.UserExperience)
             .Include(u => u.Bag)
             .Include(u => u.Wallet)
-            .Include(u=> u.UserConfig)
-
+            .Include(u => u.UserConfig)
             .FirstOrDefaultAsync(u => u.UserId == userId);
-            
     }
 
     public async Task<Roles?> GetRoleByIdAsync(int roleId)

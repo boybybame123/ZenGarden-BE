@@ -25,8 +25,8 @@ public class TreesController(ITreeService treeService) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] TreeDto treeDto)
     {
-        await treeService.AddAsync(treeDto);
-        return Ok(new { message = "Tree created successfully" });
+        var createdTree = await treeService.AddAsync(treeDto);
+        return CreatedAtAction(nameof(GetById), new { id = createdTree.TreeId }, createdTree);
     }
 
     [HttpPut("{id:int}")]
@@ -36,10 +36,11 @@ public class TreesController(ITreeService treeService) : ControllerBase
         return Ok(new { message = "Tree updated successfully" });
     }
 
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
+
+    [HttpPut("disable/{treeId:int}")]
+    public async Task<IActionResult> DisableTree(int treeId)
     {
-        await treeService.DeleteAsync(id);
-        return Ok(new { message = "Tree deleted successfully" });
+        await treeService.DisableTreeAsync(treeId);
+        return Ok(new { message = "Tree disabled successfully." });
     }
 }

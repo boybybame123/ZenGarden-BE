@@ -1,10 +1,7 @@
-﻿
+﻿namespace ZenGarden.Domain.Enums;
 
-namespace ZenGarden.Domain.Enums
+public enum UserChallengeRole
 {
-    public enum UserChallengeRole
-    {
-        organizer,
-        participant
-    }
+    organizer,
+    participant
 }

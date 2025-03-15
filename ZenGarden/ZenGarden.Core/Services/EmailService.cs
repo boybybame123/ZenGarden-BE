@@ -19,7 +19,7 @@ public class EmailService : IEmailService
             $"Your OTP code is: <b>{otp}</b>. It will expire in 5 minutes.");
     }
 
-    public async Task SendEmailAsync(string email, string subject, string body)
+    private async Task SendEmailAsync(string email, string subject, string body)
     {
         var mailMessage = new MailMessage
         {

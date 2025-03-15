@@ -8,8 +8,8 @@ public class SuggestFocusMethodValidator : AbstractValidator<SuggestFocusMethodD
     public SuggestFocusMethodValidator()
     {
         RuleFor(x => x.TaskName)
-            .NotEmpty().WithMessage("TaskName is required."); 
-        
+            .NotEmpty().WithMessage("TaskName is required.");
+
         RuleFor(x => x.TaskDescription)
             .NotEmpty().WithMessage("TaskDescription is required.");
 

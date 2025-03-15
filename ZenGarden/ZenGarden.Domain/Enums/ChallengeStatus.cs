@@ -1,11 +1,7 @@
-﻿
+﻿namespace ZenGarden.Domain.Enums;
 
-namespace ZenGarden.Domain.Enums
+public enum ChallengeStatus
 {
-    public enum ChallengeStatus
-    {
-        InActive,
-        Active
-
-    }
+    InActive,
+    Active
 }

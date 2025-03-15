@@ -371,16 +371,16 @@ public class ZenGardenContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.TaskDescription)
-                        .HasMaxLength(1000);
-            
-                    entity.Property(e => e.TaskNote)
-                        .HasMaxLength(500);
-            
-                    entity.Property(e => e.TaskResult)
-                        .HasMaxLength(2083);
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.TaskNote)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.TaskResult)
+                .HasMaxLength(2083);
 
             entity.Property(e => e.WorkDuration)
-                        .HasDefaultValue(25);
+                .HasDefaultValue(25);
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
@@ -397,10 +397,10 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp");
-            
+
             entity.Property(e => e.StartDate)
                 .HasColumnType("timestamp");
-            
+
             entity.Property(e => e.EndDate)
                 .HasColumnType("timestamp");
 
@@ -582,6 +582,9 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("Rarity")
                 .HasMaxLength(100);
 
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .ValueGeneratedOnAdd()
@@ -630,7 +633,7 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("ActivityType");
 
             entity.Property(e => e.XpAmount)
-                .HasColumnType("int")
+                .HasColumnType("double")
                 .HasColumnName("XpAmount");
 
             entity.Property(e => e.CreatedAt)
@@ -658,13 +661,13 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Progress).HasColumnType("int").HasDefaultValue(0);
             entity.Property(e => e.Status)
-            .HasConversion<int>()
-            .HasColumnName("Status")
-            .IsRequired();
+                .HasConversion<int>()
+                .HasColumnName("Status")
+                .IsRequired();
             entity.Property(e => e.ChallengeRole)
-            .HasConversion<int>()
-            .HasColumnName("ChallengeRole")
-            .IsRequired();
+                .HasConversion<int>()
+                .HasColumnName("ChallengeRole")
+                .IsRequired();
             entity.Property(e => e.JoinedAt)
                 .HasColumnType("timestamp")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -781,7 +784,7 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Phone)
                 .IsRequired()
                 .HasMaxLength(20);
-            entity.Property(e=> e.ImageUrl)
+            entity.Property(e => e.ImageUrl)
                 .IsRequired()
                 .HasMaxLength(255);
 
@@ -790,7 +793,6 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Status)
                 .HasConversion<int>()
                 .IsRequired();
-
 
 
             entity.Property(e => e.RefreshTokenHash)
@@ -845,7 +847,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.FinalTreeId)
                 .HasColumnName("FinalTreeID");
-            
+
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
                 .IsRequired();

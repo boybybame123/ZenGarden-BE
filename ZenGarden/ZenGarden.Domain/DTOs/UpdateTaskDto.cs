@@ -8,9 +8,9 @@ public class UpdateTaskDto
 
     public string? TaskDescription { get; set; }
 
-    public string? TaskNote { get; set; } 
+    public string? TaskNote { get; set; }
 
-    public string? TaskResult { get; set; } 
+    public string? TaskResult { get; set; }
 
     public int? WorkDuration { get; set; }
 

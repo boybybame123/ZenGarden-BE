@@ -14,21 +14,26 @@ public class TaskService(
     IUserTreeRepository userTreeRepository,
     IXpConfigRepository xpConfigRepository,
     ITaskTypeRepository taskTypeRepository,
+    ITreeXpLogRepository treeXpLogRepository,
+    ITreeXpConfigRepository treeXpConfigRepository,
     IMapper mapper) : ITaskService
 {
-    public async Task<List<Tasks>> GetAllTaskAsync()
+    public async Task<List<TaskDto>> GetAllTaskAsync()
     {
-        return await taskRepository.GetAllAsync(); 
+        var tasks = await taskRepository.GetAllWithDetailsAsync();
+        return mapper.Map<List<TaskDto>>(tasks);
     }
 
-    public async Task<Tasks?> GetTaskByIdAsync(int taskId)
+    public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
-        return await taskRepository.GetByIdAsync(taskId)
-               ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-    }
-    
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-    public async Task<Tasks> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
+        return mapper.Map<TaskDto>(task);
+    }
+
+
+    public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
         if (dto.FocusMethodId == null)
             throw new ArgumentException("FocusMethodId is required. Please call SuggestFocusMethod first.");
@@ -36,11 +41,10 @@ public class TaskService(
         var existingMethod = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
         if (existingMethod == null)
             throw new KeyNotFoundException("FocusMethod not found.");
-        
+
         var existingTaskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (existingTaskType == null)
             throw new KeyNotFoundException("TaskType not found.");
-
         var workDuration = dto.WorkDuration ?? existingMethod.DefaultDuration ?? 25;
         var breakTime = dto.BreakTime ?? existingMethod.DefaultBreak ?? 5;
 
@@ -61,13 +65,14 @@ public class TaskService(
         };
 
         await taskRepository.CreateAsync(newTask);
-        return newTask;
+        await unitOfWork.CommitAsync();
+        return mapper.Map<TaskDto>(newTask);
     }
 
-    
+
     public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
     {
-        var existingTask = await GetTaskByIdAsync(updateTaskDto.TaskId);
+        var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId);
         if (existingTask == null)
             throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
 
@@ -76,7 +81,7 @@ public class TaskService(
 
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription))
             existingTask.TaskDescription = updateTaskDto.TaskDescription;
-        
+
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
             existingTask.TaskNote = updateTaskDto.TaskNote;
 
@@ -102,10 +107,10 @@ public class TaskService(
             throw new InvalidOperationException("Failed to update task.");
     }
 
-    
+
     public async Task DeleteTaskAsync(int taskId)
     {
-        var task = await GetTaskByIdAsync(taskId);
+        var task = await taskRepository.GetByIdAsync(taskId);
         if (task == null)
             throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
@@ -124,7 +129,8 @@ public class TaskService(
 
         var existingInProgressTask = await taskRepository.GetUserTaskInProgressAsync(userId);
         if (existingInProgressTask != null)
-            throw new InvalidOperationException($"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
+            throw new InvalidOperationException(
+                $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
 
         task.Status = TasksStatus.InProgress;
         task.StartedAt = DateTime.UtcNow;
@@ -148,14 +154,27 @@ public class TaskService(
 
         if (task.FocusMethodId == null)
             throw new InvalidOperationException("Task does not have an assigned FocusMethod.");
+
         var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
                        ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
         var standardDuration = task.FocusMethod?.MinDuration ?? 25;
-        var workDuration = (double)(task.WorkDuration ?? 25);
-        var xpEarned = workDuration / standardDuration * xpConfig.BaseXp * xpConfig.Multiplier;
+        var xpEarned = (task.WorkDuration ?? 25) / (double)standardDuration * xpConfig.BaseXp * xpConfig.Multiplier;
 
         task.UserTree.TotalXp += xpEarned;
+
+        var xpLog = new TreeXpLog
+        {
+            TaskId = task.TaskId,
+            ActivityType = ActivityType.TaskXp,
+            XpAmount = xpEarned,
+            CreatedAt = DateTime.UtcNow
+        };
+        await treeXpLogRepository.CreateAsync(xpLog);
+
+        var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
+        if (task.UserTree.TotalXp >= maxXpThreshold) task.UserTree.TreeStatus = TreeStatus.MaxLevel;
+
         task.Status = TasksStatus.Completed;
         task.CompletedAt = DateTime.UtcNow;
 
@@ -165,6 +184,7 @@ public class TaskService(
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to complete task.");
     }
+
     public async Task UpdateOverdueTasksAsync()
     {
         var overdueTasks = await taskRepository.GetOverdueTasksAsync();
@@ -179,4 +199,18 @@ public class TaskService(
             await unitOfWork.CommitAsync();
     }
 
+    public async Task<double> CalculateTaskXpAsync(int taskId)
+    {
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+                   ?? throw new KeyNotFoundException("Task not found.");
+
+        if (task.FocusMethodId == null)
+            throw new InvalidOperationException("Task does not have an assigned FocusMethod.");
+
+        var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
+                       ?? throw new KeyNotFoundException("XP configuration not found.");
+
+        var standardDuration = task.FocusMethod?.MinDuration ?? 25;
+        return (task.WorkDuration ?? 25) / (double)standardDuration * xpConfig.BaseXp * xpConfig.Multiplier;
+    }
 }
