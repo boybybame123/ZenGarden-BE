@@ -6,9 +6,9 @@ namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IUserTreeService
 {
-    Task<IEnumerable<UserTree>> GetAllAsync();
-    Task<UserTree> GetByIdAsync(int id);
-    Task AddAsync(UserTreeDto userTreeDto);
-    Task UpdateAsync(int id, UserTreeDto userTreeDto);
+    Task AddAsync(CreateUserTreeDto createUserTreeDto);
+    Task UpdateAsync(int id, CreateUserTreeDto createUserTreeDto);
     Task ChangeStatusAsync(int id, TreeStatus newStatus);
+    Task<List<UserTreeDto>> GetAllUserTreesAsync();
+    Task<UserTreeDto> GetUserTreeDetailAsync(int userTreeId);
 }

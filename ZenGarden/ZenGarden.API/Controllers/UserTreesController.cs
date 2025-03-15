@@ -12,29 +12,29 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userTrees = await userTreeService.GetAllAsync();
+        var userTrees = await userTreeService.GetAllUserTreesAsync();
         return Ok(userTrees);
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var userTree = await userTreeService.GetByIdAsync(id);
+        var userTree = await userTreeService.GetUserTreeDetailAsync(id);
         return Ok(userTree);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add([FromBody] UserTreeDto userTreeDto)
+    public async Task<IActionResult> Add([FromBody] CreateUserTreeDto createUserTreeDto)
     {
-        await userTreeService.AddAsync(userTreeDto);
-        return CreatedAtAction(nameof(GetById), new { id = userTreeDto.UserId },
+        await userTreeService.AddAsync(createUserTreeDto);
+        return CreatedAtAction(nameof(GetById), new { id = createUserTreeDto.UserId },
             new { message = "UserTree created successfully" });
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UserTreeDto userTreeDto)
+    public async Task<IActionResult> Update(int id, [FromBody] CreateUserTreeDto createUserTreeDto)
     {
-        await userTreeService.UpdateAsync(id, userTreeDto);
+        await userTreeService.UpdateAsync(id, createUserTreeDto);
         return Ok(new { message = "UserTree updated successfully" });
     }
 
