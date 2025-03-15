@@ -7,13 +7,7 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Interfaces.IRepositories
 {
-    public interface IChallengeRepository : IGenericRepository<Challenge>
+    public interface IBagItemRepository: IGenericRepository<BagItem>
     {
-        Task<List<Challenge>> GetCallengeAll();
-
-
-
-
-         Task<Challenge?> GetByIdChallengeAsync(int id);
     }
 }

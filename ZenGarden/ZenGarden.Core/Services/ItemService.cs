@@ -32,9 +32,12 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
                ?? throw new KeyNotFoundException($"Item with ID {itemId} not found.");
     }
 
-    public async Task CreateItemAsync(Item item)
+    public async Task CreateItemAsync(ItemDto item)
     {
-        await itemRepository.CreateAsync(item);
+        var i= mapper.Map<Item>(item);
+        
+
+        await itemRepository.CreateAsync(i);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to create item.");
     }

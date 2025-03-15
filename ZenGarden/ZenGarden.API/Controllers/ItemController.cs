@@ -42,4 +42,13 @@ public class ItemController(IItemService itemService) : ControllerBase
         await _itemService.UpdateItemAsync(item);
         return Ok(new { message = "item updated successfully" });
     }
+
+    [HttpPost("create-item")]
+    [Produces("application/json")]
+    public async Task<IActionResult> CreateItem(ItemDto item)
+    {
+        await _itemService.CreateItemAsync(item);
+        return Ok(new { message = "item created successfully" });
+    }
+
 }

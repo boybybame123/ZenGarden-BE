@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ZenGarden.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    partial class ZenGardenContextModelSnapshot : ModelSnapshot
+    [Migration("20250314071659_InitialCreateIV")]
+    partial class InitialCreateIV
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -830,9 +833,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("ChallengeID");
 
-                    b.Property<int>("ChallengeRole")
-                        .HasColumnType("int")
-                        .HasColumnName("ChallengeRole");
+                    b.Property<bool>("ChallengeRole")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
