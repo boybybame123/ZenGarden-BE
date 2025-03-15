@@ -46,9 +46,9 @@ public partial class FocusMethodService : IFocusMethodService
             var isDatabaseEmpty = availableMethodNames.Count == 0;
 
             var prompt = isDatabaseEmpty
-                ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a *new unique focus method* optimized for this task. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nDo not explain, just return the result."
-                : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest a new one. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nDo not explain, just return the result.";
-
+                ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method optimized for this task. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nAll values are in minutes. Do not explain, just return the result."
+                : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest one. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nAll values are in minutes. Do not explain, just return the result.";
+            
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
                 throw new InvalidOperationException("OpenAI returned an empty response.");
