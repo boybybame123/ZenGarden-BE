@@ -20,11 +20,27 @@ public class MappingProfile : Profile
         CreateMap<UserXpConfig, UserXpConfigDto>()
             .ReverseMap();
         CreateMap<Packages, PackageDto>().ReverseMap();
-        CreateMap<UserTree, UserTreeDto>().ReverseMap();
+        CreateMap<UserTree, CreateUserTreeDto>().ReverseMap();
         CreateMap<Tree, TreeResponse>();
         CreateMap<TreeDto, Tree>();
         CreateMap<Challenge, ChallengeDto>().ReverseMap();
         CreateMap<FocusMethod, FocusMethodDto>()
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.Name));
+        CreateMap<UserTree, UserTreeDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName))
+            .ForMember(dest => dest.TreeStatus, opt => opt.MapFrom(src => src.TreeStatus.ToString()))
+            .ForMember(dest => dest.FinalTreeName, opt => opt.MapFrom(src => src.FinalTree != null ? src.FinalTree.Name : null))
+            .ForMember(dest => dest.FinalTreeRarity, opt => opt.MapFrom(src => src.FinalTree != null ? src.FinalTree.Rarity : null))
+            .ForMember(dest => dest.XpToNextLevel, opt => opt.MapFrom(src => CalculateXpToNextLevel(src)));
+    }
+    
+    private static double CalculateXpToNextLevel(UserTree userTree)
+    {
+        if (userTree.IsMaxLevel)
+        {
+            return 0;
+        }
+
+        return userTree.TreeXpConfig.XpThreshold - userTree.TotalXp;
     }
 }

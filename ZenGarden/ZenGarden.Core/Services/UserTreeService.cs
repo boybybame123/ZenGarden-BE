@@ -10,41 +10,43 @@ namespace ZenGarden.Core.Services;
 public class UserTreeService(IUnitOfWork unitOfWork, IUserTreeRepository userTreeRepository, ITreeRepository treeRepository, IMapper mapper)
     : IUserTreeService
 {
-    public async Task<IEnumerable<UserTree>> GetAllAsync()
+    public async Task<List<UserTreeDto>> GetAllUserTreesAsync()
     {
-        return await userTreeRepository.GetAllAsync();
+        var userTrees = await userTreeRepository.GetAllUserTreesAsync();
+        return mapper.Map<List<UserTreeDto>>(userTrees);
     }
 
-    public async Task<UserTree> GetByIdAsync(int id)
+
+    public async Task<UserTreeDto> GetUserTreeDetailAsync(int userTreeId)
     {
-        return await userTreeRepository.GetByIdAsync(id)
+        var userTree = await userTreeRepository.GetUserTreeDetailAsync(userTreeId)
                ?? throw new KeyNotFoundException("UserTree not found");
+        return mapper.Map<UserTreeDto>(userTree);
     }
 
-    public async Task AddAsync(UserTreeDto userTreeDto)
+    public async Task AddAsync(CreateUserTreeDto createUserTreeDto)
     {
-        var userTree = mapper.Map<UserTree>(userTreeDto);
+        var userTree = mapper.Map<UserTree>(createUserTreeDto);
         userTree.CreatedAt = DateTime.UtcNow;
         userTree.UpdatedAt = DateTime.UtcNow;
         userTree.LevelId = 1;
         userTree.TotalXp = 0;
         userTree.IsMaxLevel = false;
+        userTree.TreeStatus = TreeStatus.Growing;
+        
 
         await userTreeRepository.CreateAsync(userTree);
         await unitOfWork.CommitAsync();
     }
 
 
-    public async Task UpdateAsync(int id, UserTreeDto userTreeDto)
+    public async Task UpdateAsync(int id, CreateUserTreeDto createUserTreeDto)
     {
         var existingUserTree = await userTreeRepository.GetByIdAsync(id);
         if (existingUserTree == null) throw new KeyNotFoundException("UserTree not found");
 
-        if (!string.IsNullOrWhiteSpace(userTreeDto.Name))
-            existingUserTree.Name = userTreeDto.Name;
-
-        if (userTreeDto.TreeStatus != default) 
-            existingUserTree.TreeStatus = userTreeDto.TreeStatus;
+        if (!string.IsNullOrWhiteSpace(createUserTreeDto.Name))
+            existingUserTree.Name = createUserTreeDto.Name;
 
         existingUserTree.UpdatedAt = DateTime.UtcNow;
 
