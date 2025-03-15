@@ -38,8 +38,6 @@ public class UserService(
     }
 
 
-
-
     public async Task<Users?> GetUserByEmailAsync(string email)
     {
         return await userRepository.GetByEmailAsync(email);
@@ -62,10 +60,10 @@ public class UserService(
         var userUpdate = await GetUserByIdAsync(user.UserId);
         if (userUpdate == null)
             throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
-        
-        if(!string.IsNullOrEmpty(user.Password))
+
+        if (!string.IsNullOrEmpty(user.Password))
             userUpdate.Password = PasswordHasher.HashPassword(user.Password);
-        if(!string.IsNullOrEmpty(user.Email))
+        if (!string.IsNullOrEmpty(user.Email))
             userUpdate.Email = user.Email;
         if (!string.IsNullOrEmpty(user.Phone))
             userUpdate.Phone = user.Phone;
@@ -74,7 +72,7 @@ public class UserService(
         if (user.RoleId != null && user.RoleId != 0)
             userUpdate.RoleId = user.RoleId;
 
-        if(user.Status != userUpdate.Status && user.Status != null)
+        if (user.Status != userUpdate.Status && user.Status != null)
             userUpdate.Status = user.Status;
 
         if (!string.IsNullOrEmpty(user.ImageUrl))
@@ -166,7 +164,7 @@ public class UserService(
             {
                 UserId = newUser.UserId,
                 TotalXp = 0,
-                
+
                 XpToNextLevel = levelOneConfig.XpThreshold,
                 LevelId = 1,
                 UpdatedAt = DateTime.UtcNow

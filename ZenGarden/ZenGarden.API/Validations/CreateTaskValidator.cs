@@ -19,7 +19,7 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             .LessThan(x => x.EndDate).WithMessage("StartDate must be before EndDate.");
 
         RuleFor(x => x.WorkDuration)
-            .MustAsync(async (dto, workDuration, _) => 
+            .MustAsync(async (dto, workDuration, _) =>
             {
                 if (!workDuration.HasValue || !dto.FocusMethodId.HasValue) return true;
                 var focusMethod = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
@@ -28,7 +28,7 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             }).WithMessage("WorkDuration must be within the allowed range of the selected FocusMethod.");
 
         RuleFor(x => x.BreakTime)
-            .MustAsync(async (dto, breakTime, _) => 
+            .MustAsync(async (dto, breakTime, _) =>
             {
                 if (!breakTime.HasValue || !dto.FocusMethodId.HasValue) return true;
                 var focusMethod = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);

@@ -20,7 +20,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
             Console.WriteLine(e);
             throw;
         }
-        
+
 
         return mapper.Map<List<ItemDto>>(items);
     }
@@ -34,8 +34,8 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
 
     public async Task CreateItemAsync(ItemDto item)
     {
-        var i= mapper.Map<Item>(item);
-        
+        var i = mapper.Map<Item>(item);
+
 
         await itemRepository.CreateAsync(i);
         if (await unitOfWork.CommitAsync() == 0)

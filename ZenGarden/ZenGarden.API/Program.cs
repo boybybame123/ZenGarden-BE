@@ -26,9 +26,10 @@ _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
     .AddJsonOptions(options =>
-     {
-         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-     });
+    {
+        options.JsonSerializerOptions.ReferenceHandler =
+            ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -43,7 +44,7 @@ builder.Services.AddScoped<ITreeRepository, TreeRepository>();
 builder.Services.AddScoped<IItemDetailRepository, ItemDetailRepository>();
 builder.Services.AddScoped<IUserTreeRepository, UserTreeRepository>();
 builder.Services.AddScoped<ITreeXpLogRepository, TreeXpLogRepository>();
-builder.Services.AddScoped<ITreeLevelConfigRepository, TreeLevelConfigRepository>();
+builder.Services.AddScoped<ITreeXpConfigRepository, TreeXpConfigRepository>();
 builder.Services.AddScoped<ITaskTypeRepository, TaskTypeRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
@@ -51,11 +52,6 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IXpConfigRepository, XpConfigRepository>();
 builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", false, true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
-    .AddEnvironmentVariables();
 
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                        ?? builder.Configuration.GetConnectionString("ZenGardenDB");
@@ -67,7 +63,6 @@ builder.Services.AddDbContext<ZenGardenContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
 );
-
 
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
@@ -163,7 +158,7 @@ builder.Services.AddScoped<ITreeService, TreeService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
-builder.Services.AddScoped<IChallengeService,ChallengeService>();
+builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 

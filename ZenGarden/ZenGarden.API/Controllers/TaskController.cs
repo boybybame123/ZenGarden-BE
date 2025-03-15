@@ -33,7 +33,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "task deleted successfully" });
     }
 
-    [HttpPut("Update-Task")] 
+    [HttpPut("Update-Task")]
     public async Task<IActionResult> UpdateTask(UpdateTaskDto task)
     {
         await _taskService.UpdateTaskAsync(task);
@@ -58,13 +58,13 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "Task started successfully." });
     }
 
-
     [HttpPost("complete-task/{taskId:int}")]
     public async Task<IActionResult> CompleteTask(int taskId)
     {
         await _taskService.CompleteTaskAsync(taskId);
         return Ok(new { message = "Task completed successfully." });
     }
+
     [HttpPost("update-overdue")]
     public async Task<IActionResult> UpdateOverdueTasks()
     {
@@ -72,4 +72,10 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "Overdue tasks updated successfully." });
     }
 
+    [HttpGet("calculate-xp/{taskId:int}")]
+    public async Task<IActionResult> CalculateTaskXp(int taskId)
+    {
+        var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
+        return Ok(new { taskId, xpEarned });
+    }
 }

@@ -4,6 +4,7 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class PurchaseHistoryRepository(ZenGardenContext context) : GenericRepository<PurchaseHistory>(context), IPurchaseHistoryRepository {
-
+public class PurchaseHistoryRepository(ZenGardenContext context)
+    : GenericRepository<PurchaseHistory>(context), IPurchaseHistoryRepository
+{
 }
