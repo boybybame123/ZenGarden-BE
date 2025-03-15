@@ -175,14 +175,13 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
 builder.Services.AddHttpClient<FocusMethodRepository>();
 
-var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-                   ?? builder.Configuration["OpenAI:ApiKey"];
+var deepInfraApiKey = Environment.GetEnvironmentVariable("DEEPINFRA_API_KEY")
+                      ?? builder.Configuration["DeepInfra:ApiKey"];
 
-if (string.IsNullOrEmpty(openAiApiKey))
-    throw new InvalidOperationException("OpenAI API Key is missing.");
+if (string.IsNullOrEmpty(deepInfraApiKey))
+    throw new InvalidOperationException("DeepInfra API Key is missing.");
 
-builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = openAiApiKey; });
-
+builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = deepInfraApiKey; });
 
 var app = builder.Build();
 
