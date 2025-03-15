@@ -16,6 +16,7 @@ namespace ZenGarden.Core.Services;
 public partial class FocusMethodService : IFocusMethodService
 {
     private readonly IFocusMethodRepository _focusMethodRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly HttpClient _httpClient;
     private readonly IMapper _mapper;
     private readonly IMemoryCache _cache;
@@ -24,12 +25,13 @@ public partial class FocusMethodService : IFocusMethodService
     private static DateTime _lastRequestTime = DateTime.MinValue;
 
     public FocusMethodService(IFocusMethodRepository focusMethodRepository, HttpClient httpClient, IMapper mapper,
-        IOptions<OpenAiSettings> openAiSettings, IMemoryCache cache)
+        IOptions<OpenAiSettings> openAiSettings, IMemoryCache cache, IUnitOfWork unitOfWork)
     {
         _focusMethodRepository = focusMethodRepository;
         _httpClient = httpClient;
         _mapper = mapper;
         _cache = cache;
+        _unitOfWork = unitOfWork;
 
         var apiKey = openAiSettings.Value.ApiKey;
         if (string.IsNullOrEmpty(apiKey))
@@ -75,6 +77,7 @@ public partial class FocusMethodService : IFocusMethodService
             };
 
             await _focusMethodRepository.CreateAsync(newMethod);
+            await _unitOfWork.CommitAsync();
             return _mapper.Map<FocusMethodDto>(newMethod);
         }
         catch (HttpRequestException ex)
