@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using AspNetCoreRateLimit;
 using FluentValidation;
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
@@ -165,7 +167,9 @@ builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IChallengeService,ChallengeService>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
-
+builder.Services.AddScoped<IFirebaseStorageService, FirebaseStorageService>();
+//builder.Services.AddSingleton(opt => StorageClient.Create(GoogleCredential.FromFile(Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS"))));
+builder.Services.AddSingleton(opt => StorageClient.Create(GoogleCredential.FromFile("..\\..\\zengarden-be-firebase-adminsdk-fbsvc-465f81ff4c.json")));
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 builder.Services.AddDataProtection()
