@@ -9,7 +9,7 @@ public class EmailService : IEmailService
     private readonly SmtpClient _smtpClient = new("smtp.gmail.com")
     {
         Port = 587,
-        Credentials = new NetworkCredential("boybybame@gmail.com", "nmiklggzgheretvi"),
+        Credentials = new NetworkCredential("zengardensp25se111@gmail.com", "kmiultfbypxnqxqu"),
         EnableSsl = true
     };
 
@@ -19,11 +19,11 @@ public class EmailService : IEmailService
             $"Your OTP code is: <b>{otp}</b>. It will expire in 5 minutes.");
     }
 
-    public async Task SendEmailAsync(string email, string subject, string body)
+    private async Task SendEmailAsync(string email, string subject, string body)
     {
         var mailMessage = new MailMessage
         {
-            From = new MailAddress("boybybame@gmail.com"),
+            From = new MailAddress("zengardensp25se111@gmail.com"),
             Subject = subject,
             Body = body,
             IsBodyHtml = true

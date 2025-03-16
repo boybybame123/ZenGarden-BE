@@ -13,17 +13,17 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
     {
         return await _context.UserTree
             .Include(ut => ut.User)
-            .Include(ut => ut.FinalTree) 
-            .Include(ut => ut.TreeXpConfig) 
+            .Include(ut => ut.FinalTree)
+            .Include(ut => ut.TreeXpConfig)
             .FirstOrDefaultAsync(ut => ut.UserTreeId == userTreeId);
     }
-    
+
     public async Task<List<UserTree>> GetAllUserTreesAsync()
     {
         return await _context.UserTree
             .Include(ut => ut.User)
-            .Include(ut => ut.FinalTree)  
-            .Include(ut => ut.TreeXpConfig) 
+            .Include(ut => ut.FinalTree)
+            .Include(ut => ut.TreeXpConfig)
             .ToListAsync();
     }
 }

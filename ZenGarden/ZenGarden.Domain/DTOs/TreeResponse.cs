@@ -1,4 +1,5 @@
 namespace ZenGarden.Domain.DTOs;
+
 public class TreeResponse
 {
     public int TreeId { get; set; }

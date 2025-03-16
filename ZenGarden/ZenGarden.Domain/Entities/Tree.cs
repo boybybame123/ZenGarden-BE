@@ -10,6 +10,7 @@ public partial class Tree
     public int TreeId { get; set; }
     public string Name { get; set; }
     public string Rarity { get; set; }
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();

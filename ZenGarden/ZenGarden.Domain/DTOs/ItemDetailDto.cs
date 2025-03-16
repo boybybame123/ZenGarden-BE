@@ -1,6 +1,4 @@
-﻿using ZenGarden.Domain.Entities;
-
-namespace ZenGarden.Domain.DTOs;
+﻿namespace ZenGarden.Domain.DTOs;
 
 public class ItemDetailDto
 {
@@ -24,6 +22,4 @@ public class ItemDetailDto
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
-
 }

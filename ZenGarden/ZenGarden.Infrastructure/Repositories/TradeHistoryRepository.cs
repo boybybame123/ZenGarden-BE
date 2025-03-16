@@ -4,5 +4,5 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TradeHistoryRepository(ZenGardenContext context) : GenericRepository<TradeHistory>(context), ITradeHistoryRepository;
-
+public class TradeHistoryRepository(ZenGardenContext context)
+    : GenericRepository<TradeHistory>(context), ITradeHistoryRepository;

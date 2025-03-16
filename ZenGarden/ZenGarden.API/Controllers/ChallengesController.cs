@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Core.Services;
 using ZenGarden.Domain.DTOs;
-using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 
 namespace ZenGarden.API.Controllers;
 
@@ -13,7 +8,8 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class ChallengesController(IChallengeService challengeService) : ControllerBase
 {
-    private readonly IChallengeService _challengeService = challengeService ?? throw new ArgumentNullException(nameof(challengeService));
+    private readonly IChallengeService _challengeService =
+        challengeService ?? throw new ArgumentNullException(nameof(challengeService));
 
     [HttpGet]
     public async Task<IActionResult> GetChallenge()
@@ -39,6 +35,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         var i = await _challengeService.GetChallengeByIdAsync(challenge.ChallengeId);
         return Ok(i);
     }
+
     [HttpPut]
     public async Task<IActionResult> PutUChallenge(ChallengeDto challenge)
     {
@@ -47,5 +44,4 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         var i = await _challengeService.GetChallengeByIdAsync(challenge.ChallengeId);
         return Ok(i);
     }
-
 }

@@ -16,21 +16,29 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .Where(t => t.UserTree.UserId == userId && t.Status == TasksStatus.InProgress)
             .FirstOrDefaultAsync();
     }
-    
+
     public async Task<Tasks?> GetTaskWithDetailsAsync(int taskId)
     {
         return await _context.Tasks
-            .Include(t => t.UserTree) 
+            .Include(t => t.UserTree)
             .Include(t => t.FocusMethod)
             .Include(t => t.TaskType)
             .FirstOrDefaultAsync(t => t.TaskId == taskId);
     }
-    
+
+    public async Task<List<Tasks>> GetAllWithDetailsAsync()
+    {
+        return await _context.Tasks
+            .Include(t => t.TaskType)
+            .Include(t => t.FocusMethod)
+            .Include(t => t.UserTree)
+            .ToListAsync();
+    }
+
     public async Task<List<Tasks>> GetOverdueTasksAsync()
     {
         return await _context.Tasks
             .Where(t => t.Status == TasksStatus.InProgress && t.EndDate < DateTime.UtcNow)
             .ToListAsync();
     }
-
 }

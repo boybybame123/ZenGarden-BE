@@ -5,7 +5,8 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class FocusMethodRepository(ZenGardenContext context) : GenericRepository<FocusMethod>(context), IFocusMethodRepository
+public class FocusMethodRepository(ZenGardenContext context)
+    : GenericRepository<FocusMethod>(context), IFocusMethodRepository
 {
     private readonly ZenGardenContext _context = context;
 

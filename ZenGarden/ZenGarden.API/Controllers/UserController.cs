@@ -41,8 +41,6 @@ public class UserController(IUserService userService) : ControllerBase
     }
 
 
-
-
     [HttpPut("update-user")]
     [Produces("application/json")]
     public async Task<IActionResult> UpdateUser(UpdateUserDTO user)

@@ -50,5 +50,4 @@ public class ItemController(IItemService itemService) : ControllerBase
         await _itemService.CreateItemAsync(item);
         return Ok(new { message = "item created successfully" });
     }
-
 }
