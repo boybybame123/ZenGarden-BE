@@ -25,7 +25,7 @@ public partial class Tasks
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public TasksStatus Status { get; set; }
-    public int BreakTime { get; set; }
+    public int? BreakTime { get; set; }
     public bool IsSuggested { get; set; } = true;
     public string TaskNote { get; set; } 
     public string TaskResult { get; set; } 
