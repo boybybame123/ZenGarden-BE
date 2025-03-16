@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using AspNetCoreRateLimit;
 using FluentValidation;
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
@@ -22,6 +24,7 @@ using ZenGarden.Infrastructure.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
@@ -104,7 +107,7 @@ builder.Services.AddSwaggerGen(c =>
             Id = "Bearer"
         }
     };
-
+  
     c.AddSecurityDefinition("Bearer", securitySchema);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -159,7 +162,9 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
+builder.Services.AddSingleton<IS3Service, S3Service>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+
 
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
@@ -194,4 +199,5 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.UseDeveloperExceptionPage();
 app.Run();
