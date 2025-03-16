@@ -1,5 +1,4 @@
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Interfaces.IServices;

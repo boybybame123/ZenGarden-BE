@@ -1,7 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.API.Controllers;
 
@@ -9,5 +6,4 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class ChallengeTasksController : ControllerBase
 {
-    
 }

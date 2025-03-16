@@ -1,44 +1,38 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 
-namespace ZenGarden.Core.Services
+namespace ZenGarden.Core.Services;
+
+public class TradeHistoryService(
+    ITradeHistoryRepository tradeHistoryRepository,
+    IUnitOfWork unitOfWork,
+    IMapper mapper) : ITradeHistoryService
 {
-    public class TradeHistoryService(ITradeHistoryRepository tradeHistoryRepository, IUnitOfWork unitOfWork, IMapper mapper) : ITradeHistoryService
+    public Task<TradeHistory> CreateTradeHistoryAsync(TradeHistory tradeHistory)
     {
-        public Task<TradeHistory> CreateTradeHistoryAsync(TradeHistory tradeHistory)
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
+    }
 
-        public Task<TradeHistory> DeleteTradeHistoryAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
+    public Task<TradeHistory> DeleteTradeHistoryAsync(int id)
+    {
+        throw new NotImplementedException();
+    }
 
-        public async Task<List<TradeHistory>> GetTradeHistoryAsync()
-        {
-            var history = await tradeHistoryRepository.GetAllAsync();
-            return history.ToList();
-            
+    public async Task<List<TradeHistory>> GetTradeHistoryAsync()
+    {
+        var history = await tradeHistoryRepository.GetAllAsync();
+        return history.ToList();
+    }
 
-        }
+    public Task<TradeHistory> GetTradeHistoryByIdAsync(int id)
+    {
+        throw new NotImplementedException();
+    }
 
-        public Task<TradeHistory> GetTradeHistoryByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TradeHistory> UpdateTradeHistoryAsync(TradeHistory tradeHistory)
-        {
-            throw new NotImplementedException();
-        }
+    public Task<TradeHistory> UpdateTradeHistoryAsync(TradeHistory tradeHistory)
+    {
+        throw new NotImplementedException();
     }
 }

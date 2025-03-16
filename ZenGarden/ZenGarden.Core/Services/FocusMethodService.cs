@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -15,14 +16,14 @@ namespace ZenGarden.Core.Services;
 
 public partial class FocusMethodService : IFocusMethodService
 {
-    private readonly IFocusMethodRepository _focusMethodRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly HttpClient _httpClient;
-    private readonly IMapper _mapper;
-    private readonly IMemoryCache _cache;
     private static readonly SemaphoreSlim RateLimitSemaphore = new(1, 1);
     private static readonly TimeSpan RateLimitInterval = TimeSpan.FromSeconds(2);
     private static DateTime _lastRequestTime = DateTime.MinValue;
+    private readonly IMemoryCache _cache;
+    private readonly IFocusMethodRepository _focusMethodRepository;
+    private readonly HttpClient _httpClient;
+    private readonly IMapper _mapper;
+    private readonly IUnitOfWork _unitOfWork;
 
     public FocusMethodService(IFocusMethodRepository focusMethodRepository, HttpClient httpClient, IMapper mapper,
         IOptions<OpenAiSettings> openAiSettings, IMemoryCache cache, IUnitOfWork unitOfWork)
@@ -50,7 +51,7 @@ public partial class FocusMethodService : IFocusMethodService
             var prompt = isDatabaseEmpty
                 ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method optimized for this task. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nAll values are in minutes. Do not explain, just return the result."
                 : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest one. Return the result in exactly this format:\n\nName - MinDuration - MaxDuration - MinBreak - MaxBreak - DefaultDuration - DefaultBreak.\n\nAll values are in minutes. Do not explain, just return the result.";
-            
+
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
                 throw new InvalidOperationException("OpenAI returned an empty response.");
@@ -86,7 +87,8 @@ public partial class FocusMethodService : IFocusMethodService
         }
         catch (JsonException ex)
         {
-            throw new InvalidOperationException("Failed to parse OpenAI response. The API returned unexpected data.", ex);
+            throw new InvalidOperationException("Failed to parse OpenAI response. The API returned unexpected data.",
+                ex);
         }
         catch (DbUpdateException ex)
         {
@@ -101,13 +103,10 @@ public partial class FocusMethodService : IFocusMethodService
 
     private async Task<string?> CallOpenAiApi(string prompt)
     {
-        if (_cache.TryGetValue(prompt, out string? cachedResponse))
-        {
-            return cachedResponse;
-        }
+        if (_cache.TryGetValue(prompt, out string? cachedResponse)) return cachedResponse;
 
         const int maxRetries = 3;
-        int attempt = 0;
+        var attempt = 0;
 
         while (attempt < maxRetries)
         {
@@ -116,9 +115,7 @@ public partial class FocusMethodService : IFocusMethodService
             {
                 var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
                 if (timeSinceLastRequest < RateLimitInterval)
-                {
                     await Task.Delay(RateLimitInterval - timeSinceLastRequest);
-                }
 
                 var requestBody = new
                 {
@@ -139,7 +136,7 @@ public partial class FocusMethodService : IFocusMethodService
 
                 _lastRequestTime = DateTime.UtcNow;
 
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 {
                     Console.WriteLine(
                         $"[ZenGarden] OpenAI Rate Limit hit. Retrying... Attempt {attempt + 1}/{maxRetries}");
@@ -193,7 +190,7 @@ public partial class FocusMethodService : IFocusMethodService
 
         throw new HttpRequestException("The OpenAI API request failed after multiple attempts.");
     }
-    
+
     private static int ExtractNumber(string input, int defaultValue)
     {
         var match = MyRegex().Match(input);
