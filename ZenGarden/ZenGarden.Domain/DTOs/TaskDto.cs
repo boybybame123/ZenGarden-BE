@@ -7,6 +7,7 @@ public class TaskDto
     public int TaskId { get; set; }
     public string? TaskName { get; set; }
     public string? TaskDescription { get; set; }
+    public int? TotalDuration { get; set; }
     public int? WorkDuration { get; set; }
     public int? BreakTime { get; set; }
     public DateTime? StartDate { get; set; }

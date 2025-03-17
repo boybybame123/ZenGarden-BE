@@ -17,6 +17,7 @@ public partial class Tasks
     public int? FocusMethodId { get; set; }
     public string TaskName { get; set; }
     public string TaskDescription { get; set; }
+    public int? TotalDuration { get; set; } 
     public int? WorkDuration { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

@@ -8,12 +8,17 @@ public class SuggestFocusMethodValidator : AbstractValidator<SuggestFocusMethodD
     public SuggestFocusMethodValidator()
     {
         RuleFor(x => x.TaskName)
-            .NotEmpty().WithMessage("TaskName is required.");
+            .MaximumLength(100).WithMessage("TaskName must be at most 100 characters.");
 
         RuleFor(x => x.TaskDescription)
-            .NotEmpty().WithMessage("TaskDescription is required.");
+            .MaximumLength(500).WithMessage("TaskDescription must be at most 500 characters.");
+
+        RuleFor(x => x.TotalDuration)
+            .GreaterThan(0).WithMessage("TotalDuration must be greater than 0.")
+            .When(x => x.TotalDuration.HasValue); 
 
         RuleFor(x => x.StartDate)
-            .LessThan(x => x.EndDate).WithMessage("StartDate must be before EndDate.");
+            .LessThan(x => x.EndDate)
+            .WithMessage("StartDate must be before EndDate.");
     }
 }
