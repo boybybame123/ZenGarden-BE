@@ -16,6 +16,10 @@ public class TaskService(
     ITaskTypeRepository taskTypeRepository,
     ITreeXpLogRepository treeXpLogRepository,
     ITreeXpConfigRepository treeXpConfigRepository,
+    ITreeRepository treeRepository,
+    IUserXpLogRepository userXpLogRepository,
+    IUserXpLogService userXpLogService,
+    IFocusMethodService focusMethodService,
     IMapper mapper) : ITaskService
 {
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -35,28 +39,31 @@ public class TaskService(
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
-        if (dto.FocusMethodId == null)
-            throw new ArgumentException("FocusMethodId is required. Please call SuggestFocusMethod first.");
-
-        var existingMethod = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
-        if (existingMethod == null)
-            throw new KeyNotFoundException("FocusMethod not found.");
+        var selectedMethod = dto.FocusMethodId.HasValue
+            ? mapper.Map<FocusMethodDto>(await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value))
+            : await focusMethodService.SuggestFocusMethodAsync(new SuggestFocusMethodDto
+            {
+                TaskName = dto.TaskName,
+                TaskDescription = dto.TaskDescription,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate
+            });
+        if (selectedMethod == null)
+            throw new InvalidOperationException("No valid focus method found.");
 
         var existingTaskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (existingTaskType == null)
             throw new KeyNotFoundException("TaskType not found.");
-        var workDuration = dto.WorkDuration ?? existingMethod.DefaultDuration ?? 25;
-        var breakTime = dto.BreakTime ?? existingMethod.DefaultBreak ?? 5;
 
         var newTask = new Tasks
         {
             TaskTypeId = dto.TaskTypeId,
             UserTreeId = dto.UserTreeId,
-            FocusMethodId = existingMethod.FocusMethodId,
+            FocusMethodId = selectedMethod.FocusMethodId,
             TaskName = dto.TaskName,
             TaskDescription = dto.TaskDescription,
-            WorkDuration = workDuration,
-            BreakTime = breakTime,
+            WorkDuration = selectedMethod.DefaultDuration ?? 25,
+            BreakTime = selectedMethod.DefaultBreak ?? 5,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             CreatedAt = DateTime.UtcNow,
@@ -132,6 +139,11 @@ public class TaskService(
             throw new InvalidOperationException(
                 $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
 
+        var today = DateTime.UtcNow.Date;
+        var checkInLog = await userXpLogRepository.GetUserCheckInLogAsync(userId, today);
+
+        if (checkInLog == null) await userXpLogService.CheckInAndGetXpAsync(userId);
+
         task.Status = TasksStatus.InProgress;
         task.StartedAt = DateTime.UtcNow;
         taskRepository.Update(task);
@@ -173,7 +185,13 @@ public class TaskService(
         await treeXpLogRepository.CreateAsync(xpLog);
 
         var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
-        if (task.UserTree.TotalXp >= maxXpThreshold) task.UserTree.TreeStatus = TreeStatus.MaxLevel;
+        if (task.UserTree.TotalXp >= maxXpThreshold)
+        {
+            task.UserTree.TreeStatus = TreeStatus.MaxLevel;
+
+            var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
+            if (finalTreeId != null) task.UserTree.FinalTreeId = finalTreeId;
+        }
 
         task.Status = TasksStatus.Completed;
         task.CompletedAt = DateTime.UtcNow;

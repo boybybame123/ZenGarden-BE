@@ -8,46 +8,46 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class UserXpConfigsController(IUserXpConfigService userXpConfigService) : ControllerBase
 {
-    private readonly IUserXpConfigService _UserXpConfigService =
+    private readonly IUserXpConfigService _userXpConfigService =
         userXpConfigService ?? throw new ArgumentNullException(nameof(userXpConfigService));
 
     [HttpGet]
     public async Task<IActionResult> GetUserXpConfigs()
     {
-        var UserXpConfigs = await _UserXpConfigService.GetAllUserXpConfigsAsync();
-        return Ok(UserXpConfigs);
+        var userXpConfigs = await _userXpConfigService.GetAllUserXpConfigsAsync();
+        return Ok(userXpConfigs);
     }
 
-    [HttpGet("{UserXpConfigId}")]
-    public async Task<IActionResult> GetUserXpConfigById(int UserXpConfigId)
+    [HttpGet("{userXpConfigId:int}")]
+    public async Task<IActionResult> GetUserXpConfigById(int userXpConfigId)
     {
-        var UserXpConfig = await _UserXpConfigService.GetUserXpConfigByIdAsync(UserXpConfigId);
-        if (UserXpConfig == null) return NotFound();
-        return Ok(UserXpConfig);
+        var userXpConfig = await _userXpConfigService.GetUserXpConfigByIdAsync(userXpConfigId);
+        if (userXpConfig == null) return NotFound();
+        return Ok(userXpConfig);
     }
 
-    [HttpDelete("{UserXpConfigId}")]
+    [HttpDelete("{userXpConfigId:int}")]
     [Produces("application/json")]
-    public async Task<IActionResult> DeleteUserXpConfig(int UserXpConfigId)
+    public async Task<IActionResult> DeleteUserXpConfig(int userXpConfigId)
     {
-        await _UserXpConfigService.DeleteUserXpConfigAsync(UserXpConfigId);
+        await _userXpConfigService.DeleteUserXpConfigAsync(userXpConfigId);
         return Ok(new { message = "UserXpConfig deleted successfully" });
     }
 
     [HttpPut("update-UserXpConfig")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateUserXpConfig(UserXpConfigDto UserXpConfig)
+    public async Task<IActionResult> UpdateUserXpConfig(UserXpConfigDto userXpConfig)
     {
-        await _UserXpConfigService.UpdateUserXpConfigAsync(UserXpConfig);
-        var i = await _UserXpConfigService.GetUserXpConfigByIdAsync(UserXpConfig.LevelId);
+        await _userXpConfigService.UpdateUserXpConfigAsync(userXpConfig);
+        var i = await _userXpConfigService.GetUserXpConfigByIdAsync(userXpConfig.LevelId);
         return Ok(new { message = "UserXpConfig updated successfully", i });
     }
 
     [HttpPost]
     public async Task<IActionResult> PostUserConfig(UserXpConfigDto userConfig)
     {
-        await _UserXpConfigService.CreateUserXpConfigAsync(userConfig);
-        var i = await _UserXpConfigService.GetUserXpConfigByIdAsync(userConfig.LevelId);
+        await _userXpConfigService.CreateUserXpConfigAsync(userConfig);
+        var i = await _userXpConfigService.GetUserXpConfigByIdAsync(userConfig.LevelId);
 
         return Ok(new { message = "UserXpConfig updated successfully", i });
     }

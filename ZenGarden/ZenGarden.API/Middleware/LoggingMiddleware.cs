@@ -4,12 +4,13 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
 {
     private static async Task<string> ReadRequestBody(HttpRequest request, int maxLength = 1000)
     {
-        if (request.Body == null || !request.Body.CanRead)
+        if (request.ContentLength == null || request.ContentLength == 0 || !request.Body.CanRead)
             return "[Empty Body]";
 
-        request.EnableBuffering();
-        request.Body.Position = 0;
+        if (!request.Body.CanSeek)
+            request.EnableBuffering();
 
+        request.Body.Position = 0;
         using var reader = new StreamReader(request.Body, leaveOpen: true);
         var bodyText = await reader.ReadToEndAsync();
         request.Body.Position = 0;
@@ -23,13 +24,14 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
 
     public async Task Invoke(HttpContext context)
     {
-        var requestBody = await ReadRequestBody(context.Request);
+        var path = context.Request.Path.Value ?? "";
+        var method = context.Request.Method;
 
-        if (context.Request.Path.Value is { } path && path.Contains("openai", StringComparison.OrdinalIgnoreCase))
-            requestBody = "[FILTERED]";
+        var requestBody = path.Contains("openai", StringComparison.OrdinalIgnoreCase)
+            ? "[FILTERED]"
+            : await ReadRequestBody(context.Request);
 
-        logger.LogInformation("[Request] {Method} {Path} | Body: {Body}",
-            context.Request.Method, context.Request.Path, requestBody);
+        logger.LogInformation("[Request] {Method} {Path} | Body: {Body}", method, path, requestBody);
 
         await next(context);
     }

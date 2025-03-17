@@ -37,11 +37,11 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<TreeXpLog> TreeXpLog { get; set; }
     public virtual DbSet<UserChallenge> UserChallenges { get; set; }
     public virtual DbSet<UserConfig> UserConfig { get; set; }
-    public virtual DbSet<UserExperience> UserExperience { get; set; }
+    public virtual DbSet<UserExperience?> UserExperience { get; set; }
     public virtual DbSet<Users> Users { get; set; }
     public virtual DbSet<UserTree> UserTree { get; set; }
     public virtual DbSet<UserXpConfig> UserXpConfig { get; set; }
-    public virtual DbSet<UserXpLog> UserXpLog { get; set; }
+    public virtual DbSet<UserXpLog?> UserXpLog { get; set; }
     public virtual DbSet<Wallet> Wallet { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -377,7 +377,8 @@ public class ZenGardenContext : DbContext
                 .HasMaxLength(500);
 
             entity.Property(e => e.TaskResult)
-                .HasMaxLength(2083);
+                .HasMaxLength(2083)
+                .HasDefaultValue(string.Empty);
 
             entity.Property(e => e.WorkDuration)
                 .HasDefaultValue(25);
@@ -409,9 +410,8 @@ public class ZenGardenContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.BreakTime)
-                .HasDefaultValue(5)
-                .IsRequired();
-
+                .HasDefaultValue(5);
+            
             entity.Property(e => e.IsSuggested)
                 .HasDefaultValue(true)
                 .IsRequired();
@@ -419,12 +419,12 @@ public class ZenGardenContext : DbContext
             entity.HasOne(d => d.FocusMethod)
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.FocusMethodId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(d => d.TaskType)
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.TaskTypeId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(d => d.UserTree)
                 .WithMany(p => p.Tasks)
@@ -733,8 +733,33 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.TotalXp).HasColumnName("TotalXP");
 
+            entity.Property(e => e.XpToNextLevel)
+                .HasColumnName("XpToNextLevel");
+
+            entity.Property(e => e.LevelId)
+                .HasColumnName("LevelID");
+
+            entity.Property(e => e.TotalXp)
+                .HasColumnType("double")
+                .HasDefaultValue(0)
+                .IsRequired();
+
+            entity.Property(e => e.IsMaxLevel)
+                .HasColumnType("bit")
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(e => e.StreakDays)
+                .HasColumnName("StreakDays");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
+                .ValueGeneratedOnUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.HasOne(e => e.User)
@@ -913,7 +938,7 @@ public class ZenGardenContext : DbContext
             entity.HasKey(e => e.LogId).HasName("PRIMARY");
 
             entity.Property(e => e.XpAmount)
-                .HasColumnType("int")
+                .HasColumnType("double")
                 .HasDefaultValue(0)
                 .HasColumnName("XpAmount");
 

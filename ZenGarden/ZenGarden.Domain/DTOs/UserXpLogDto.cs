@@ -2,7 +2,7 @@
 
 namespace ZenGarden.Domain.DTOs;
 
-public class UserXpLog
+public class UserXpLogDto
 {
     public int LogId { get; init; }
 

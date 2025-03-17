@@ -5,4 +5,5 @@ namespace ZenGarden.Core.Interfaces.IRepositories;
 public interface ITreeRepository : IGenericRepository<Tree>
 {
     Task<List<int>> GetAllTreeIdsAsync();
+    Task<int?> GetRandomFinalTreeIdAsync();
 }
