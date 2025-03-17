@@ -377,7 +377,8 @@ public class ZenGardenContext : DbContext
                 .HasMaxLength(500);
 
             entity.Property(e => e.TaskResult)
-                .HasMaxLength(2083);
+                .HasMaxLength(2083)
+                .HasDefaultValue(string.Empty);
 
             entity.Property(e => e.WorkDuration)
                 .HasDefaultValue(25);
@@ -409,9 +410,8 @@ public class ZenGardenContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.BreakTime)
-                .HasDefaultValue(5)
-                .IsRequired();
-
+                .HasDefaultValue(5);
+            
             entity.Property(e => e.IsSuggested)
                 .HasDefaultValue(true)
                 .IsRequired();
@@ -419,12 +419,12 @@ public class ZenGardenContext : DbContext
             entity.HasOne(d => d.FocusMethod)
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.FocusMethodId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(d => d.TaskType)
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.TaskTypeId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(d => d.UserTree)
                 .WithMany(p => p.Tasks)

@@ -54,7 +54,7 @@ public class ChallengeService(IChallengeRepository challengeRepository, IUnitOfW
 
         if (Challenge.status != existingChallenge.status) existingChallenge.status = Challenge.status;
 
-        await challengeRepository.CreateAsync(existingChallenge);
+        challengeRepository.Update(existingChallenge);
         await unitOfWork.CommitAsync();
     }
 }
