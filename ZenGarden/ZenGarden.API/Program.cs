@@ -1,15 +1,18 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
+using Amazon.Extensions.NETCore.Setup;
 using AspNetCoreRateLimit;
 using FluentValidation;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
@@ -33,6 +36,10 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler =
             ReferenceHandler.IgnoreCycles;
     });
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104857600; // 100MB
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -93,27 +100,46 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSwaggerGen(c =>
 {
+    c.OperationFilter<FileUploadOperation>();
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
+    // ✅ Hỗ trợ IFormFile trong Swagger
 
-    var securitySchema = new OpenApiSecurityScheme
+
+    // ✅ Xác định kiểu dữ liệu cho IFormFile
+    c.MapType<FileObject>(() => new OpenApiSchema
+    {
+        Type = "object",
+        Properties = new Dictionary<string, OpenApiSchema>
+        {
+            ["fileName"] = new OpenApiSchema { Type = "string" },
+            ["fileBase64"] = new OpenApiSchema { Type = "string", Format = "byte" },
+            ["path"] = new OpenApiSchema { Type = "string" }
+        }
+    });
+
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
-        Reference = new OpenApiReference
-        {
-            Type = ReferenceType.SecurityScheme,
-            Id = "Bearer"
-        }
-    };
-  
-    c.AddSecurityDefinition("Bearer", securitySchema);
+        In = ParameterLocation.Header,
+        Description = "Enter your Bearer token in the format: Bearer {your token}"
+    });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { securitySchema, Array.Empty<string>() }
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] {}
+        }
     });
 });
+
+
 
 builder.Services.AddCors(options =>
 {
@@ -166,6 +192,7 @@ builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IS3Service, S3Service>();
+
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 
@@ -186,6 +213,10 @@ if (string.IsNullOrEmpty(deepInfraApiKey))
 
 builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = deepInfraApiKey; });
 
+
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
+builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -203,4 +234,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.UseDeveloperExceptionPage();
+
+
+
+
 app.Run();

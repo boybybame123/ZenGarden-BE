@@ -1,12 +1,9 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IServices;
+using Microsoft.AspNetCore.Http;
+using Amazon.S3.Transfer;
 
 namespace ZenGarden.Core.Services
 {
@@ -19,36 +16,62 @@ namespace ZenGarden.Core.Services
 
         public S3Service(IConfiguration config)
         {
-            var awsOptions = config.GetSection("AWS");
-            var accessKey = awsOptions["AccessKey"];
-            var secretKey = awsOptions["SecretKey"];
-            var serviceUrl = awsOptions["ServiceURL"];
+            var awsSection = config.GetSection("AWS");
+            var accessKey = awsSection["AccessKey"];
+            var secretKey = awsSection["SecretKey"];
+            var serviceUrl = awsSection["ServiceURL"];
 
+            // Cấu hình S3 cho BizflyCloud
             var s3Config = new AmazonS3Config
             {
-                ServiceURL = serviceUrl,
-                ForcePathStyle = true
+                ServiceURL = serviceUrl,        // VD: "https://hcm.ss.bfcplatform.vn"
+                ForcePathStyle = true,
+                
+
             };
 
             _s3Client = new AmazonS3Client(accessKey, secretKey, s3Config);
-            _bucketName = awsOptions["BucketName"];
+            _bucketName = awsSection["BucketName"];
         }
-
-        // 1. Upload File
-        public async Task<string> UploadFileAsync(string key, Stream fileStream)
+        public async Task<string> UploadFileAsync(IFormFile file)
         {
-            var request = new PutObjectRequest
+            using var stream = file.OpenReadStream();
+            var key = file.FileName;
+            var uploadRequest = new TransferUtilityUploadRequest
             {
                 BucketName = _bucketName,
+                InputStream = stream,
                 Key = key,
-                InputStream = fileStream,
-                ContentType = "application/octet-stream",
-                CannedACL = S3CannedACL.PublicRead
+                ContentType = file.ContentType,
+                CannedACL = S3CannedACL.PublicRead,
+                PartSize = 10 * 1024 * 1024, // Set chunk size for large files
+                AutoCloseStream = true
             };
 
-            await _s3Client.PutObjectAsync(request);
-            return $"https://{_bucketName}.hn.ss.bfcplatform.vn/{key}";
+            var transferUtility = new TransferUtility(_s3Client);
+            await transferUtility.UploadAsync(uploadRequest);
+
+            return GeneratePreSignedUrl(key);
         }
+        private string GeneratePreSignedUrl(string fileKey, int expiryDuration = 3600)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _bucketName,
+                Key = fileKey,
+                Expires = DateTime.UtcNow.AddSeconds(expiryDuration), // Hết hạn sau 1 giờ
+            };
+
+            return _s3Client.GetPreSignedURL(request);
+        }
+
+
+
+
+
+
+
+
 
         // 2. Get File List
         public async Task<List<string>> ListFilesAsync()
