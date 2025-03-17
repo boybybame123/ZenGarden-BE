@@ -7,11 +7,11 @@ namespace ZenGarden.Infrastructure.Repositories;
 
 public class XpConfigRepository(ZenGardenContext context) : GenericRepository<XpConfig>(context), IXpConfigRepository
 {
-    private readonly ZenGardenContext _context1 = context;
+    private readonly ZenGardenContext _context = context;
 
     public async Task<XpConfig?> GetXpConfigAsync(int taskTypeId, int focusMethodId)
     {
-        return await _context1.XpConfigs
+        return await _context.XpConfigs
             .FirstOrDefaultAsync(x => x.TaskTypeId == taskTypeId && x.FocusMethodId == focusMethodId);
     }
 }

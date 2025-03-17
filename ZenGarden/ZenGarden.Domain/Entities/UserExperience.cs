@@ -11,9 +11,11 @@ public partial class UserExperience
 {
     public  int UserExperienceId { get; set; }
     public int UserId { get; set; }
-    public long TotalXp { get; set; } = 0;
+    public double TotalXp { get; set; } = 0;
     public int XpToNextLevel { get; set; } = 100; 
     public int LevelId { get; set; } 
+    public int StreakDays { get; set; } = 0;
+    public bool IsMaxLevel { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Users User { get; set; }

@@ -27,6 +27,7 @@ public class TreeService(ITreeRepository treeRepository, IMapper mapper, IUnitOf
     {
         var tree = mapper.Map<Tree>(treeDto);
         tree.CreatedAt = DateTime.UtcNow;
+        tree.IsActive = true;
 
         await treeRepository.CreateAsync(tree);
         await unitOfWork.CommitAsync();
@@ -54,6 +55,9 @@ public class TreeService(ITreeRepository treeRepository, IMapper mapper, IUnitOf
     {
         var tree = await treeRepository.GetByIdAsync(id);
         if (tree == null) throw new KeyNotFoundException("Tree not found");
+
+        if (!tree.IsActive)
+            return false;
 
         tree.IsActive = false;
         tree.UpdatedAt = DateTime.UtcNow;

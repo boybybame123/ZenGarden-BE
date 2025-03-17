@@ -72,7 +72,7 @@ public class UserService(
         if (user.RoleId != null && user.RoleId != 0)
             userUpdate.RoleId = user.RoleId;
 
-        if (user.Status != userUpdate.Status && user.Status != null)
+        if (user.Status != userUpdate.Status)
             userUpdate.Status = user.Status;
 
         if (!string.IsNullOrEmpty(user.ImageUrl))
@@ -164,10 +164,11 @@ public class UserService(
             {
                 UserId = newUser.UserId,
                 TotalXp = 0,
-
                 XpToNextLevel = levelOneConfig.XpThreshold,
                 LevelId = 1,
-                UpdatedAt = DateTime.UtcNow
+                IsMaxLevel = false,
+                StreakDays = 0,
+                CreatedAt = DateTime.UtcNow
             };
 
             await walletRepository.CreateAsync(wallet);

@@ -1,88 +1,29 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserXpLogsController : ControllerBase
+public class UserXpLogsController(IUserXpLogService userXpLogService)
+    : ControllerBase
 {
-    private readonly ZenGardenContext _context;
-
-    public UserXpLogsController(ZenGardenContext context)
+    [HttpPost("confirm-focus/{userId:int}")]
+    public async Task<IActionResult> GetUserCheckInLog(int userId)
     {
-        _context = context;
+        var today = DateTime.UtcNow.Date;
+        var log = await userXpLogService.GetUserCheckInLogAsync(userId, today);
+
+        if (log == null)
+            return NotFound(new { message = "User has not checked in today." });
+
+        return Ok(log);
     }
 
-    // GET: api/UserXpLogs
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserXpLog>>> GetUserXpLog()
+    [HttpPost("claim-daily-xp/{userId:int}")]
+    public async Task<IActionResult> CheckInUser(int userId)
     {
-        return await _context.UserXpLog.ToListAsync();
-    }
-
-    // GET: api/UserXpLogs/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<UserXpLog>> GetUserXpLog(int id)
-    {
-        var userXpLog = await _context.UserXpLog.FindAsync(id);
-
-        if (userXpLog == null) return NotFound();
-
-        return userXpLog;
-    }
-
-    // PUT: api/UserXpLogs/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutUserXpLog(int id, UserXpLog userXpLog)
-    {
-        if (id != userXpLog.LogId) return BadRequest();
-
-        _context.Entry(userXpLog).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!UserXpLogExists(id)) return NotFound();
-
-            throw;
-        }
-
-        return NoContent();
-    }
-
-    // POST: api/UserXpLogs
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<UserXpLog>> PostUserXpLog(UserXpLog userXpLog)
-    {
-        _context.UserXpLog.Add(userXpLog);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetUserXpLog", new { id = userXpLog.LogId }, userXpLog);
-    }
-
-    // DELETE: api/UserXpLogs/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteUserXpLog(int id)
-    {
-        var userXpLog = await _context.UserXpLog.FindAsync(id);
-        if (userXpLog == null) return NotFound();
-
-        _context.UserXpLog.Remove(userXpLog);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private bool UserXpLogExists(int id)
-    {
-        return _context.UserXpLog.Any(e => e.LogId == id);
+        var xpEarned = await userXpLogService.CheckInAndGetXpAsync(userId);
+        return Ok(new { message = "Check-in successful!", xpEarned });
     }
 }

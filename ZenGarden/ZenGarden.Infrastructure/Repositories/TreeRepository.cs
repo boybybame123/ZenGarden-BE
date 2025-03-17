@@ -13,4 +13,14 @@ public class TreeRepository(ZenGardenContext context) : GenericRepository<Tree>(
     {
         return await _context.Tree.Select(t => t.TreeId).ToListAsync();
     }
+
+    public async Task<int?> GetRandomFinalTreeIdAsync()
+    {
+        var finalTreeIds = await _context.Tree
+            .Where(t => t.IsActive)
+            .Select(t => t.TreeId)
+            .ToListAsync();
+
+        return finalTreeIds.Count != 0 ? finalTreeIds[new Random().Next(finalTreeIds.Count)] : null;
+    }
 }
