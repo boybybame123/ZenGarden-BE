@@ -8,6 +8,12 @@ public class ValidationMiddleware(RequestDelegate next)
 {
     public async Task Invoke(HttpContext context)
     {
+        if (context.Request.ContentType != null &&
+    context.Request.ContentType.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+        {
+            await next(context);
+            return;
+        }
         if (!HttpMethods.IsGet(context.Request.Method) &&
             !HttpMethods.IsHead(context.Request.Method) &&
             !HttpMethods.IsDelete(context.Request.Method) &&

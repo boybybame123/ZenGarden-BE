@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.Core.Interfaces.IServices
 {
@@ -14,7 +16,7 @@ namespace ZenGarden.Core.Interfaces.IServices
         /// <param name="key">The unique key (filename) in the bucket.</param>
         /// <param name="fileStream">The file stream.</param>
         /// <returns>The public URL of the uploaded file.</returns>
-        Task<string> UploadFileAsync(string key, Stream fileStream);
+        Task<string> UploadFileAsync(IFormFile file);
 
         /// <summary>
         /// Retrieves a list of all file keys in the bucket.
