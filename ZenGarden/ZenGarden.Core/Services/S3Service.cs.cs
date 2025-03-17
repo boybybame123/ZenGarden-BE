@@ -36,12 +36,12 @@ namespace ZenGarden.Core.Services
         public async Task<string> UploadFileAsync(IFormFile file)
         {
             using var stream = file.OpenReadStream();
-
+            var key = file.FileName;
             var uploadRequest = new TransferUtilityUploadRequest
             {
                 BucketName = _bucketName,
                 InputStream = stream,
-                Key = Guid.NewGuid().ToString() + "-" + file.FileName,
+                Key = key,
                 ContentType = file.ContentType,
                 CannedACL = S3CannedACL.PublicRead,
                 PartSize = 10 * 1024 * 1024, // Set chunk size for large files
@@ -51,9 +51,19 @@ namespace ZenGarden.Core.Services
             var transferUtility = new TransferUtility(_s3Client);
             await transferUtility.UploadAsync(uploadRequest);
 
-            return $"https://{_bucketName}.s3.amazonaws.com/{uploadRequest.Key}";
+            return GeneratePreSignedUrl(key);
         }
+        private string GeneratePreSignedUrl(string fileKey, int expiryDuration = 3600)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _bucketName,
+                Key = fileKey,
+                Expires = DateTime.UtcNow.AddSeconds(expiryDuration), // Hết hạn sau 1 giờ
+            };
 
+            return _s3Client.GetPreSignedURL(request);
+        }
 
 
 
