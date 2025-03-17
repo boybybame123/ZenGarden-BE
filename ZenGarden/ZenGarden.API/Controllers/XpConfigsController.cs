@@ -7,11 +7,11 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class XPConfigsController : ControllerBase
+public class XpConfigsController : ControllerBase
 {
     private readonly ZenGardenContext _context;
 
-    public XPConfigsController(ZenGardenContext context)
+    public XpConfigsController(ZenGardenContext context)
     {
         _context = context;
     }

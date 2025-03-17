@@ -16,6 +16,9 @@ public class TaskService(
     ITaskTypeRepository taskTypeRepository,
     ITreeXpLogRepository treeXpLogRepository,
     ITreeXpConfigRepository treeXpConfigRepository,
+    ITreeRepository treeRepository,
+    IUserXpLogRepository userXpLogRepository,
+    IUserXpLogService userXpLogService,
     IMapper mapper) : ITaskService
 {
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -132,6 +135,11 @@ public class TaskService(
             throw new InvalidOperationException(
                 $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
 
+        var today = DateTime.UtcNow.Date;
+        var checkInLog = await userXpLogRepository.GetUserCheckInLogAsync(userId, today);
+
+        if (checkInLog == null) await userXpLogService.CheckInAndGetXpAsync(userId);
+
         task.Status = TasksStatus.InProgress;
         task.StartedAt = DateTime.UtcNow;
         taskRepository.Update(task);
@@ -173,7 +181,13 @@ public class TaskService(
         await treeXpLogRepository.CreateAsync(xpLog);
 
         var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
-        if (task.UserTree.TotalXp >= maxXpThreshold) task.UserTree.TreeStatus = TreeStatus.MaxLevel;
+        if (task.UserTree.TotalXp >= maxXpThreshold)
+        {
+            task.UserTree.TreeStatus = TreeStatus.MaxLevel;
+
+            var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
+            if (finalTreeId != null) task.UserTree.FinalTreeId = finalTreeId;
+        }
 
         task.Status = TasksStatus.Completed;
         task.CompletedAt = DateTime.UtcNow;

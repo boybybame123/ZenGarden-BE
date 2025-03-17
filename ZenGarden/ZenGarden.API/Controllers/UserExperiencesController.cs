@@ -60,7 +60,7 @@ public class UserExperiencesController : ControllerBase
     // POST: api/UserExperiences
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<UserExperience>> PostUserExperience(UserExperience userExperience)
+    public async Task<ActionResult<UserExperience>> PostUserExperience(UserExperience? userExperience)
     {
         _context.UserExperience.Add(userExperience);
         await _context.SaveChangesAsync();
