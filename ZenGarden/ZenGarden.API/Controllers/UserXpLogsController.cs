@@ -8,14 +8,13 @@ namespace ZenGarden.API.Controllers;
 public class UserXpLogsController(IUserXpLogService userXpLogService)
     : ControllerBase
 {
-    [HttpPost("confirm-focus/{userId:int}")]
-    public async Task<IActionResult> GetUserCheckInLog(int userId)
+    [HttpGet("confirm-focus/{userId:int}")]
+    public async Task<IActionResult> GetUserCheckInLog(int userId, [FromQuery] DateTime date)
     {
-        var today = DateTime.UtcNow.Date;
-        var log = await userXpLogService.GetUserCheckInLogAsync(userId, today);
+        var log = await userXpLogService.GetUserCheckInLogAsync(userId, date);
 
         if (log == null)
-            return NotFound(new { message = "User has not checked in today." });
+            return NotFound(new { message = "User has not checked in on this date." });
 
         return Ok(log);
     }

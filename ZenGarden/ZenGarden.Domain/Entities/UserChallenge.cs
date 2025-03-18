@@ -13,6 +13,6 @@ public class UserChallenge
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public virtual required Challenge Challenge { get; set; }
-    public virtual required Users User { get; set; }
+    public virtual Challenge? Challenge { get; set; }
+    public virtual Users? User { get; set; }
 }
