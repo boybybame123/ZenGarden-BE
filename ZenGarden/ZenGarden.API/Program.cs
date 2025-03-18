@@ -139,7 +139,7 @@ builder.Services.AddSwaggerGen(c =>
             {
                 Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
-            new string[] {}
+            []
         }
     });
 });
@@ -197,7 +197,6 @@ builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IS3Service, S3Service>();
 builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
-builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
@@ -231,6 +230,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowAll");
 
+app.UseMiddleware<JwtMiddleware>();
 app.UseMiddleware<UserContextMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
