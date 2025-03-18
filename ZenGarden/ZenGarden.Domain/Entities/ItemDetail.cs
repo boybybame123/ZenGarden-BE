@@ -10,7 +10,7 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class ItemDetail
 {
-
+    
     public int ItemDetailId { get; set; }
    
     public int ItemId { get; set; } // Liên kết với bảng Item
