@@ -1,8 +1,7 @@
-﻿namespace ZenGarden.Domain.DTOs;
+namespace ZenGarden.Domain.DTOs;
 
-public class TaskTypeDto
+public class CreateTaskTypeDto
 {
-    public int TaskTypeId { get; set; }
     public string TaskTypeName { get; set; } = string.Empty;
     public string? TaskTypeDescription { get; set; }
 }

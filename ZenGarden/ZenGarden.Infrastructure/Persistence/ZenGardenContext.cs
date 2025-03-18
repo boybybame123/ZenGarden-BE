@@ -37,11 +37,11 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<TreeXpLog> TreeXpLog { get; set; }
     public virtual DbSet<UserChallenge> UserChallenges { get; set; }
     public virtual DbSet<UserConfig> UserConfig { get; set; }
-    public virtual DbSet<UserExperience?> UserExperience { get; set; }
+    public virtual DbSet<UserExperience> UserExperience { get; set; }
     public virtual DbSet<Users> Users { get; set; }
     public virtual DbSet<UserTree> UserTree { get; set; }
     public virtual DbSet<UserXpConfig> UserXpConfig { get; set; }
-    public virtual DbSet<UserXpLog?> UserXpLog { get; set; }
+    public virtual DbSet<UserXpLog> UserXpLog { get; set; }
     public virtual DbSet<Wallet> Wallet { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -152,7 +152,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.ChallengeName).HasMaxLength(255);
 
-            entity.Property(e => e.status)
+            entity.Property(e => e.Status)
                 .HasConversion<int>()
                 .IsRequired();
             entity.Property(e => e.Description)
@@ -195,10 +195,10 @@ public class ZenGardenContext : DbContext
                 .ValueGeneratedOnUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-            entity.HasOne(d => d.Challenge)
-                .WithMany(p => p.ChallengeTasks)
-                .HasForeignKey(d => d.ChallengeId)
-                .OnDelete(DeleteBehavior.NoAction)
+            entity.HasOne(ct => ct.Challenge)
+                    .WithMany(c => c.ChallengeTasks)
+                    .HasForeignKey(ct => ct.ChallengeId)
+                    .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("challengetask_ibfk_1");
             entity.HasOne(d => d.Tasks)
                 .WithMany(p => p.ChallengeTasks)

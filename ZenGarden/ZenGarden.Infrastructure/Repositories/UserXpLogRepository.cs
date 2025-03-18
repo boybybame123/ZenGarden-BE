@@ -16,8 +16,7 @@ public class UserXpLogRepository(ZenGardenContext context) : GenericRepository<U
         var endOfDay = date.Date.AddDays(1).AddTicks(-1);
 
         return await _context.UserXpLog
-            .FirstOrDefaultAsync(x => x != null &&
-                                      x.UserId == userId &&
+            .FirstOrDefaultAsync(x => x.UserId == userId &&
                                       x.XpSource == XpSourceType.DailyLogin &&
                                       x.CreatedAt >= startOfDay &&
                                       x.CreatedAt <= endOfDay);
@@ -26,8 +25,8 @@ public class UserXpLogRepository(ZenGardenContext context) : GenericRepository<U
     public async Task<UserXpLog?> GetLastCheckInLogAsync(int userId)
     {
         return await _context.UserXpLog
-            .Where(x => x!.UserId == userId && x.XpSource == XpSourceType.DailyLogin)
-            .OrderByDescending(x => x!.CreatedAt)
+            .Where(x => x.UserId == userId && x.XpSource == XpSourceType.DailyLogin)
+            .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync();
     }
 }
