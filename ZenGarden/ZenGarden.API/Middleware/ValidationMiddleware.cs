@@ -20,11 +20,11 @@ public class ValidationMiddleware(RequestDelegate next)
             !HttpMethods.IsDelete(context.Request.Method) &&
             !HttpMethods.IsOptions(context.Request.Method))
         {
-            if (context.Request.ContentLength == 0 || !context.Request.HasJsonContentType())
+            if (context.Request.ContentLength > 0 && !context.Request.HasJsonContentType())
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.ContentType = "application/json";
-                var errorResponse = new ErrorResponse("Invalid Content-Type", "Content-Type must be application/json, or empty body allowed.");
+                var errorResponse = new ErrorResponse("Invalid Content-Type", "Content-Type must be application/json.");
                 await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
                 return;
             }
