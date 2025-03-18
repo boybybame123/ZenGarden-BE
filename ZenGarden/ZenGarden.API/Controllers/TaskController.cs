@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -46,8 +45,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         var createdTask = await _taskService.CreateTaskWithSuggestedMethodAsync(dto);
         return Ok(createdTask);
     }
-
-    [Authorize]
+    
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
     {
