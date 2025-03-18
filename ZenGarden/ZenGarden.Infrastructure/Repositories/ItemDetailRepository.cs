@@ -5,8 +5,7 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class ItemDetailRepository(ZenGardenContext context)
-    : GenericRepository<ItemDetail>(context), IItemDetailRepository
+public class ItemDetailRepository(ZenGardenContext context): GenericRepository<ItemDetail>(context), IItemDetailRepository
 {
     private readonly ZenGardenContext _context = context;
 
@@ -14,7 +13,6 @@ public class ItemDetailRepository(ZenGardenContext context)
     public async Task<ItemDetail?> GetItemDetailsByItemId(int itemId)
     {
         return await _context.ItemDetail
-            .Include(o => o.Item)
             .FirstOrDefaultAsync(od => od.ItemId == itemId);
     }
 }

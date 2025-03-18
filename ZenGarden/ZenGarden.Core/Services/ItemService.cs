@@ -42,18 +42,40 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
             throw new InvalidOperationException("Failed to create item.");
     }
 
-    public async Task UpdateItemAsync(ItemDto item)
+    public async Task UpdateItemAsync(UpdateItemDto item)
     {
         var updateItem = await GetItemByIdAsync(item.ItemId);
-        if (updateItem == null)
-            throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
 
-        mapper.Map(item, updateItem);
+
+
+
+
+
+
+        updateItem.Name = item.Name;
+        updateItem.Type = item.Type;
+        updateItem.Rarity = item.Rarity;
+        updateItem.Cost = item.Cost;
+        updateItem.Status = item.Status;
+        updateItem.UpdatedAt = DateTime.Now;
+
+
+
+
+
+
+
+
 
         itemRepository.Update(updateItem);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update item.");
     }
+
+
+
+
+
 
     public async Task DeleteItemAsync(int itemId)
     {
@@ -67,26 +89,5 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
     }
 
 
-    public async Task CreateItemAsync(CreateItemDto item)
-    {
-        try
-        {
-            var a = itemRepository.CountAsync();
-            
 
-            var i = mapper.Map<Item>(item);
-            await itemRepository.CreateAsync(i);
-            if (await unitOfWork.CommitAsync() == 0)
-                throw new InvalidOperationException("Failed to create item.");
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-
-
-
-        }
-
-    }
 }

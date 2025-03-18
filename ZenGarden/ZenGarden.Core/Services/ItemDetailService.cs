@@ -6,7 +6,7 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Services;
 
-public class ItemDetailService(IItemDetailRepository itemDetailRepository, IUnitOfWork unitOfWork, IMapper mapper)
+public class ItemDetailService(IItemDetailRepository itemDetailRepository, IUnitOfWork unitOfWork, IMapper mapper, IS3Service s3Service)
     : IItemDetailService
 {
     public Task CreateItemDetailAsync(ItemDetail itemDetail)
@@ -26,8 +26,20 @@ public class ItemDetailService(IItemDetailRepository itemDetailRepository, IUnit
     }
 
 
-    public Task UpdateItemDetailAsync(ItemDetail itemDetail)
+    public async Task UpdateItemDetailAsync(UpdateItemDetailDto itemDetail)
     {
-        throw new NotImplementedException();
+        var updateItemDetail = await itemDetailRepository.GetItemDetailsByItemId(itemDetail.ItemId);
+
+        updateItemDetail.Type = itemDetail.Type;
+        updateItemDetail.Description = itemDetail.Description;
+        updateItemDetail.Duration = itemDetail.Duration;
+        updateItemDetail.Effect = itemDetail.Effect;
+
+        var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
+        updateItemDetail.MediaUrl = mediaUrl;
+
+        itemDetailRepository.Update(updateItemDetail);
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update item.");
     }
 }
