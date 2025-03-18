@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -46,11 +48,12 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(createdTask);
     }
     
+    [Authorize]
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
     {
-        if (HttpContext.Items["UserId"] is not int userId)
-            return Unauthorized(new { message = "User authentication required." });
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId)) return Unauthorized();
 
         await _taskService.StartTaskAsync(taskId, userId);
         return Ok(new { message = "Task started successfully." });
