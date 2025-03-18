@@ -33,13 +33,24 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
         return Ok(item);
     }
 
-    [HttpDelete("{itemId}")]
+    [HttpPut("{itemId}")]
     [Produces("application/json")]
     public async Task<IActionResult> DeleteItem(int itemId)
     {
         await _itemService.DeleteItemAsync(itemId);
         return Ok(new { message = "item deleted successfully" });
     }
+
+
+
+    [HttpPut("active-item/{itemId}")]
+    [Produces("application/json")]
+    public async Task<IActionResult> ActiveItem(int itemId)
+    {
+        await _itemService.ActiveItem(itemId);
+        return Ok(new { message = "item activated successfully" });
+    }
+
 
     [HttpPut("update-item")]
     [Produces("application/json")]

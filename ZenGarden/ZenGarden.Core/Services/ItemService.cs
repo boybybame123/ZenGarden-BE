@@ -3,6 +3,7 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
@@ -74,16 +75,36 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
 
 
 
+    public async Task ActiveItem(int itemId)
+    {
 
+        var item = await GetItemByIdAsync(itemId);
+        if (item == null)
+            throw new KeyNotFoundException($"Item with ID {itemId} not found.");
+
+        item.Status = ItemStatus.Active;
+
+
+
+        itemRepository.Update(item);
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to delete item.");
+    }
 
 
     public async Task DeleteItemAsync(int itemId)
     {
         var item = await GetItemByIdAsync(itemId);
+
+
         if (item == null)
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
 
-        await itemRepository.RemoveAsync(item);
+        item.Status = ItemStatus.Inactive;
+
+
+
+             itemRepository.Update(item);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete item.");
     }
