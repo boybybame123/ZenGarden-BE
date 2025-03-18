@@ -28,7 +28,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
 
     public async Task<Item?> GetItemByIdAsync(int itemId)
     {
-        return await itemRepository.GetByIdAsync(itemId)
+        return await itemRepository.GetItemByIdAsync(itemId)
                ?? throw new KeyNotFoundException($"Item with ID {itemId} not found.");
     }
 
