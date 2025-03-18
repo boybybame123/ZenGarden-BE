@@ -52,7 +52,7 @@ public class ChallengeService(IChallengeRepository challengeRepository, IUnitOfW
 
         if (Challenge.XpReward != 0) existingChallenge.XpReward = Challenge.XpReward;
 
-        if (Challenge.status != existingChallenge.status) existingChallenge.status = Challenge.status;
+        if (Challenge.status != existingChallenge.Status) existingChallenge.Status = Challenge.status;
 
         challengeRepository.Update(existingChallenge);
         await unitOfWork.CommitAsync();

@@ -24,7 +24,6 @@ public class ChallengesController(IChallengeService challengeService) : Controll
     public async Task<IActionResult> GetChallenge(int challengeId)
     {
         var user = await _challengeService.GetChallengeByIdAsync(challengeId);
-        if (user == null) return NotFound();
         return Ok(user);
     }
 

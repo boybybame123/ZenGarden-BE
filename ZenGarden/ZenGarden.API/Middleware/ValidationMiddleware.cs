@@ -9,16 +9,18 @@ public class ValidationMiddleware(RequestDelegate next)
     public async Task Invoke(HttpContext context)
     {
         if (context.Request.ContentType != null &&
-    context.Request.ContentType.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+            context.Request.ContentType.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase))
         {
             await next(context);
             return;
         }
+
         if (!HttpMethods.IsGet(context.Request.Method) &&
             !HttpMethods.IsHead(context.Request.Method) &&
             !HttpMethods.IsDelete(context.Request.Method) &&
             !HttpMethods.IsOptions(context.Request.Method))
-            if (!context.Request.HasJsonContentType())
+        {
+            if (context.Request.ContentLength > 0 && !context.Request.HasJsonContentType())
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.ContentType = "application/json";
@@ -26,6 +28,7 @@ public class ValidationMiddleware(RequestDelegate next)
                 await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
                 return;
             }
+        }
 
         await next(context);
     }
