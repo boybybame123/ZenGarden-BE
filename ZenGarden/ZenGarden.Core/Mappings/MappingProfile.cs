@@ -38,6 +38,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.FocusMethod.Name))
             .ForMember(dest => dest.UserTreeName, opt => opt.MapFrom(src => src.UserTree.Name));
         CreateMap<UserXpLog, UserXpLogDto>().ReverseMap();
+        CreateMap<TaskType, TaskTypeDto>();
+        CreateMap<CreateTaskTypeDto, TaskType>();
+        CreateMap<UpdateTaskTypeDto, TaskType>();
     }
 
     private static double CalculateXpToNextLevel(UserTree userTree)

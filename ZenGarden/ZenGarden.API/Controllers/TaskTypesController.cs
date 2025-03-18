@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
 
@@ -9,80 +8,46 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class TaskTypesController : ControllerBase
 {
-    private readonly ZenGardenContext _context;
+    private readonly ITaskTypeService _taskTypeService;
 
-    public TaskTypesController(ZenGardenContext context)
+    public TaskTypesController(ITaskTypeService taskTypeService)
     {
-        _context = context;
+        _taskTypeService = taskTypeService;
     }
 
-    // GET: api/TaskTypes
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskType>>> GetTaskType()
+    public async Task<IActionResult> GetAll()
     {
-        return await _context.TaskType.ToListAsync();
+        var result = await _taskTypeService.GetAllTaskTypesAsync();
+        return Ok(result);
     }
 
-    // GET: api/TaskTypes/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskType>> GetTaskType(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var taskType = await _context.TaskType.FindAsync(id);
-
-        if (taskType == null) return NotFound();
-
-        return taskType;
+        var result = await _taskTypeService.GetTaskTypeByIdAsync(id);
+        return result is not null ? Ok(result) : NotFound();
     }
 
-    // PUT: api/TaskTypes/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutTaskType(int id, TaskType taskType)
-    {
-        if (id != taskType.TaskTypeId) return BadRequest();
-
-        _context.Entry(taskType).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!TaskTypeExists(id)) return NotFound();
-
-            throw;
-        }
-
-        return NoContent();
-    }
-
-    // POST: api/TaskTypes
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<TaskType>> PostTaskType(TaskType taskType)
+    public async Task<IActionResult> Create([FromBody] CreateTaskTypeDto dto)
     {
-        _context.TaskType.Add(taskType);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetTaskType", new { id = taskType.TaskTypeId }, taskType);
+        var result = await _taskTypeService.CreateTaskTypeAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = result.TaskTypeId }, result);
     }
 
-    // DELETE: api/TaskTypes/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskTypeDto dto)
+    {
+        var success = await _taskTypeService.UpdateTaskTypeAsync(id, dto);
+        return success ? NoContent() : NotFound();
+    }
+
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTaskType(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var taskType = await _context.TaskType.FindAsync(id);
-        if (taskType == null) return NotFound();
-
-        _context.TaskType.Remove(taskType);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        var success = await _taskTypeService.DeleteTaskTypeAsync(id);
+        return success ? NoContent() : NotFound();
     }
-
-    private bool TaskTypeExists(int id)
-    {
-        return _context.TaskType.Any(e => e.TaskTypeId == id);
-    }
+    
 }
