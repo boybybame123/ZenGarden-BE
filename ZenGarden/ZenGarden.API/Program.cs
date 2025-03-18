@@ -61,6 +61,9 @@ builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IXpConfigRepository, XpConfigRepository>();
 builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
+builder.Services.AddScoped<IUserXpLogRepository, UserXpLogRepository>();
+
+
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -174,7 +177,6 @@ builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
 builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskValidator>();
 builder.Services.AddScoped<IValidator<SuggestFocusMethodDto>, SuggestFocusMethodValidator>();
 builder.Services.AddScoped<IValidator<UpdateTaskDto>, UpdateTaskValidator>();
-builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -192,6 +194,8 @@ builder.Services.AddScoped<IUserTreeService, UserTreeService>();
 builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IS3Service, S3Service>();
+builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
+
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
