@@ -172,6 +172,9 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
 builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
 builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskValidator>();
+builder.Services.AddScoped<IValidator<SuggestFocusMethodDto>, SuggestFocusMethodValidator>();
+builder.Services.AddScoped<IValidator<UpdateTaskDto>, UpdateTaskValidator>();
+builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

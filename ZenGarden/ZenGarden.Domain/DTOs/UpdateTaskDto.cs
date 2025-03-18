@@ -11,6 +11,8 @@ public class UpdateTaskDto
     public string? TaskNote { get; set; }
 
     public string? TaskResult { get; set; }
+    
+    public int? TotalDuration { get; set; }
 
     public int? WorkDuration { get; set; }
 

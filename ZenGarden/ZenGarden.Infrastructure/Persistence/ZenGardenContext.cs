@@ -382,6 +382,10 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.WorkDuration)
                 .HasDefaultValue(25);
+            
+            entity.Property(e => e.TotalDuration)
+                .HasColumnType("int")
+                .HasDefaultValue(0);
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")

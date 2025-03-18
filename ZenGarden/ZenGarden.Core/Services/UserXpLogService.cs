@@ -10,9 +10,7 @@ namespace ZenGarden.Core.Services;
 public class UserXpLogService(
     IUserXpLogRepository userXpLogRepository,
     IUserExperienceRepository userExperienceRepository,
-    IUserXpConfigRepository userXpConfigRepository,
-    IMapper mapper,
-    IUnitOfWork unitOfWork)
+    IMapper mapper)
     : IUserXpLogService
 {
     public async Task<UserXpLogDto?> GetUserCheckInLogAsync(int userId, DateTime date)
@@ -27,18 +25,19 @@ public class UserXpLogService(
     {
         const int xpBase = 10;
         const double streakBonusRate = 0.1;
+        const int maxStreakDays = 7;
 
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
         if (userExp == null)
             throw new KeyNotFoundException("User experience record not found.");
 
         var lastCheckIn = await userXpLogRepository.GetLastCheckInLogAsync(userId);
-        var streakDays = lastCheckIn != null && lastCheckIn.CreatedAt.Date == DateTime.UtcNow.Date.AddDays(-1)
-            ? userExp.StreakDays + 1
+        var streakDays = (lastCheckIn != null && lastCheckIn.CreatedAt.Date == DateTime.UtcNow.Date.AddDays(-1))
+            ? Math.Min(userExp.StreakDays + 1, maxStreakDays) 
             : 1;
 
-        var xpEarned = xpBase * (1 + (streakDays - 1) * streakBonusRate);
-
+        var xpEarned = xpBase * (1 + (Math.Min(streakDays, maxStreakDays) - 1) * streakBonusRate);
+        
         userExp.TotalXp += xpEarned;
         userExp.StreakDays = streakDays;
         userExp.UpdatedAt = DateTime.UtcNow;

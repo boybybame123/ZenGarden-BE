@@ -45,6 +45,7 @@ public class TaskService(
             {
                 TaskName = dto.TaskName,
                 TaskDescription = dto.TaskDescription,
+                TotalDuration = dto.TotalDuration,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate
             });
@@ -62,6 +63,7 @@ public class TaskService(
             FocusMethodId = selectedMethod.FocusMethodId,
             TaskName = dto.TaskName,
             TaskDescription = dto.TaskDescription,
+            TotalDuration = dto.TotalDuration,
             WorkDuration = selectedMethod.DefaultDuration ?? 25,
             BreakTime = selectedMethod.DefaultBreak ?? 5,
             StartDate = dto.StartDate,
@@ -75,7 +77,6 @@ public class TaskService(
         await unitOfWork.CommitAsync();
         return mapper.Map<TaskDto>(newTask);
     }
-
 
     public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
     {
@@ -95,6 +96,9 @@ public class TaskService(
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
             existingTask.TaskResult = updateTaskDto.TaskResult;
 
+        if (updateTaskDto.TotalDuration.HasValue)
+            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
+        
         if (updateTaskDto.WorkDuration.HasValue)
             existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
 
@@ -169,6 +173,9 @@ public class TaskService(
 
         var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
                        ?? throw new KeyNotFoundException("XP configuration not found for this task.");
+        
+        if (task.TotalDuration is null or <= 0)
+            throw new InvalidOperationException("Total duration must be fully provided before completing the task.");
 
         var standardDuration = task.FocusMethod?.MinDuration ?? 25;
         var xpEarned = (task.WorkDuration ?? 25) / (double)standardDuration * xpConfig.BaseXp * xpConfig.Multiplier;
