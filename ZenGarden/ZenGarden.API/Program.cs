@@ -62,6 +62,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IXpConfigRepository, XpConfigRepository>();
 builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
 builder.Services.AddScoped<IUserXpLogRepository, UserXpLogRepository>();
+builder.Services.AddScoped<IBagItemRepository, BagItemRepository>();
+builder.Services.AddScoped<IPurchaseHistoryRepository, PurchaseHistoryRepository>();
 
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -195,6 +197,7 @@ builder.Services.AddScoped<IUserXpConfigService, UserXpConfigService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IS3Service, S3Service>();
 builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
