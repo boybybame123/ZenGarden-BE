@@ -270,7 +270,7 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Description).HasColumnType("text");
             entity.Property(e => e.Type).HasMaxLength(50);
             entity.Property(e => e.MediaUrl).HasMaxLength(255);
-            entity.Property(e => e.Effect).HasColumnType("json");
+            entity.Property(e => e.Effect).HasColumnType("text");
             entity.Property(e => e.Duration).HasColumnType("text");
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")

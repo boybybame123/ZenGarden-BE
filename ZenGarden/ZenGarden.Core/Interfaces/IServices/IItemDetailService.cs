@@ -7,6 +7,6 @@ public interface IItemDetailService
 {
     Task<List<ItemDetailDto>> GetAllItemDetails();
     Task CreateItemDetailAsync(ItemDetail itemDetail);
-    Task UpdateItemDetailAsync(ItemDetail itemDetail);
+    Task UpdateItemDetailAsync(UpdateItemDetailDto itemDetail);
     Task DeleteItemDetailAsync(int itemDetailId);
 }
