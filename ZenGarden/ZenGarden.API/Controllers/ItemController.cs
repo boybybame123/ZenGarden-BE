@@ -8,9 +8,12 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ItemController(IItemService itemService) : ControllerBase
+public class ItemController(IItemService itemService,IItemDetailService itemDetail,IS3Service s3Service) : ControllerBase
 {
     private readonly IItemService _itemService = itemService ?? throw new ArgumentNullException(nameof(itemService));
+    private readonly IItemDetailService _itemDetailService = itemDetail ?? throw new ArgumentNullException(nameof(itemDetail));
+    private readonly IS3Service _s3Service = s3Service ?? throw new ArgumentNullException(nameof(s3Service));
+
 
     [HttpGet]
     public async Task<IActionResult> GetItems()

@@ -65,4 +65,28 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete item.");
     }
+
+
+    public async Task CreateItemAsync(CreateItemDto item)
+    {
+        try
+        {
+            var a = itemRepository.CountAsync();
+            
+
+            var i = mapper.Map<Item>(item);
+            await itemRepository.CreateAsync(i);
+            if (await unitOfWork.CommitAsync() == 0)
+                throw new InvalidOperationException("Failed to create item.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+
+
+
+        }
+
+    }
 }
