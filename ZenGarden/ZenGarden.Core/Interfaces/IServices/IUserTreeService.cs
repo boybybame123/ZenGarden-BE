@@ -10,4 +10,5 @@ public interface IUserTreeService
     Task ChangeStatusAsync(int id, TreeStatus newStatus);
     Task<List<UserTreeDto>> GetAllUserTreesAsync();
     Task<UserTreeDto> GetUserTreeDetailAsync(int userTreeId);
+    Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid);
 }
