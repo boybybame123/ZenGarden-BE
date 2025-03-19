@@ -3,6 +3,7 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
@@ -28,7 +29,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
 
     public async Task<Item?> GetItemByIdAsync(int itemId)
     {
-        return await itemRepository.GetByIdAsync(itemId)
+        return await itemRepository.GetItemByIdAsync(itemId)
                ?? throw new KeyNotFoundException($"Item with ID {itemId} not found.");
     }
 
@@ -42,51 +43,72 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
             throw new InvalidOperationException("Failed to create item.");
     }
 
-    public async Task UpdateItemAsync(ItemDto item)
+    public async Task UpdateItemAsync(UpdateItemDto item)
     {
         var updateItem = await GetItemByIdAsync(item.ItemId);
-        if (updateItem == null)
-            throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
 
-        mapper.Map(item, updateItem);
+
+
+
+
+
+
+        updateItem.Name = item.Name;
+        updateItem.Type = item.Type;
+        updateItem.Rarity = item.Rarity;
+        updateItem.Cost = item.Cost;
+        updateItem.Status = item.Status;
+        updateItem.UpdatedAt = DateTime.Now;
+
+
+
+
+
+
+
+
 
         itemRepository.Update(updateItem);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update item.");
     }
 
-    public async Task DeleteItemAsync(int itemId)
+
+
+    public async Task ActiveItem(int itemId)
     {
+
         var item = await GetItemByIdAsync(itemId);
         if (item == null)
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
 
-        await itemRepository.RemoveAsync(item);
+        item.Status = ItemStatus.Active;
+
+
+
+        itemRepository.Update(item);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete item.");
     }
 
 
-    public async Task CreateItemAsync(CreateItemDto item)
+    public async Task DeleteItemAsync(int itemId)
     {
-        try
-        {
-            var a = itemRepository.CountAsync();
-            
+        var item = await GetItemByIdAsync(itemId);
 
-            var i = mapper.Map<Item>(item);
-            await itemRepository.CreateAsync(i);
-            if (await unitOfWork.CommitAsync() == 0)
-                throw new InvalidOperationException("Failed to create item.");
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
+
+        if (item == null)
+            throw new KeyNotFoundException($"Item with ID {itemId} not found.");
+
+        item.Status = ItemStatus.Inactive;
 
 
 
-        }
-
+             itemRepository.Update(item);
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to delete item.");
     }
+
+
+
 }

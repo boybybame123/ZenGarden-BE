@@ -12,4 +12,5 @@ public interface IUserTreeService
     Task<List<UserTreeDto>> GetAllUserTreesAsync();
     Task<UserTreeDto> GetUserTreeDetailAsync(int userTreeId);
     Task CheckAndSetMaxLevelAsync(UserTree userTree);
+    Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid);
 }

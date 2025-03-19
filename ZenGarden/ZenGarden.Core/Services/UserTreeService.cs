@@ -94,4 +94,13 @@ public class UserTreeService(
         }
     }
 
+
+    public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid)
+    {
+        var userTrees = await userTreeRepository.GetUserTreeByUserdIdAsync(userid);
+        return mapper.Map<List<UserTreeDto>>(userTrees);
+    }
+
+
+
 }

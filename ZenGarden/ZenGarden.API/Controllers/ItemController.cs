@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Amazon.Runtime.Internal;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Stripe.Forwarding;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -30,7 +33,7 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
         return Ok(item);
     }
 
-    [HttpDelete("{itemId}")]
+    [HttpPut("{itemId}")]
     [Produces("application/json")]
     public async Task<IActionResult> DeleteItem(int itemId)
     {
@@ -38,19 +41,73 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
         return Ok(new { message = "item deleted successfully" });
     }
 
+
+
+    [HttpPut("active-item/{itemId}")]
+    [Produces("application/json")]
+    public async Task<IActionResult> ActiveItem(int itemId)
+    {
+        await _itemService.ActiveItem(itemId);
+        return Ok(new { message = "item activated successfully" });
+    }
+
+
     [HttpPut("update-item")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateItem(ItemDto item)
+    public async Task<IActionResult> UpdateItem(UpdateItemDto item)
     {
+      
+
+
         await _itemService.UpdateItemAsync(item);
         return Ok(new { message = "item updated successfully" });
     }
+
+
+    [HttpPut("update-itemdetail")]
+    public async Task<IActionResult> UpdateItemDetail(UpdateItemDetailDto itemDetail)
+    {
+
+
+
+        await _itemDetailService.UpdateItemDetailAsync(itemDetail);
+        return Ok(new { message = "item detail updated successfully" });
+    }
+
+
 
     [HttpPost("create-item")]
     [Produces("application/json")]
     public async Task<IActionResult> CreateItem(ItemDto item)
     {
+       
         await _itemService.CreateItemAsync(item);
         return Ok(new { message = "item created successfully" });
     }
+
+
+
+    [HttpPost("upload-and-create-item")]
+    public async Task<IActionResult> UploadAndCreateItem([FromForm]ItemDto request)
+    {
+        // Upload file lên S3
+        var mediaUrl = await _s3Service.UploadFileAsync(request.File);
+
+
+
+
+
+        // Convert ItemJson => ItemDto
+
+        // Gán mediaUrl
+        request.ItemDetail.MediaUrl = mediaUrl;
+
+        // Lưu DB
+        await _itemService.CreateItemAsync(request);
+
+        return Ok(new { message = "Item created successfully", mediaUrl });
+    }
+
+
+
 }
