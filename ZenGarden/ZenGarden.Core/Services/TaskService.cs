@@ -15,8 +15,7 @@ public class TaskService(
     IXpConfigRepository xpConfigRepository,
     ITaskTypeRepository taskTypeRepository,
     ITreeXpLogRepository treeXpLogRepository,
-    ITreeXpConfigRepository treeXpConfigRepository,
-    ITreeRepository treeRepository,
+    IUserTreeService userTreeService,
     IUserXpLogRepository userXpLogRepository,
     IUserXpLogService userXpLogService,
     IFocusMethodService focusMethodService,
@@ -35,7 +34,14 @@ public class TaskService(
 
         return mapper.Map<TaskDto>(task);
     }
+    
+    public async Task<TaskDto?> GetTaskByUserTreeIdAsync(int userTreeId)
+    {
+        var task = await taskRepository.GetTaskByUserTreeIdAsync(userTreeId)
+                   ?? throw new KeyNotFoundException($"Task with UserTree ID {userTreeId} not found.");
 
+        return mapper.Map<TaskDto>(task);
+    }
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
@@ -174,30 +180,33 @@ public class TaskService(
         var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
                        ?? throw new KeyNotFoundException("XP configuration not found for this task.");
         
-        if (task.TotalDuration is null or <= 0)
-            throw new InvalidOperationException("Total duration must be fully provided before completing the task.");
+        // if (task.StartedAt == null)
+        //     throw new InvalidOperationException("Task must have a start time to be completed.");
+        //
+        // if (DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration ?? 0))
+        //     throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
+        
+        var workDuration = task.WorkDuration ?? 0;
+        if (workDuration <= 0)
+            throw new InvalidOperationException("Invalid WorkDuration for task completion.");
 
         var standardDuration = task.FocusMethod?.MinDuration ?? 25;
-        var xpEarned = (task.WorkDuration ?? 25) / (double)standardDuration * xpConfig.BaseXp * xpConfig.Multiplier;
+        var xpEarned = (workDuration / (double)standardDuration) * xpConfig.BaseXp * xpConfig.Multiplier;
 
-        task.UserTree.TotalXp += xpEarned;
-
-        var xpLog = new TreeXpLog
+        if (xpEarned > 0)
         {
-            TaskId = task.TaskId,
-            ActivityType = ActivityType.TaskXp,
-            XpAmount = xpEarned,
-            CreatedAt = DateTime.UtcNow
-        };
-        await treeXpLogRepository.CreateAsync(xpLog);
+            task.UserTree.TotalXp += xpEarned;
 
-        var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
-        if (task.UserTree.TotalXp >= maxXpThreshold)
-        {
-            task.UserTree.TreeStatus = TreeStatus.MaxLevel;
-
-            var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
-            if (finalTreeId != null) task.UserTree.FinalTreeId = finalTreeId;
+            var xpLog = new TreeXpLog
+            {
+                TaskId = task.TaskId,
+                ActivityType = ActivityType.TaskXp,
+                XpAmount = xpEarned,
+                CreatedAt = DateTime.UtcNow
+            };
+            await treeXpLogRepository.CreateAsync(xpLog);
+    
+            await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
         }
 
         task.Status = TasksStatus.Completed;

@@ -32,8 +32,8 @@ public class UserXpLogService(
             throw new KeyNotFoundException("User experience record not found.");
 
         var lastCheckIn = await userXpLogRepository.GetLastCheckInLogAsync(userId);
-        var streakDays = (lastCheckIn != null && lastCheckIn.CreatedAt.Date == DateTime.UtcNow.Date.AddDays(-1))
-            ? Math.Min(userExp.StreakDays + 1, maxStreakDays) 
+        var streakDays = lastCheckIn != null && lastCheckIn.CreatedAt.Date == DateTime.UtcNow.Date.AddDays(-1)
+            ? Math.Min(userExp.StreakDays + 1, maxStreakDays)
             : 1;
 
         var xpEarned = xpBase * (1 + (Math.Min(streakDays, maxStreakDays) - 1) * streakBonusRate);

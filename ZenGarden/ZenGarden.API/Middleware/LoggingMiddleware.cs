@@ -22,6 +22,20 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
                 : bodyText;
     }
 
+    private static async Task<string> ReadResponseBody(HttpResponse response, int maxLength = 1000)
+    {
+        response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(response.Body);
+        var bodyText = await reader.ReadToEndAsync();
+        response.Body.Seek(0, SeekOrigin.Begin);
+
+        return string.IsNullOrWhiteSpace(bodyText)
+            ? "[Empty Body]"
+            : bodyText.Length > maxLength
+                ? string.Concat(bodyText.AsSpan(0, maxLength), "...")
+                : bodyText;
+    }
+
     public async Task Invoke(HttpContext context)
     {
         var path = context.Request.Path.Value ?? "";
@@ -33,6 +47,28 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
 
         logger.LogInformation("[Request] {Method} {Path} | Body: {Body}", method, path, requestBody);
 
-        await next(context);
+        var originalResponseBody = context.Response.Body;
+        using var newResponseBody = new MemoryStream();
+        context.Response.Body = newResponseBody;
+
+        try
+        {
+            await next(context);
+
+            var responseBody = await ReadResponseBody(context.Response);
+            logger.LogInformation("[Response] {Method} {Path} | Status: {StatusCode} | Body: {Body}",
+                method, path, context.Response.StatusCode, responseBody);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "[Error] {Method} {Path} | Message: {Message}", method, path, ex.Message);
+            throw;
+        }
+        finally
+        {
+            newResponseBody.Seek(0, SeekOrigin.Begin);
+            await newResponseBody.CopyToAsync(originalResponseBody);
+            context.Response.Body = originalResponseBody;
+        }
     }
 }

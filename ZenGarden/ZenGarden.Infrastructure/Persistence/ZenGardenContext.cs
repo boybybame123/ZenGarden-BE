@@ -1018,7 +1018,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")
-                .ValueGeneratedOnAddOrUpdate()
+                .ValueGeneratedOnUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.HasOne(d => d.FocusMethod)
