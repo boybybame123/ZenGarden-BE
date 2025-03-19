@@ -16,6 +16,15 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .Where(t => t.UserTree.UserId == userId && t.Status == TasksStatus.InProgress)
             .FirstOrDefaultAsync();
     }
+    
+    public async Task<Tasks?> GetTaskByUserTreeIdAsync(int userTreeId)
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Include(t => t.FocusMethod)
+            .Include(t => t.TaskType)
+            .FirstOrDefaultAsync(t => t.UserTreeId == userTreeId);
+    }
 
     public async Task<Tasks?> GetTaskWithDetailsAsync(int taskId)
     {

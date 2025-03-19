@@ -29,7 +29,7 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             .GreaterThan(x => x.StartDate).WithMessage("EndDate must be after StartDate.");
 
         RuleFor(x => x.TotalDuration)
-            .GreaterThan(0).When(x => x.TotalDuration.HasValue)
+            .GreaterThan(30).When(x => x.TotalDuration.HasValue)
             .WithMessage("TotalDuration must be greater than 0 if provided.");
 
         RuleFor(x => x.WorkDuration)
@@ -57,7 +57,5 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
                 var focusMethod = await focusMethodRepository.GetByIdAsync(focusMethodId.Value);
                 return focusMethod != null;
             }).WithMessage("The selected FocusMethodId does not exist.");
-
-
     }
 }

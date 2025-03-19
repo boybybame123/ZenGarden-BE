@@ -11,6 +11,7 @@ public class UserTreeService(
     IUnitOfWork unitOfWork,
     IUserTreeRepository userTreeRepository,
     ITreeRepository treeRepository,
+    ITreeXpConfigRepository treeXpConfigRepository,
     IMapper mapper)
     : IUserTreeService
 {
@@ -80,6 +81,19 @@ public class UserTreeService(
         var random = new Random();
         return treeIds[random.Next(treeIds.Count)];
     }
+    
+    public async Task CheckAndSetMaxLevelAsync(UserTree userTree)
+    {
+        var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
+        if (userTree.TotalXp >= maxXpThreshold)
+        {
+            userTree.TreeStatus = TreeStatus.MaxLevel;
+            userTree.IsMaxLevel = true;
+            var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
+            if (finalTreeId != null) userTree.FinalTreeId = finalTreeId;
+        }
+    }
+
 
     public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid)
     {

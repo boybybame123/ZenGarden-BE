@@ -40,7 +40,8 @@ public class MappingProfile : Profile
         CreateMap<UserXpLog, UserXpLogDto>().ReverseMap();
         CreateMap<TaskType, TaskTypeDto>();
         CreateMap<CreateTaskTypeDto, TaskType>();
-        CreateMap<UpdateTaskTypeDto, TaskType>();
+        CreateMap<UpdateTaskTypeDto, TaskType>()
+            .ForAllMembers(opts => opts.Condition((_, _, srcMember) => srcMember != null));
     }
 
     private static double CalculateXpToNextLevel(UserTree userTree)
