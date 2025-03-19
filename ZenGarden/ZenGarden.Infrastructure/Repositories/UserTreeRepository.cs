@@ -26,4 +26,12 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
             .Include(ut => ut.TreeXpConfig)
             .ToListAsync();
     }
+    public async Task<UserTree?> GetUserTreeByUserdIdAsync(int userId)
+    {
+        return await _context.UserTree
+            .Include(ut => ut.User)
+            .Include(ut => ut.FinalTree)
+            .Include(ut => ut.TreeXpConfig)
+            .FirstOrDefaultAsync(ut => ut.UserId== userId);
+    }
 }

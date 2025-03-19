@@ -44,4 +44,13 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         await userTreeService.ChangeStatusAsync(id, newStatus);
         return Ok(new { message = "UserTree status updated successfully" });
     }
+
+
+    [HttpGet("user/{userId:int}")]
+    public async Task<IActionResult> GetByUserId(int userId)
+    {
+        var userTree = await userTreeService.GetUserTreeByUserIdAsync(userId);
+        return Ok(userTree);
+    }
+
 }
