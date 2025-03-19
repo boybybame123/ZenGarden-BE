@@ -19,10 +19,18 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(tasks);
     }
 
-    [HttpGet("{taskId:int}")]
+    [HttpGet("by-id/{taskId:int}")]
     public async Task<IActionResult> GetTaskById(int taskId)
     {
         var task = await _taskService.GetTaskByIdAsync(taskId);
+        if (task == null) return NotFound();
+        return Ok(task);
+    }
+
+    [HttpGet("by-user-tree/{userTreeId:int}")]
+    public async Task<IActionResult> GetTaskByUserTreeId(int userTreeId)
+    {
+        var task = await _taskService.GetTaskByUserTreeIdAsync(userTreeId);
         if (task == null) return NotFound();
         return Ok(task);
     }

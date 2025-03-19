@@ -5,7 +5,6 @@ namespace ZenGarden.Domain.Entities;
 public class UserXpLog
 {
     public int LogId { get; init; }
-
     public int UserId { get; init; }
     public XpSourceType XpSource { get; init; }
     public double XpAmount { get; init; }
