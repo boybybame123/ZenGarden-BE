@@ -22,12 +22,12 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
                 : bodyText;
     }
 
-    private static async Task<string> ReadResponseBody(HttpResponse response, int maxLength = 1000)
+    private static async Task<string> ReadResponseBody(Stream responseBodyStream, int maxLength = 1000)
     {
-        response.Body.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(response.Body);
+        responseBodyStream.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(responseBodyStream, leaveOpen: true);
         var bodyText = await reader.ReadToEndAsync();
-        response.Body.Seek(0, SeekOrigin.Begin);
+        responseBodyStream.Seek(0, SeekOrigin.Begin);
 
         return string.IsNullOrWhiteSpace(bodyText)
             ? "[Empty Body]"
@@ -55,7 +55,7 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
         {
             await next(context);
 
-            var responseBody = await ReadResponseBody(context.Response);
+            var responseBody = await ReadResponseBody(newResponseBody);
             logger.LogInformation("[Response] {Method} {Path} | Status: {StatusCode} | Body: {Body}",
                 method, path, context.Response.StatusCode, responseBody);
         }
@@ -68,7 +68,7 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
         {
             newResponseBody.Seek(0, SeekOrigin.Begin);
             await newResponseBody.CopyToAsync(originalResponseBody);
-            context.Response.Body = originalResponseBody;
+            context.Response.Body = originalResponseBody; 
         }
     }
 }
