@@ -45,12 +45,11 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         return Ok(new { message = "UserTree status updated successfully" });
     }
 
-
-    [HttpGet("user/{userId:int}")]
-    public async Task<IActionResult> GetByUserId(int userId)
+    [HttpGet("GetUserTree-ByUserId/{id:int}")]
+    public async Task<IActionResult> GetAllUserTreeByUserId(int id)
     {
-        var userTree = await userTreeService.GetUserTreeByUserIdAsync(userId);
-        return Ok(userTree);
+        var userTrees = await userTreeService.GetAllUserTreesByUserIdAsync(id);
+        return Ok(userTrees);
     }
 
 }

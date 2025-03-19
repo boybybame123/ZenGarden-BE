@@ -81,13 +81,12 @@ public class UserTreeService(
         return treeIds[random.Next(treeIds.Count)];
     }
 
-    public async Task<UserTreeDto> GetUserTreeByUserIdAsync(int userId)
+    public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid)
     {
-        var userTree = await userTreeRepository.GetUserTreeByUserdIdAsync(userId);
-        if (userTree == null) throw new KeyNotFoundException("UserTree not found");
-
-        return mapper.Map<UserTreeDto>(userTree);
+        var userTrees = await userTreeRepository.GetUserTreeByUserdIdAsync(userid);
+        return mapper.Map<List<UserTreeDto>>(userTrees);
     }
+
 
 
 }
