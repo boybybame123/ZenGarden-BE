@@ -13,5 +13,6 @@ public interface ITaskService
     Task CompleteTaskAsync(int taskId);
     Task UpdateOverdueTasksAsync();
     Task<double> CalculateTaskXpAsync(int taskId);
-    Task<TaskDto?> GetTaskByUserTreeIdAsync(int userTreeId);
+    Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId);
+    Task<List<TaskDto>> GetTaskByUserIdAsync(int userId);
 }
