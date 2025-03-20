@@ -51,5 +51,4 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         var userTrees = await userTreeService.GetAllUserTreesByUserIdAsync(id);
         return Ok(userTrees);
     }
-
 }

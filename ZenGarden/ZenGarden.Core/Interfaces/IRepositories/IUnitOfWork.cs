@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace ZenGarden.Core.Interfaces.IRepositories;
 
 public interface IUnitOfWork : IDisposable
@@ -6,5 +8,5 @@ public interface IUnitOfWork : IDisposable
     Task<int> CommitAsync();
     Task RollbackTransactionAsync();
     Task CommitTransactionAsync();
-    Task BeginTransactionAsync();
+    Task<IDbContextTransaction> BeginTransactionAsync();
 }

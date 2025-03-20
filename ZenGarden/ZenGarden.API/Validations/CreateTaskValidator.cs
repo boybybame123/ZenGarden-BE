@@ -46,14 +46,14 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             {
                 if (!breakTime.HasValue || !dto.FocusMethodId.HasValue) return true;
                 var focusMethod = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
-                if (focusMethod == null) return false; 
+                if (focusMethod == null) return false;
                 return breakTime.Value >= focusMethod.MinBreak && breakTime.Value <= focusMethod.MaxBreak;
             }).WithMessage("BreakTime must be within the allowed range of the selected FocusMethod.");
 
         RuleFor(x => x.FocusMethodId)
             .MustAsync(async (focusMethodId, _) =>
             {
-                if (!focusMethodId.HasValue) return true; 
+                if (!focusMethodId.HasValue) return true;
                 var focusMethod = await focusMethodRepository.GetByIdAsync(focusMethodId.Value);
                 return focusMethod != null;
             }).WithMessage("The selected FocusMethodId does not exist.");

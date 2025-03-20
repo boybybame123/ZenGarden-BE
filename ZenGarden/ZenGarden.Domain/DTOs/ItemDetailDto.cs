@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-
-namespace ZenGarden.Domain.DTOs;
+﻿namespace ZenGarden.Domain.DTOs;
 
 public class ItemDetailDto
 {
@@ -12,8 +10,6 @@ public class ItemDetailDto
     public string Description { get; set; } // Mô tả item
 
 
- 
-
     public string Type { get; set; } // Loại item (background, music, xp_boost, xp_protect)
 
     public string MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
@@ -21,8 +17,4 @@ public class ItemDetailDto
     public string Effect { get; set; } // Chứa JSON hiệu ứng
 
     public int? Duration { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
-
-   
-
-
 }

@@ -6,7 +6,11 @@ using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Services;
 
-public class ItemDetailService(IItemDetailRepository itemDetailRepository, IUnitOfWork unitOfWork, IMapper mapper, IS3Service s3Service)
+public class ItemDetailService(
+    IItemDetailRepository itemDetailRepository,
+    IUnitOfWork unitOfWork,
+    IMapper mapper,
+    IS3Service s3Service)
     : IItemDetailService
 {
     public Task CreateItemDetailAsync(ItemDetail itemDetail)

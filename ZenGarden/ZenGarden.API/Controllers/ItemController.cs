@@ -1,7 +1,4 @@
-﻿using Amazon.Runtime.Internal;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Stripe.Forwarding;
+﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -11,10 +8,14 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ItemController(IItemService itemService,IItemDetailService itemDetail,IS3Service s3Service) : ControllerBase
+public class ItemController(IItemService itemService, IItemDetailService itemDetail, IS3Service s3Service)
+    : ControllerBase
 {
+    private readonly IItemDetailService _itemDetailService =
+        itemDetail ?? throw new ArgumentNullException(nameof(itemDetail));
+
     private readonly IItemService _itemService = itemService ?? throw new ArgumentNullException(nameof(itemService));
-    private readonly IItemDetailService _itemDetailService = itemDetail ?? throw new ArgumentNullException(nameof(itemDetail));
+
     private readonly IS3Service _s3Service = s3Service ?? throw new ArgumentNullException(nameof(s3Service));
 
 
@@ -42,7 +43,6 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
     }
 
 
-
     [HttpPut("active-item/{itemId}")]
     [Produces("application/json")]
     public async Task<IActionResult> ActiveItem(int itemId)
@@ -56,9 +56,6 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
     [Produces("application/json")]
     public async Task<IActionResult> UpdateItem(UpdateItemDto item)
     {
-      
-
-
         await _itemService.UpdateItemAsync(item);
         return Ok(new { message = "item updated successfully" });
     }
@@ -67,34 +64,25 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
     [HttpPut("update-itemdetail")]
     public async Task<IActionResult> UpdateItemDetail(UpdateItemDetailDto itemDetail)
     {
-
-
-
         await _itemDetailService.UpdateItemDetailAsync(itemDetail);
         return Ok(new { message = "item detail updated successfully" });
     }
-
 
 
     [HttpPost("create-item")]
     [Produces("application/json")]
     public async Task<IActionResult> CreateItem(ItemDto item)
     {
-       
         await _itemService.CreateItemAsync(item);
         return Ok(new { message = "item created successfully" });
     }
 
 
-
     [HttpPost("upload-and-create-item")]
-    public async Task<IActionResult> UploadAndCreateItem([FromForm]ItemDto request)
+    public async Task<IActionResult> UploadAndCreateItem([FromForm] ItemDto request)
     {
         // Upload file lên S3
         var mediaUrl = await _s3Service.UploadFileAsync(request.File);
-
-
-
 
 
         // Convert ItemJson => ItemDto
@@ -107,7 +95,4 @@ public class ItemController(IItemService itemService,IItemDetailService itemDeta
 
         return Ok(new { message = "Item created successfully", mediaUrl });
     }
-
-
-
 }

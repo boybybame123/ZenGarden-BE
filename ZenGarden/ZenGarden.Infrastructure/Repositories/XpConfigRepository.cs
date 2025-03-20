@@ -14,4 +14,10 @@ public class XpConfigRepository(ZenGardenContext context) : GenericRepository<Xp
         return await _context.XpConfigs
             .FirstOrDefaultAsync(x => x.TaskTypeId == taskTypeId && x.FocusMethodId == focusMethodId);
     }
+
+    public async Task<XpConfig?> GetByFocusMethodIdAndTaskTypeIdAsync(int focusMethodId, int taskTypeId)
+    {
+        return await _context.XpConfigs
+            .FirstOrDefaultAsync(x => x.FocusMethodId == focusMethodId && x.TaskTypeId == taskTypeId);
+    }
 }
