@@ -10,4 +10,5 @@ public class FocusMethodDto
     public int? MaxBreak { get; set; }
     public int? DefaultDuration { get; set; }
     public int? DefaultBreak { get; set; }
+    public double XpMultiplier { get; set; }
 }

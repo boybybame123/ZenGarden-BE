@@ -5,7 +5,8 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class ItemDetailRepository(ZenGardenContext context): GenericRepository<ItemDetail>(context), IItemDetailRepository
+public class ItemDetailRepository(ZenGardenContext context)
+    : GenericRepository<ItemDetail>(context), IItemDetailRepository
 {
     private readonly ZenGardenContext _context = context;
 

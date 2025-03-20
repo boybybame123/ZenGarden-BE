@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -49,21 +50,22 @@ public partial class FocusMethodService : IFocusMethodService
             var isDatabaseEmpty = availableMethodNames.Count == 0;
 
             var prompt = isDatabaseEmpty
-                ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method optimized for this task. Return the result in exactly this format:\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak.\n\nAll values are in minutes. Do not explain, just return the result."
-                : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest one. Return the result in exactly this format:\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak.\n\nAll values are in minutes. Do not explain, just return the result.";
+                ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method optimized for this task. Return the result in exactly this format:\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier.\n\nXpMultiplier should be between 1.0 (low impact) and 2.0 (high impact). All values are in minutes. Do not explain, just return the result."
+                : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest one. Return the result in exactly this format:\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier.\n\nXpMultiplier should be between 1.0 (low impact) and 2.0 (high impact). All values are in minutes. Do not explain, just return the result.";
 
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
                 throw new InvalidOperationException("OpenAI returned an empty response.");
 
             var parts = aiResponse.Split('-').Select(p => p.Trim()).ToArray();
-            if (parts.Length != 7)
+            if (parts.Length != 8)
                 throw new InvalidDataException($"Invalid AI response format: {aiResponse}");
 
             var suggestedMethodName = parts[0];
 
-            var existingMethod = await _focusMethodRepository.GetByNameAsync(suggestedMethodName);
-            if (existingMethod != null) return _mapper.Map<FocusMethodDto>(existingMethod);
+            var closestMatch = await _focusMethodRepository.SearchBySimilarityAsync(suggestedMethodName);
+            if (closestMatch != null) return _mapper.Map<FocusMethodDto>(closestMatch);
+
 
             var newMethod = new FocusMethod
             {
@@ -74,6 +76,7 @@ public partial class FocusMethodService : IFocusMethodService
                 MaxBreak = ExtractNumber(parts[4], 30),
                 DefaultDuration = ExtractNumber(parts[5], 45),
                 DefaultBreak = ExtractNumber(parts[6], 10),
+                XpMultiplier = ExtractDouble(parts[7], 1.0),
                 IsActive = true
             };
 
@@ -194,7 +197,17 @@ public partial class FocusMethodService : IFocusMethodService
     private static int ExtractNumber(string input, int defaultValue)
     {
         var match = MyRegex().Match(input);
-        return match.Success ? int.Parse(match.Value) : defaultValue;
+        if (match.Success && int.TryParse(match.Value, out var result)) return result > 0 ? result : defaultValue;
+
+        return defaultValue;
+    }
+
+    private static double ExtractDouble(string input, double defaultValue)
+    {
+        if (double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var result))
+            return result;
+
+        return defaultValue;
     }
 
     [GeneratedRegex(@"\d+")]

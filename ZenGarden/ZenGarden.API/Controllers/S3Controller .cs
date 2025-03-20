@@ -1,13 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using ZenGarden.Core.Interfaces.IServices;
-using Amazon.S3;
-
-using ZenGarden.Domain.DTOs;
 
 [ApiController]
 [Route("api/s3")]
@@ -62,6 +54,7 @@ public class S3Controller : ControllerBase
         var url = await _s3Service.GetPreSignedUrlAsync(key);
         return Ok(new { Url = url });
     }
+
     [HttpPost("upload-file")]
     [Consumes("multipart/form-data")] // ⚠️ Bắt buộc có dòng này
     public async Task<IActionResult> UploadFile(IFormFile file)
@@ -69,20 +62,4 @@ public class S3Controller : ControllerBase
         var url = await _s3Service.UploadFileAsync(file);
         return Ok(new { Url = url });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-

@@ -128,6 +128,30 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Description).HasColumnType("text");
             entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID").ValueGeneratedOnAdd();
+            entity.Property(e => e.XpMultiplier)
+                .HasColumnType("double")
+                .HasDefaultValue(1);
+            entity.Property(e => e.DefaultDuration)
+                .HasColumnType("int")
+                .HasDefaultValue(25);
+            entity.Property(e => e.DefaultBreak)
+                .HasColumnType("int")
+                .HasDefaultValue(5);
+            entity.Property(e => e.MinDuration)
+                .HasColumnType("int")
+                .HasDefaultValue(25);
+            entity.Property(e => e.MaxDuration)
+                .HasColumnType("int")
+                .HasDefaultValue(60);
+            entity.Property(e => e.MinBreak)
+                .HasColumnType("int")
+                .HasDefaultValue(5);
+            entity.Property(e => e.MaxBreak)
+                .HasColumnType("int")
+                .HasDefaultValue(15);
+            entity.Property(e => e.IsActive)
+                .HasColumnType("bit")
+                .HasDefaultValue(true);
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .ValueGeneratedOnAdd()
@@ -196,9 +220,9 @@ public class ZenGardenContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.HasOne(ct => ct.Challenge)
-                    .WithMany(c => c.ChallengeTasks)
-                    .HasForeignKey(ct => ct.ChallengeId)
-                    .OnDelete(DeleteBehavior.Cascade)
+                .WithMany(c => c.ChallengeTasks)
+                .HasForeignKey(ct => ct.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("challengetask_ibfk_1");
             entity.HasOne(d => d.Tasks)
                 .WithMany(p => p.ChallengeTasks)
@@ -382,7 +406,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.WorkDuration)
                 .HasDefaultValue(25);
-            
+
             entity.Property(e => e.TotalDuration)
                 .HasColumnType("int")
                 .HasDefaultValue(0);
@@ -415,7 +439,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.BreakTime)
                 .HasDefaultValue(5);
-            
+
             entity.Property(e => e.IsSuggested)
                 .HasDefaultValue(true)
                 .IsRequired();
@@ -449,12 +473,17 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.TaskTypeDescription)
                 .HasMaxLength(255);
+            entity.Property(e => e.XpMultiplier)
+                .HasColumnType("double")
+                .HasDefaultValue(1);
             entity.Property(e => e.CreatedAt)
-                .HasColumnType("datetime")
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(e => e.UpdatedAt)
-                .HasColumnType("datetime")
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.HasMany(e => e.Tasks)
@@ -1008,8 +1037,9 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.BaseXp)
                 .HasColumnType("double");
 
-            entity.Property(e => e.Multiplier)
-                .HasColumnType("double");
+            entity.Property(e => e.XpMultiplier)
+                .HasColumnType("double")
+                .HasDefaultValue(1);
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")

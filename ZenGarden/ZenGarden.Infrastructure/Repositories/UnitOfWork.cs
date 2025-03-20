@@ -14,9 +14,10 @@ public class UnitOfWork(ZenGardenContext context) : IUnitOfWork
         return new GenericRepository<TEntity>(_context);
     }
 
-    public async Task BeginTransactionAsync()
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
     {
         _transaction = await _context.Database.BeginTransactionAsync();
+        return _transaction;
     }
 
     public async Task CommitTransactionAsync()

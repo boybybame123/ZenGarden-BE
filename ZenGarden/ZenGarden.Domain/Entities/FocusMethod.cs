@@ -16,6 +16,7 @@ public partial class FocusMethod
     public int? MaxDuration { get; set; }
     public int? MinBreak { get; set; }
     public int? MaxBreak { get; set; }
+    public double XpMultiplier { get; set; } = 1;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
