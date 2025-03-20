@@ -35,13 +35,29 @@ public class TaskService(
 
         return mapper.Map<TaskDto>(task);
     }
-
-    public async Task<TaskDto?> GetTaskByUserTreeIdAsync(int userTreeId)
+    
+    public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
-        var task = await taskRepository.GetTaskByUserTreeIdAsync(userTreeId)
-                   ?? throw new KeyNotFoundException($"Task with UserTree ID {userTreeId} not found.");
+        var tasks = await taskRepository.GetTasksByUserIdAsync(userId);
+    
+        if (tasks == null || tasks.Count == 0)
+        {
+            throw new KeyNotFoundException($"Tasks with UserTree ID {userId} not found.");
+        }
 
-        return mapper.Map<TaskDto>(task);
+        return mapper.Map<List<TaskDto>>(tasks);
+    }
+
+    public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
+    {
+        var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId);
+    
+        if (tasks == null || tasks.Count == 0)
+        {
+            throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
+        }
+
+        return mapper.Map<List<TaskDto>>(tasks);
     }
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
