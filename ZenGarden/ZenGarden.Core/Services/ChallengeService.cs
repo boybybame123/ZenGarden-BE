@@ -3,28 +3,71 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class ChallengeService(IChallengeRepository challengeRepository, IUnitOfWork unitOfWork, IMapper mapper)
+public class ChallengeService(
+    IChallengeRepository challengeRepository,
+    IUnitOfWork unitOfWork,
+    IUserChallengeRepository userChallengeRepository,
+    ITaskRepository taskRepository,
+    IChallengeTaskRepository challengeTaskRepository,
+    IMapper mapper)
     : IChallengeService
 {
-    public async Task CreateChallengeAsync(ChallengeDto Challenge)
+    public async Task<ChallengeDto> CreateChallengeAsync(int userId, CreateChallengeDto dto)
     {
-        var check = await challengeRepository.GetByIdAsync(Challenge.ChallengeId);
-        if (check == null)
+        var challenge = new Challenge
         {
-            var Challenges = mapper.Map<Challenge>(Challenge);
-            await challengeRepository.CreateAsync(Challenges);
+            ChallengeTypeId = dto.ChallengeTypeId,
+            ChallengeName = dto.ChallengeName,
+            Description = dto.Description,
+            XpReward = dto.XpReward,
+            Status = ChallengeStatus.Pending
+        };
+
+        await challengeRepository.CreateAsync(challenge);
+        await unitOfWork.CommitAsync();
+
+        var userChallenge = new UserChallenge
+        {
+            ChallengeId = challenge.ChallengeId,
+            UserId = userId,
+            ChallengeRole = UserChallengeRole.Organizer
+        };
+
+        await userChallengeRepository.CreateAsync(userChallenge);
+        await unitOfWork.CommitAsync();
+
+        if (dto.Tasks == null || dto.Tasks.Count == 0) return mapper.Map<ChallengeDto>(challenge);
+        foreach (var task in dto.Tasks.Select(taskDto => new Tasks
+                 {
+                     TaskName = taskDto.TaskName,
+                     TaskDescription = taskDto.TaskDescription,
+                     Status = TasksStatus.NotStarted,
+                     CreatedAt = DateTime.UtcNow
+                 }))
+        {
+            await taskRepository.CreateAsync(task);
             await unitOfWork.CommitAsync();
+
+            var challengeTask = new ChallengeTask
+            {
+                ChallengeId = challenge.ChallengeId,
+                TaskId = task.TaskId
+            };
+
+            await challengeTaskRepository.CreateAsync(challengeTask);
         }
-        else
-        {
-            throw new Exception("Challenge already exists");
-        }
+
+        await unitOfWork.CommitAsync();
+
+        return mapper.Map<ChallengeDto>(challenge);
     }
 
-    public Task DeleteChallengeAsync(int ChallengeId)
+
+    public Task DeleteChallengeAsync(int challengeId)
     {
         throw new NotImplementedException();
     }
@@ -35,26 +78,34 @@ public class ChallengeService(IChallengeRepository challengeRepository, IUnitOfW
         return challenges;
     }
 
-    public async Task<Challenge?> GetChallengeByIdAsync(int ChallengeId)
+    public async Task<Challenge> GetChallengeByIdAsync(int challengeId)
     {
-        var Challenges = await challengeRepository.GetByIdChallengeAsync(ChallengeId);
-        return Challenges;
+        var challenges = await challengeRepository.GetByIdChallengeAsync(challengeId);
+        return challenges;
     }
 
-    public async Task UpdateChallengeAsync(ChallengeDto Challenge)
+    public async Task UpdateChallengeAsync(ChallengeDto challenge)
     {
-        var existingChallenge = await challengeRepository.GetByIdAsync(Challenge.ChallengeId);
-        if (!string.IsNullOrEmpty(Challenge.ChallengeName)) existingChallenge.ChallengeName = Challenge.ChallengeName;
+        var existingChallenge = await challengeRepository.GetByIdAsync(challenge.ChallengeId);
+        if (!string.IsNullOrEmpty(challenge.ChallengeName))
+            if (existingChallenge != null)
+                existingChallenge.ChallengeName = challenge.ChallengeName;
 
-        if (!string.IsNullOrEmpty(Challenge.Description)) existingChallenge.Description = Challenge.Description;
+        if (!string.IsNullOrEmpty(challenge.Description))
+            if (existingChallenge != null)
+                existingChallenge.Description = challenge.Description;
 
-        if (Challenge.ChallengeTypeId != 0) existingChallenge.ChallengeTypeId = Challenge.ChallengeTypeId;
+        if (challenge.ChallengeTypeId != 0)
+            if (existingChallenge != null)
+                existingChallenge.ChallengeTypeId = challenge.ChallengeTypeId;
 
-        if (Challenge.XpReward != 0) existingChallenge.XpReward = Challenge.XpReward;
+        if (challenge.XpReward != 0)
+            if (existingChallenge != null)
+                existingChallenge.XpReward = challenge.XpReward;
 
-        if (Challenge.status != existingChallenge.Status) existingChallenge.Status = Challenge.status;
+        if (existingChallenge != null && challenge.Status != existingChallenge.Status) existingChallenge.Status = challenge.Status;
 
-        challengeRepository.Update(existingChallenge);
+        if (existingChallenge != null) challengeRepository.Update(existingChallenge);
         await unitOfWork.CommitAsync();
     }
 }
