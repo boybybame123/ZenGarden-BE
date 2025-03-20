@@ -3,8 +3,6 @@ using System.Text.Json.Serialization;
 using Amazon.Extensions.NETCore.Setup;
 using AspNetCoreRateLimit;
 using FluentValidation;
-using Google.Apis.Auth.OAuth2;
-using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
@@ -12,7 +10,6 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
@@ -27,7 +24,7 @@ using ZenGarden.Infrastructure.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 _ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+builder.Configuration.AddJsonFile("appsettings.json", false, true);
 
 builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
@@ -116,9 +113,9 @@ builder.Services.AddSwaggerGen(c =>
         Type = "object",
         Properties = new Dictionary<string, OpenApiSchema>
         {
-            ["fileName"] = new OpenApiSchema { Type = "string" },
-            ["fileBase64"] = new OpenApiSchema { Type = "string", Format = "byte" },
-            ["path"] = new OpenApiSchema { Type = "string" }
+            ["fileName"] = new() { Type = "string" },
+            ["fileBase64"] = new() { Type = "string", Format = "byte" },
+            ["path"] = new() { Type = "string" }
         }
     });
 
@@ -143,7 +140,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
 
 
 builder.Services.AddCors(options =>
@@ -202,7 +198,6 @@ builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 
-
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
@@ -241,8 +236,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.UseDeveloperExceptionPage();
-
-
 
 
 app.Run();

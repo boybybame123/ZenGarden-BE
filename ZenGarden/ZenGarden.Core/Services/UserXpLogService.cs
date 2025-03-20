@@ -37,7 +37,7 @@ public class UserXpLogService(
             : 1;
 
         var xpEarned = xpBase * (1 + (Math.Min(streakDays, maxStreakDays) - 1) * streakBonusRate);
-        
+
         userExp.TotalXp += xpEarned;
         userExp.StreakDays = streakDays;
         userExp.UpdatedAt = DateTime.UtcNow;

@@ -48,11 +48,6 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         var updateItem = await GetItemByIdAsync(item.ItemId);
 
 
-
-
-
-
-
         updateItem.Name = item.Name;
         updateItem.Type = item.Type;
         updateItem.Rarity = item.Rarity;
@@ -61,29 +56,19 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         updateItem.UpdatedAt = DateTime.Now;
 
 
-
-
-
-
-
-
-
         itemRepository.Update(updateItem);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update item.");
     }
 
 
-
     public async Task ActiveItem(int itemId)
     {
-
         var item = await GetItemByIdAsync(itemId);
         if (item == null)
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
 
         item.Status = ItemStatus.Active;
-
 
 
         itemRepository.Update(item);
@@ -103,12 +88,8 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         item.Status = ItemStatus.Inactive;
 
 
-
-             itemRepository.Update(item);
+        itemRepository.Update(item);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete item.");
     }
-
-
-
 }

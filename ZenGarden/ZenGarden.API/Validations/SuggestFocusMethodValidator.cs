@@ -15,7 +15,7 @@ public class SuggestFocusMethodValidator : AbstractValidator<SuggestFocusMethodD
 
         RuleFor(x => x.TotalDuration)
             .GreaterThan(0).WithMessage("TotalDuration must be greater than 0.")
-            .When(x => x.TotalDuration.HasValue); 
+            .When(x => x.TotalDuration.HasValue);
 
         RuleFor(x => x.StartDate)
             .LessThan(x => x.EndDate)

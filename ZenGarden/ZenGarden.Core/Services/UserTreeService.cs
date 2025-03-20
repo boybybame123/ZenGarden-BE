@@ -74,14 +74,6 @@ public class UserTreeService(
         await unitOfWork.CommitAsync();
     }
 
-    private async Task<int?> AssignRandomFinalTreeIdAsync()
-    {
-        var treeIds = await treeRepository.GetAllTreeIdsAsync();
-        if (treeIds.Count == 0) return null;
-        var random = new Random();
-        return treeIds[random.Next(treeIds.Count)];
-    }
-    
     public async Task CheckAndSetMaxLevelAsync(UserTree userTree)
     {
         var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
@@ -101,6 +93,11 @@ public class UserTreeService(
         return mapper.Map<List<UserTreeDto>>(userTrees);
     }
 
-
-
+    private async Task<int?> AssignRandomFinalTreeIdAsync()
+    {
+        var treeIds = await treeRepository.GetAllTreeIdsAsync();
+        if (treeIds.Count == 0) return null;
+        var random = new Random();
+        return treeIds[random.Next(treeIds.Count)];
+    }
 }

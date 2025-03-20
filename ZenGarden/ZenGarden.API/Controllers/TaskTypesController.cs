@@ -49,5 +49,4 @@ public class TaskTypesController : ControllerBase
         var success = await _taskTypeService.DeleteTaskTypeAsync(id);
         return success ? NoContent() : NotFound();
     }
-    
 }

@@ -19,7 +19,6 @@ public class ValidationMiddleware(RequestDelegate next)
             !HttpMethods.IsHead(context.Request.Method) &&
             !HttpMethods.IsDelete(context.Request.Method) &&
             !HttpMethods.IsOptions(context.Request.Method))
-        {
             if (context.Request.ContentLength > 0 && !context.Request.HasJsonContentType())
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -28,7 +27,6 @@ public class ValidationMiddleware(RequestDelegate next)
                 await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
                 return;
             }
-        }
 
         await next(context);
     }

@@ -68,7 +68,7 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
         {
             newResponseBody.Seek(0, SeekOrigin.Begin);
             await newResponseBody.CopyToAsync(originalResponseBody);
-            context.Response.Body = originalResponseBody; 
+            context.Response.Body = originalResponseBody;
         }
     }
 }

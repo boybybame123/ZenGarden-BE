@@ -4,4 +4,5 @@ public class CreateTaskTypeDto
 {
     public string TaskTypeName { get; set; } = string.Empty;
     public string? TaskTypeDescription { get; set; }
+    public decimal XpMultiplier { get; set; }
 }

@@ -55,7 +55,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         var createdTask = await _taskService.CreateTaskWithSuggestedMethodAsync(dto);
         return Ok(createdTask);
     }
-    
+
     [Authorize]
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
