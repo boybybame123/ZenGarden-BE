@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ZenGarden.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreateII : Migration
+    public partial class InitialCreateVIII : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -21,7 +21,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     ChallengeTypeID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ChallengeTypeName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    ChallengeTypeName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
@@ -31,7 +31,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PK_ChallengeType", x => x.ChallengeTypeID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "FocusMethod",
@@ -39,17 +39,18 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     FocusMethodID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    DefaultDuration = table.Column<int>(type: "int", nullable: true),
-                    DefaultBreak = table.Column<int>(type: "int", nullable: true),
-                    MinDuration = table.Column<int>(type: "int", nullable: true),
-                    MaxDuration = table.Column<int>(type: "int", nullable: true),
-                    MinBreak = table.Column<int>(type: "int", nullable: true),
-                    MaxBreak = table.Column<int>(type: "int", nullable: true),
-                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    DefaultDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 25),
+                    DefaultBreak = table.Column<int>(type: "int", nullable: true, defaultValue: 5),
+                    MinDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 25),
+                    MaxDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 60),
+                    MinBreak = table.Column<int>(type: "int", nullable: true, defaultValue: 5),
+                    MaxBreak = table.Column<int>(type: "int", nullable: true, defaultValue: 15),
+                    XpMultiplier = table.Column<double>(type: "double", nullable: false, defaultValue: 1.0),
+                    IsActive = table.Column<ulong>(type: "bit", nullable: false, defaultValue: 1ul),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -58,7 +59,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.FocusMethodID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Item",
@@ -66,11 +67,11 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     ItemID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Type = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Type = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Rarity = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Rarity = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Cost = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -82,7 +83,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.ItemID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Packages",
@@ -90,7 +91,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     PackageID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    Name = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Price = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
@@ -103,7 +104,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.PackageID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Roles",
@@ -111,7 +112,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     RoleID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    RoleName = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    RoleName = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
@@ -119,7 +120,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.RoleID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "TaskType",
@@ -127,19 +128,20 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     TaskTypeID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TaskTypeName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    TaskTypeName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    TaskTypeDescription = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    TaskTypeDescription = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                    XpMultiplier = table.Column<double>(type: "double", nullable: false, defaultValue: 1.0),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.TaskTypeID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Tree",
@@ -147,10 +149,11 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     TreeID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Rarity = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Rarity = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -159,7 +162,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.TreeID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "TreeXpConfig",
@@ -176,7 +179,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.LevelID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "UserXpConfig",
@@ -193,7 +196,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     table.PrimaryKey("PRIMARY", x => x.LevelID);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Challenge",
@@ -202,11 +205,12 @@ namespace ZenGarden.Infrastructure.Migrations
                     ChallengeID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     ChallengeTypeID = table.Column<int>(type: "int", nullable: false),
-                    ChallengeName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    ChallengeName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Description = table.Column<string>(type: "varchar(1000)", unicode: false, maxLength: 1000, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Description = table.Column<string>(type: "varchar(1000)", unicode: false, maxLength: 1000, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     XpReward = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -221,7 +225,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "ItemDetail",
@@ -230,15 +234,15 @@ namespace ZenGarden.Infrastructure.Migrations
                     ItemDetailID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     ItemID = table.Column<int>(type: "int", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Description = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Type = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Type = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    MediaUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    MediaUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Effect = table.Column<string>(type: "json", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Effect = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Duration = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Duration = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Sold = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -255,7 +259,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Users",
@@ -264,22 +268,22 @@ namespace ZenGarden.Infrastructure.Migrations
                     UserId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     RoleID = table.Column<int>(type: "int", nullable: true),
-                    UserName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    UserName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Email = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    Email = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Password = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    Password = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Phone = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    Phone = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    RefreshTokenHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    RefreshTokenHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     RefreshTokenExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    OtpCodeHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    OtpCodeHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     OtpExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    ImageUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    ImageUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
@@ -294,7 +298,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "RoleID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "XpConfigs",
@@ -304,11 +308,10 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     FocusMethodID = table.Column<int>(type: "int", nullable: false),
                     TaskTypeID = table.Column<int>(type: "int", nullable: false),
-                    BaseXP = table.Column<double>(type: "double", nullable: false),
-                    Multiplier = table.Column<double>(type: "double", nullable: false),
+                    BaseXp = table.Column<double>(type: "double", nullable: false),
+                    XpMultiplier = table.Column<double>(type: "double", nullable: false, defaultValue: 1.0),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.ComputedColumn)
                 },
                 constraints: table =>
                 {
@@ -327,7 +330,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Bag",
@@ -351,7 +354,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "PurchaseHistory",
@@ -381,7 +384,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "ItemID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "UserChallenges",
@@ -392,6 +395,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     ChallengeID = table.Column<int>(type: "int", nullable: false),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     Progress = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    ChallengeRole = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     JoinedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -414,7 +418,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "UserConfig",
@@ -423,9 +427,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     UserConfigID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
-                    BackgroundConfig = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    BackgroundConfig = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    SoundConfig = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    SoundConfig = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
@@ -441,7 +445,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "UserExperience",
@@ -450,19 +454,20 @@ namespace ZenGarden.Infrastructure.Migrations
                     UserExperienceID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: false),
-                    TotalXP = table.Column<long>(type: "bigint", nullable: false),
-                    CurrentLevel = table.Column<int>(type: "int", nullable: false),
+                    TotalXP = table.Column<double>(type: "double", nullable: false, defaultValue: 0.0),
                     XpToNextLevel = table.Column<int>(type: "int", nullable: false),
-                    LevelId = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    LevelID = table.Column<int>(type: "int", nullable: false),
+                    StreakDays = table.Column<int>(type: "int", nullable: false),
+                    IsMaxLevel = table.Column<ulong>(type: "bit", nullable: false, defaultValue: 0ul),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PRIMARY", x => x.UserExperienceID);
                     table.ForeignKey(
-                        name: "FK_UserExperience_UserXpConfig_LevelId",
-                        column: x => x.LevelId,
+                        name: "FK_UserExperience_UserXpConfig_LevelID",
+                        column: x => x.LevelID,
                         principalTable: "UserXpConfig",
                         principalColumn: "LevelID",
                         onDelete: ReferentialAction.Restrict);
@@ -474,7 +479,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "UserTree",
@@ -484,8 +489,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserID = table.Column<int>(type: "int", nullable: true),
                     FinalTreeID = table.Column<int>(type: "int", nullable: true),
+                    TreeID = table.Column<int>(type: "int", nullable: false),
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false, collation: "utf8mb4_general_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     LevelID = table.Column<int>(type: "int", nullable: false),
-                    TotalXp = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    TotalXp = table.Column<double>(type: "double", nullable: false, defaultValue: 0.0),
                     IsMaxLevel = table.Column<ulong>(type: "bit", nullable: false, defaultValue: 0ul),
                     TreeStatus = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -502,6 +510,12 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "LevelID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_UserTree_Users_TreeID",
+                        column: x => x.TreeID,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "usertree_ibfk_1",
                         column: x => x.UserID,
                         principalTable: "Users",
@@ -515,7 +529,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "UserXpLog",
@@ -525,7 +539,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserId = table.Column<int>(type: "int", nullable: false),
                     XpSource = table.Column<int>(type: "int", nullable: false),
-                    XpAmount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    XpAmount = table.Column<double>(type: "double", nullable: false, defaultValue: 0.0),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -540,7 +554,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Wallet",
@@ -552,7 +566,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     Balance = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "'0.00'"),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-                    Currency = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    Currency = table.Column<string>(type: "longtext", nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     IsLocked = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     LastTransactionAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
@@ -568,7 +582,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "BagItem",
@@ -597,7 +611,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "ItemID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Tasks",
@@ -608,18 +622,25 @@ namespace ZenGarden.Infrastructure.Migrations
                     TaskTypeID = table.Column<int>(type: "int", nullable: false),
                     UserTreeID = table.Column<int>(type: "int", nullable: true),
                     FocusMethodID = table.Column<int>(type: "int", nullable: true),
-                    TaskName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_0900_ai_ci")
+                    TaskName = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    TaskDescription = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    TaskDescription = table.Column<string>(type: "varchar(1000)", maxLength: 1000, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Duration = table.Column<int>(type: "int", nullable: true),
+                    TotalDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 0),
+                    WorkDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 25),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     StartedAt = table.Column<DateTime>(type: "timestamp", nullable: true),
                     CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "timestamp", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "timestamp", nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    BreakTime = table.Column<int>(type: "int", nullable: false, defaultValue: 5),
-                    IsSuggested = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
+                    BreakTime = table.Column<int>(type: "int", nullable: true, defaultValue: 5),
+                    IsSuggested = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true),
+                    TaskNote = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true, collation: "utf8mb4_general_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    TaskResult = table.Column<string>(type: "varchar(2083)", maxLength: 2083, nullable: true, defaultValue: "", collation: "utf8mb4_general_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -629,7 +650,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         column: x => x.FocusMethodID,
                         principalTable: "FocusMethod",
                         principalColumn: "FocusMethodID",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Tasks_TaskType_TaskTypeID",
                         column: x => x.TaskTypeID,
@@ -644,7 +665,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "TradeHistory",
@@ -689,7 +710,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalColumn: "UserTreeID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "Transactions",
@@ -703,9 +724,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     Amount = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
                     Type = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    PaymentMethod = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    PaymentMethod = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    TransactionRef = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_0900_ai_ci")
+                    TransactionRef = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     TransactionTime = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -732,7 +753,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "ChallengeTask",
@@ -757,10 +778,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         name: "challengetask_ibfk_1",
                         column: x => x.ChallengeID,
                         principalTable: "Challenge",
-                        principalColumn: "ChallengeID");
+                        principalColumn: "ChallengeID",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
                 name: "TreeXpLog",
@@ -770,7 +792,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     TaskID = table.Column<int>(type: "int", nullable: true),
                     ActivityType = table.Column<int>(type: "int", nullable: false),
-                    XpAmount = table.Column<int>(type: "int", nullable: false),
+                    XpAmount = table.Column<double>(type: "double", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -785,7 +807,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_0900_ai_ci");
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bag_UserID",
@@ -906,9 +928,9 @@ namespace ZenGarden.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserExperience_LevelId",
+                name: "IX_UserExperience_LevelID",
                 table: "UserExperience",
-                column: "LevelId");
+                column: "LevelID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserExperience_UserID",
@@ -936,6 +958,11 @@ namespace ZenGarden.Infrastructure.Migrations
                 name: "IX_UserTree_LevelID",
                 table: "UserTree",
                 column: "LevelID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserTree_TreeID",
+                table: "UserTree",
+                column: "TreeID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserTree_UserID",

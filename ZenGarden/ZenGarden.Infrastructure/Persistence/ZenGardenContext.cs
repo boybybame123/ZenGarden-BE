@@ -69,7 +69,7 @@ public class ZenGardenContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .UseCollation("utf8mb4_0900_ai_ci")
+            .UseCollation("utf8mb4_general_ci")
             .HasCharSet("utf8mb4");
 
         modelBuilder.Entity<Bag>(entity =>

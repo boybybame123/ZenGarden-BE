@@ -12,15 +12,15 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    [Migration("20250313094507_InitialCreateIII")]
-    partial class InitialCreateIII
+    [Migration("20250321131922_InitialCreateVIII")]
+    partial class InitialCreateVIII
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .UseCollation("utf8mb4_0900_ai_ci")
+                .UseCollation("utf8mb4_general_ci")
                 .HasAnnotation("ProductVersion", "8.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
@@ -125,6 +125,9 @@ namespace ZenGarden.Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(1000)");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnUpdate()
                         .HasColumnType("timestamp")
@@ -221,28 +224,42 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<int?>("DefaultBreak")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(5);
 
                     b.Property<int?>("DefaultDuration")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(25);
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
+                    b.Property<ulong>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(1ul);
 
                     b.Property<int?>("MaxBreak")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(15);
 
                     b.Property<int?>("MaxDuration")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(60);
 
                     b.Property<int?>("MinBreak")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(5);
 
                     b.Property<int?>("MinDuration")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(25);
 
                     b.Property<string>("Name")
                         .HasMaxLength(100)
@@ -252,6 +269,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .ValueGeneratedOnUpdate()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    b.Property<double>("XpMultiplier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double")
+                        .HasDefaultValue(1.0);
 
                     b.HasKey("FocusMethodId")
                         .HasName("PRIMARY");
@@ -326,7 +348,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Effect")
-                        .HasColumnType("json");
+                        .HasColumnType("text");
 
                     b.Property<int>("ItemId")
                         .HasColumnType("int")
@@ -473,7 +495,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
+                        .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("TaskTypeDescription")
@@ -486,9 +508,14 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
+                        .ValueGeneratedOnUpdate()
+                        .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    b.Property<double>("XpMultiplier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double")
+                        .HasDefaultValue(1.0);
 
                     b.HasKey("TaskTypeId")
                         .HasName("PRIMARY");
@@ -505,7 +532,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TaskId"));
 
-                    b.Property<int>("BreakTime")
+                    b.Property<int?>("BreakTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(5);
@@ -518,9 +545,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<int?>("Duration")
-                        .HasColumnType("int")
-                        .HasColumnName("Duration");
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp");
 
                     b.Property<int?>("FocusMethodId")
                         .HasColumnType("int")
@@ -531,6 +557,9 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(true);
 
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp");
+
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("timestamp");
 
@@ -538,25 +567,46 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TaskDescription")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
 
                     b.Property<string>("TaskName")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<string>("TaskNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("TaskResult")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2083)
+                        .HasColumnType("varchar(2083)")
+                        .HasDefaultValue("");
+
                     b.Property<int>("TaskTypeId")
                         .HasColumnType("int")
                         .HasColumnName("TaskTypeID");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<int?>("TotalDuration")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnUpdate()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
                     b.Property<int?>("UserTreeId")
                         .HasColumnType("int")
                         .HasColumnName("UserTreeID");
+
+                    b.Property<int?>("WorkDuration")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(25);
 
                     b.HasKey("TaskId")
                         .HasName("PRIMARY");
@@ -712,6 +762,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
@@ -789,8 +844,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-                    b.Property<int>("XpAmount")
-                        .HasColumnType("int")
+                    b.Property<double>("XpAmount")
+                        .HasColumnType("double")
                         .HasColumnName("XpAmount");
 
                     b.HasKey("LogId")
@@ -813,6 +868,10 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<int>("ChallengeId")
                         .HasColumnType("int")
                         .HasColumnName("ChallengeID");
+
+                    b.Property<int>("ChallengeRole")
+                        .HasColumnType("int")
+                        .HasColumnName("ChallengeRole");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -904,17 +963,31 @@ namespace ZenGarden.Infrastructure.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserExperienceId"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<ulong>("IsMaxLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(0ul);
 
                     b.Property<int>("LevelId")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("LevelID");
 
-                    b.Property<long>("TotalXp")
-                        .HasColumnType("bigint")
+                    b.Property<int>("StreakDays")
+                        .HasColumnType("int")
+                        .HasColumnName("StreakDays");
+
+                    b.Property<double>("TotalXp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double")
+                        .HasDefaultValue(0.0)
                         .HasColumnName("TotalXP");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedOnUpdate()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
@@ -923,7 +996,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnName("UserID");
 
                     b.Property<int>("XpToNextLevel")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("XpToNextLevel");
 
                     b.HasKey("UserExperienceId")
                         .HasName("PRIMARY");
@@ -963,10 +1037,20 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("LevelID");
 
-                    b.Property<int>("TotalXp")
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<double>("TotalXp")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("double")
+                        .HasDefaultValue(0.0);
+
+                    b.Property<int?>("TreeOwnerId")
+                        .IsRequired()
                         .HasColumnType("int")
-                        .HasDefaultValue(0);
+                        .HasColumnName("TreeID");
 
                     b.Property<int>("TreeStatus")
                         .ValueGeneratedOnAdd()
@@ -990,6 +1074,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasIndex("FinalTreeId");
 
                     b.HasIndex("LevelId");
+
+                    b.HasIndex("TreeOwnerId");
 
                     b.HasIndex("UserId");
 
@@ -1046,10 +1132,10 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int>("XpAmount")
+                    b.Property<double>("XpAmount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0)
+                        .HasColumnType("double")
+                        .HasDefaultValue(0.0)
                         .HasColumnName("XpAmount");
 
                     b.Property<int>("XpSource")
@@ -1190,16 +1276,16 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.ToTable("Wallet");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.XPConfig", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.XpConfig", b =>
                 {
-                    b.Property<int>("XPConfigId")
+                    b.Property<int>("XpConfigId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("XPConfigID");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("XPConfigId"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("XpConfigId"));
 
-                    b.Property<double>("BaseXP")
+                    b.Property<double>("BaseXp")
                         .HasColumnType("double");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1211,21 +1297,21 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("FocusMethodID");
 
-                    b.Property<double>("Multiplier")
-                        .HasColumnType("double");
-
                     b.Property<int>("TaskTypeId")
                         .HasColumnType("int")
                         .HasColumnName("TaskTypeID");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAddOrUpdate()
+                        .ValueGeneratedOnUpdate()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
+                    b.Property<double>("XpMultiplier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double")
+                        .HasDefaultValue(1.0);
 
-                    b.HasKey("XPConfigId")
+                    b.HasKey("XpConfigId")
                         .HasName("PRIMARY");
 
                     b.HasIndex("FocusMethodId");
@@ -1280,7 +1366,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasOne("ZenGarden.Domain.Entities.Challenge", "Challenge")
                         .WithMany("ChallengeTasks")
                         .HasForeignKey("ChallengeId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("challengetask_ibfk_1");
 
@@ -1328,7 +1414,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasOne("ZenGarden.Domain.Entities.FocusMethod", "FocusMethod")
                         .WithMany("Tasks")
                         .HasForeignKey("FocusMethodId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("ZenGarden.Domain.Entities.TaskType", "TaskType")
                         .WithMany("Tasks")
@@ -1478,6 +1564,12 @@ namespace ZenGarden.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "TreeOwner")
+                        .WithMany()
+                        .HasForeignKey("TreeOwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ZenGarden.Domain.Entities.Users", "User")
                         .WithMany("UserTree")
                         .HasForeignKey("UserId")
@@ -1485,6 +1577,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasConstraintName("usertree_ibfk_1");
 
                     b.Navigation("FinalTree");
+
+                    b.Navigation("TreeOwner");
 
                     b.Navigation("TreeXpConfig");
 
@@ -1523,7 +1617,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.XPConfig", b =>
+            modelBuilder.Entity("ZenGarden.Domain.Entities.XpConfig", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.FocusMethod", "FocusMethod")
                         .WithMany("XPConfigs")
@@ -1532,7 +1626,7 @@ namespace ZenGarden.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ZenGarden.Domain.Entities.TaskType", "TaskType")
-                        .WithMany("XPConfigs")
+                        .WithMany("XpConfigs")
                         .HasForeignKey("TaskTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1584,7 +1678,7 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     b.Navigation("Tasks");
 
-                    b.Navigation("XPConfigs");
+                    b.Navigation("XpConfigs");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tasks", b =>
