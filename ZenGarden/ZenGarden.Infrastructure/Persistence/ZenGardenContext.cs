@@ -175,6 +175,8 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.ChallengeTypeId).HasColumnName("ChallengeTypeID");
 
             entity.Property(e => e.ChallengeName).HasMaxLength(255);
+            
+            entity.Property(e => e.Reward).HasColumnType("int");
 
             entity.Property(e => e.Status)
                 .HasConversion<int>()

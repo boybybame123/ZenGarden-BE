@@ -23,9 +23,6 @@ using ZenGarden.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-_ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.Configuration.AddJsonFile("appsettings.json", false, true);
-
 builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
     .AddJsonOptions(options =>
@@ -61,7 +58,9 @@ builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
 builder.Services.AddScoped<IUserXpLogRepository, UserXpLogRepository>();
 builder.Services.AddScoped<IBagItemRepository, BagItemRepository>();
 builder.Services.AddScoped<IPurchaseHistoryRepository, PurchaseHistoryRepository>();
-
+builder.Services.AddScoped<IXpConfigService, XpConfigService>();
+builder.Services.AddScoped<IUserChallengeRepository, UserChallengeRepository>();
+builder.Services.AddScoped<IChallengeTaskRepository, ChallengeTaskRepository>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 

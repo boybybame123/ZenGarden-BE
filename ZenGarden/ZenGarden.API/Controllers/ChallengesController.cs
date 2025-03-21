@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -20,7 +22,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
     }
 
 
-    [HttpGet("{challengeId}")]
+    [HttpGet("{challengeId:int}")]
     public async Task<IActionResult> GetChallenge(int challengeId)
     {
         var user = await _challengeService.GetChallengeByIdAsync(challengeId);
@@ -28,12 +30,32 @@ public class ChallengesController(IChallengeService challengeService) : Controll
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostChallenge(ChallengeDto challenge)
+    [Authorize]
+    public async Task<IActionResult> CreateChallenge([FromBody] CreateChallengeDto challengeDto)
     {
-        await _challengeService.CreateChallengeAsync(challenge);
-        var i = await _challengeService.GetChallengeByIdAsync(challenge.ChallengeId);
-        return Ok(i);
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        var challenge = await _challengeService.CreateChallengeAsync(userId, challengeDto);
+
+        return CreatedAtAction(nameof(CreateChallenge), new { id = challenge.ChallengeId }, challenge);
     }
+    
+    [HttpPost("{challengeId:int}/join")]
+    [Authorize]
+    public async Task<IActionResult> JoinChallenge(int challengeId, [FromBody] JoinChallengeDto joinDto)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var result = await _challengeService.JoinChallengeAsync(userId, challengeId, joinDto.UserTreeId, joinDto.TaskTypeId);
+    
+        if (!result) return BadRequest("Failed to join the challenge.");
+
+        return Ok(new { Message = "Joined challenge successfully!" });
+    }
+
 
     [HttpPut]
     public async Task<IActionResult> PutUChallenge(ChallengeDto challenge)
