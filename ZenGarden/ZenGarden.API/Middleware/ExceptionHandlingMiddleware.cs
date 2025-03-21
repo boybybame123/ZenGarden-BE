@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Domain.DTOs;
 
@@ -37,6 +38,22 @@ public class ExceptionHandlingMiddleware(
     {
         var response = context.Response;
         response.ContentType = "application/json";
+        
+        if (exception is FluentValidation.ValidationException validationException)
+        {
+            var validationErrors = validationException.Errors
+                .Select(e => new { e.PropertyName, e.ErrorMessage })
+                .ToList();
+
+            response.StatusCode = (int)HttpStatusCode.BadRequest;
+            await response.WriteAsJsonAsync(new
+            {
+                response.StatusCode,
+                Message = "Validation failed",
+                Errors = validationErrors
+            });
+            return;
+        }
 
         var statusCode = exception switch
         {
@@ -45,25 +62,24 @@ public class ExceptionHandlingMiddleware(
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             InvalidOperationException => (int)HttpStatusCode.BadRequest,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-            DbException => (int)HttpStatusCode.ServiceUnavailable,
-            DbUpdateException => (int)HttpStatusCode.Conflict,
+            DbException or DbUpdateException => (int)HttpStatusCode.Conflict,
             _ => (int)HttpStatusCode.InternalServerError
         };
 
-        if (_enableOpenAiCheck &&
-            exception.Message.Contains("OpenAI API request failed", StringComparison.OrdinalIgnoreCase))
-            statusCode = (int)HttpStatusCode.ServiceUnavailable;
+        var errorId = Guid.NewGuid().ToString();
+        logger.LogError(exception, "Error {ErrorId} at {Path}", errorId, context.Request.Path);
 
-        var errorResponse = new ErrorResponse
+        var problemDetails = new ProblemDetails
         {
-            StatusCode = statusCode,
-            Message = exception.Message,
-            Details = env.IsDevelopment()
-                ? exception.StackTrace
-                : "An unexpected error occurred. Please try again later."
+            Status = statusCode,
+            Title = "An error occurred",
+            Detail = env.IsDevelopment() ? exception.Message : "An unexpected error occurred. Please try again later.",
+            Instance = context.Request.Path,
+            Extensions = { ["errorId"] = errorId }
         };
 
         response.StatusCode = statusCode;
-        await response.WriteAsync(JsonSerializer.Serialize(errorResponse, JsonOptions));
+        await response.WriteAsJsonAsync(problemDetails);
     }
+
 }

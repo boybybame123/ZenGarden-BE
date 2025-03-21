@@ -22,7 +22,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
     }
 
 
-    [HttpGet("{challengeId}")]
+    [HttpGet("{challengeId:int}")]
     public async Task<IActionResult> GetChallenge(int challengeId)
     {
         var user = await _challengeService.GetChallengeByIdAsync(challengeId);
@@ -40,6 +40,22 @@ public class ChallengesController(IChallengeService challengeService) : Controll
 
         return CreatedAtAction(nameof(CreateChallenge), new { id = challenge.ChallengeId }, challenge);
     }
+    
+    [HttpPost("{challengeId:int}/join")]
+    [Authorize]
+    public async Task<IActionResult> JoinChallenge(int challengeId, [FromBody] JoinChallengeDto joinDto)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var result = await _challengeService.JoinChallengeAsync(userId, challengeId, joinDto.UserTreeId, joinDto.TaskTypeId);
+    
+        if (!result) return BadRequest("Failed to join the challenge.");
+
+        return Ok(new { Message = "Joined challenge successfully!" });
+    }
+
 
     [HttpPut]
     public async Task<IActionResult> PutUChallenge(ChallengeDto challenge)

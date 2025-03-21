@@ -68,4 +68,13 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         return await _dbSet.AnyAsync(predicate);
     }
+    
+    public virtual async Task AddRangeAsync(IEnumerable<T> entities)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        var entityList = entities.ToList();
+        if (!entityList.Any()) return;
+
+        await _dbSet.AddRangeAsync(entityList);
+    }
 }
