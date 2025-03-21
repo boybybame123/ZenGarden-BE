@@ -13,6 +13,9 @@ public partial class UserTree
     public int UserTreeId { get; set; }
     public int? UserId { get; set; }
     public int? FinalTreeId { get; set; }
+    public int? TreeOwnerId { get; set; }
+
+
     public required string Name { get; set; }
     public int LevelId { get; set; } = 1;
     public double TotalXp { get; set; } = 0;
@@ -26,4 +29,5 @@ public partial class UserTree
     public virtual ICollection<TradeHistory> TradeHistoryUserTreeB { get; set; } = new List<TradeHistory>();
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
     public virtual required Users User { get; set; }
+    public virtual required Users TreeOwner { get; set; }
 }

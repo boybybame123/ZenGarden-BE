@@ -902,6 +902,10 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.UserId)
                 .HasColumnName("UserID");
 
+            entity.Property(e => e.TreeOwnerId)
+                .HasColumnName("TreeID");
+
+
             entity.Property(e => e.LevelId)
                 .HasColumnName("LevelID");
 
@@ -947,11 +951,22 @@ public class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.FinalTreeId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("usertree_ibfk_2");
+            entity.HasOne(ut => ut.TreeOwner)
+                  .WithMany()
+                  .HasForeignKey(ut => ut.TreeOwnerId)
+                  .IsRequired()
+                  .OnDelete(DeleteBehavior.Cascade);
+
+
 
             entity.HasOne(d => d.TreeXpConfig)
                 .WithMany(p => p.UserTrees)
                 .HasForeignKey(d => d.LevelId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+
+
         });
 
 
