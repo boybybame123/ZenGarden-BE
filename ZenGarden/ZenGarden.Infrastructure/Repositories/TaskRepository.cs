@@ -26,7 +26,7 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .Where(t => t.UserTreeId == userTreeId)
             .ToListAsync();
     }
-    
+
     public async Task<List<Tasks>> GetTasksByUserIdAsync(int userId)
     {
         return await _context.Tasks
@@ -59,6 +59,25 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     {
         return await _context.Tasks
             .Where(t => t.Status == TasksStatus.InProgress && t.EndDate < DateTime.UtcNow)
+            .ToListAsync();
+    }
+
+    public async Task<List<Tasks>> GetTasksByUserChallengeAsync(int userId, int challengeId)
+    {
+        return await (from t in _context.Tasks
+                join ct in _context.ChallengeTask on t.TaskId equals ct.TaskId
+                join uc in _context.UserChallenges on ct.ChallengeId equals uc.ChallengeId
+                where uc.UserId == userId && uc.ChallengeId == challengeId
+                select t)
+            .ToListAsync();
+    }
+
+    public async Task<List<Tasks>> GetTasksByChallengeIdAsync(int challengeId)
+    {
+        return await (from t in _context.Tasks
+                join ct in _context.ChallengeTask on t.TaskId equals ct.TaskId
+                where ct.ChallengeId == challengeId
+                select t)
             .ToListAsync();
     }
 }

@@ -204,7 +204,9 @@ public partial class FocusMethodService : IFocusMethodService
 
     private static double ExtractDouble(string input, double defaultValue)
     {
-        return double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
+        return double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var result)
+            ? result
+            : defaultValue;
     }
 
     [GeneratedRegex(@"\d+")]

@@ -15,4 +15,11 @@ public class UserChallengeRepository(ZenGardenContext context)
         return await _context.UserChallenges
             .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == challengeId);
     }
+
+    public async Task<List<UserChallenge>> GetAllUsersInChallengeAsync(int challengeId)
+    {
+        return await _context.UserChallenges
+            .Where(uc => uc.ChallengeId == challengeId)
+            .ToListAsync();
+    }
 }

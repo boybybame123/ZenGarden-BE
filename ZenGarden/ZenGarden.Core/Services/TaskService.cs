@@ -35,15 +35,13 @@ public class TaskService(
 
         return mapper.Map<TaskDto>(task);
     }
-    
+
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
         var tasks = await taskRepository.GetTasksByUserIdAsync(userId);
-    
+
         if (tasks == null || tasks.Count == 0)
-        {
             throw new KeyNotFoundException($"Tasks with UserTree ID {userId} not found.");
-        }
 
         return mapper.Map<List<TaskDto>>(tasks);
     }
@@ -51,11 +49,9 @@ public class TaskService(
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
         var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId);
-    
+
         if (tasks == null || tasks.Count == 0)
-        {
             throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
-        }
 
         return mapper.Map<List<TaskDto>>(tasks);
     }
@@ -64,10 +60,10 @@ public class TaskService(
     {
         if (string.IsNullOrWhiteSpace(dto.TaskName) || string.IsNullOrWhiteSpace(dto.TaskDescription))
             throw new ArgumentException("Task name and description cannot be empty.");
-        
+
         if (!dto.TotalDuration.HasValue)
             throw new InvalidOperationException("TotalDuration is required but was null.");
-        
+
         var existingTaskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (existingTaskType == null)
             throw new KeyNotFoundException("TaskType not found.");
@@ -85,7 +81,7 @@ public class TaskService(
 
         if (selectedMethod == null)
             throw new InvalidOperationException("No valid focus method found.");
-        
+
         await using var transaction = await unitOfWork.BeginTransactionAsync();
         try
         {

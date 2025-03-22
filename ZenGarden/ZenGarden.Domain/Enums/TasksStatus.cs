@@ -5,5 +5,6 @@ public enum TasksStatus
     NotStarted,
     InProgress,
     Completed,
-    Overdue
+    Overdue,
+    Canceled
 }

@@ -1,10 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 using System.Net;
-using System.Text.Json;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Middleware;
 
@@ -14,13 +12,6 @@ public class ExceptionHandlingMiddleware(
     IWebHostEnvironment env,
     IConfiguration config)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    private readonly bool _enableOpenAiCheck = config.GetValue<bool>("MiddlewareSettings:EnableOpenAICheck");
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -38,8 +29,8 @@ public class ExceptionHandlingMiddleware(
     {
         var response = context.Response;
         response.ContentType = "application/json";
-        
-        if (exception is FluentValidation.ValidationException validationException)
+
+        if (exception is ValidationException validationException)
         {
             var validationErrors = validationException.Errors
                 .Select(e => new { e.PropertyName, e.ErrorMessage })
@@ -58,7 +49,7 @@ public class ExceptionHandlingMiddleware(
         var statusCode = exception switch
         {
             ArgumentNullException => (int)HttpStatusCode.BadRequest,
-            ValidationException => (int)HttpStatusCode.UnprocessableEntity,
+            System.ComponentModel.DataAnnotations.ValidationException => (int)HttpStatusCode.UnprocessableEntity,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             InvalidOperationException => (int)HttpStatusCode.BadRequest,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
@@ -66,20 +57,25 @@ public class ExceptionHandlingMiddleware(
             _ => (int)HttpStatusCode.InternalServerError
         };
 
+        var showDetail = env.IsDevelopment() || config.GetValue("MiddlewareSettings:ShowDetailedErrors", false);
+
         var errorId = Guid.NewGuid().ToString();
-        logger.LogError(exception, "Error {ErrorId} at {Path}", errorId, context.Request.Path);
+        var traceId = context.TraceIdentifier;
+
+        logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}", errorId, traceId,
+            context.Request.Path);
 
         var problemDetails = new ProblemDetails
         {
             Status = statusCode,
             Title = "An error occurred",
-            Detail = env.IsDevelopment() ? exception.Message : "An unexpected error occurred. Please try again later.",
-            Instance = context.Request.Path,
-            Extensions = { ["errorId"] = errorId }
+            Detail = showDetail ? exception.Message : "An unexpected error occurred. Please try again later.",
+            Instance = context.Request.Path
         };
+        problemDetails.Extensions.Add("errorId", errorId);
+        problemDetails.Extensions.Add("traceId", traceId);
 
         response.StatusCode = statusCode;
         await response.WriteAsJsonAsync(problemDetails);
     }
-
 }
