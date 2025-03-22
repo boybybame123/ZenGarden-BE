@@ -13,23 +13,23 @@ public class ChallengesController(IChallengeService challengeService) : Controll
     private readonly IChallengeService _challengeService =
         challengeService ?? throw new ArgumentNullException(nameof(challengeService));
 
-    [HttpGet]
+    [HttpGet("get-all")]
     public async Task<IActionResult> GetChallenge()
     {
-        var challenge = await _challengeService.GetAllChallengeAsync();
+        var challenge = await _challengeService.GetAllChallengesAsync();
         Console.WriteLine(challenge.ToList());
         return Ok(challenge);
     }
 
 
-    [HttpGet("{challengeId:int}")]
+    [HttpGet("get-by-id/{challengeId:int}")]
     public async Task<IActionResult> GetChallenge(int challengeId)
     {
         var user = await _challengeService.GetChallengeByIdAsync(challengeId);
         return Ok(user);
     }
 
-    [HttpPost]
+    [HttpPost("create-challenge")]
     [Authorize]
     public async Task<IActionResult> CreateChallenge([FromBody] CreateChallengeDto challengeDto)
     {
@@ -38,10 +38,10 @@ public class ChallengesController(IChallengeService challengeService) : Controll
 
         var challenge = await _challengeService.CreateChallengeAsync(userId, challengeDto);
 
-        return CreatedAtAction(nameof(CreateChallenge), new { id = challenge.ChallengeId }, challenge);
+        return CreatedAtAction(nameof(GetChallenge), new { challengeId = challenge.ChallengeId }, challenge);
     }
-    
-    [HttpPost("{challengeId:int}/join")]
+
+    [HttpPost("join/{challengeId:int}")]
     [Authorize]
     public async Task<IActionResult> JoinChallenge(int challengeId, [FromBody] JoinChallengeDto joinDto)
     {
@@ -49,20 +49,47 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
             return Unauthorized();
 
-        var result = await _challengeService.JoinChallengeAsync(userId, challengeId, joinDto.UserTreeId, joinDto.TaskTypeId);
-    
-        if (!result) return BadRequest("Failed to join the challenge.");
+        var result = await _challengeService.JoinChallengeAsync(userId, challengeId, joinDto);
+
+        if (!result) return BadRequest(new { Error = "You have already joined this challenge or it is closed." });
 
         return Ok(new { Message = "Joined challenge successfully!" });
     }
 
-
-    [HttpPut]
-    public async Task<IActionResult> PutUChallenge(ChallengeDto challenge)
+    [HttpPut("update-challenge")]
+    public async Task<IActionResult> UpdateChallenge([FromBody] UpdateChallengeDto challenge)
     {
         await _challengeService.UpdateChallengeAsync(challenge);
 
         var i = await _challengeService.GetChallengeByIdAsync(challenge.ChallengeId);
         return Ok(i);
+    }
+
+    [HttpPut("leave/{challengeId:int}")]
+    [Authorize]
+    public async Task<IActionResult> LeaveChallenge(int challengeId)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var success = await _challengeService.LeaveChallengeAsync(userId, challengeId);
+        if (!success) return BadRequest("Failed to leave the challenge.");
+
+        return Ok(new { Message = "You have successfully left the challenge." });
+    }
+
+    [HttpPut("cancel/{challengeId:int}")]
+    [Authorize]
+    public async Task<IActionResult> CancelChallenge(int challengeId)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var success = await _challengeService.CancelChallengeAsync(challengeId, userId);
+        if (!success) return BadRequest("Failed to cancel the challenge.");
+
+        return Ok(new { Message = "Challenge has been canceled successfully." });
     }
 }

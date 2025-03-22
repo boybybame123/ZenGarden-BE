@@ -5,7 +5,8 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class ChallengeTaskRepository(ZenGardenContext context) : GenericRepository<ChallengeTask>(context), IChallengeTaskRepository
+public class ChallengeTaskRepository(ZenGardenContext context)
+    : GenericRepository<ChallengeTask>(context), IChallengeTaskRepository
 {
     private readonly ZenGardenContext _context = context;
 

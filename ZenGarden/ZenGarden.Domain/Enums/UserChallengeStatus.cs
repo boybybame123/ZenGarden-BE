@@ -5,5 +5,6 @@ public enum UserChallengeStatus
     Active,
     InProgress,
     Completed,
-    Failed
+    Failed,
+    Canceled
 }
