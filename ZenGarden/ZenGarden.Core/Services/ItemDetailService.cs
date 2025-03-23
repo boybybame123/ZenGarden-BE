@@ -23,10 +23,10 @@ public class ItemDetailService(
         throw new NotImplementedException();
     }
 
-    public async Task<List<ItemDetailDto>> GetAllItemDetails()
+    public async Task<List<ItemDetail>> GetAllItemDetails()
     {
         var itemDetails = await itemDetailRepository.GetAllAsync();
-        return mapper.Map<List<ItemDetailDto>>(itemDetails);
+        return mapper.Map<List<ItemDetail>>(itemDetails);
     }
 
 
@@ -34,16 +34,34 @@ public class ItemDetailService(
     {
         var updateItemDetail = await itemDetailRepository.GetItemDetailsByItemId(itemDetail.ItemId);
 
-        updateItemDetail.Type = itemDetail.Type;
-        updateItemDetail.Description = itemDetail.Description;
-        updateItemDetail.Duration = itemDetail.Duration;
-        updateItemDetail.Effect = itemDetail.Effect;
+        if (updateItemDetail != null)
+        {
+            if (itemDetail.Type != null)
+                updateItemDetail.Type = itemDetail.Type;
+            if (itemDetail.Description != null)
+                updateItemDetail.Description = itemDetail.Description;
+            if (itemDetail.Duration.HasValue)
+                updateItemDetail.Duration = itemDetail.Duration;
+            if (itemDetail.Effect != null)
+                updateItemDetail.Effect = itemDetail.Effect;
+            updateItemDetail.UpdatedAt = DateTime.Now;
+            if (itemDetail.IsUnique != updateItemDetail.IsUnique)
+                updateItemDetail.IsUnique = itemDetail.IsUnique;
+            if (itemDetail.MonthlyPurchaseLimit.HasValue)
+                updateItemDetail.MonthlyPurchaseLimit = itemDetail.MonthlyPurchaseLimit;
 
-        var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
-        updateItemDetail.MediaUrl = mediaUrl;
+            if (itemDetail.File != null)
+            {
+                var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
+                if (mediaUrl != null)
+                {
+                    updateItemDetail.MediaUrl = mediaUrl;
+                }
+            }
 
-        itemDetailRepository.Update(updateItemDetail);
-        if (await unitOfWork.CommitAsync() == 0)
-            throw new InvalidOperationException("Failed to update item.");
+            itemDetailRepository.Update(updateItemDetail);
+            if (await unitOfWork.CommitAsync() == 0)
+                throw new InvalidOperationException("Failed to update item.");
+        }
     }
 }

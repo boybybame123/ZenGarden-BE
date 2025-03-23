@@ -48,12 +48,15 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         var updateItem = await GetItemByIdAsync(item.ItemId);
 
 
-        updateItem.Name = item.Name;
-        updateItem.Type = item.Type;
-        updateItem.Rarity = item.Rarity;
-        updateItem.Cost = item.Cost;
-        updateItem.Status = item.Status;
-        updateItem.UpdatedAt = DateTime.Now;
+        if (updateItem != null)
+        {
+            updateItem.Name = item.Name ?? updateItem.Name;
+            updateItem.Type = item.Type ?? updateItem.Type;
+            updateItem.Rarity = item.Rarity ?? updateItem.Rarity;
+            updateItem.Cost = item.Cost ?? updateItem.Cost;
+            updateItem.Status = item.Status;
+            updateItem.UpdatedAt = DateTime.Now;
+        }
 
 
         itemRepository.Update(updateItem);
