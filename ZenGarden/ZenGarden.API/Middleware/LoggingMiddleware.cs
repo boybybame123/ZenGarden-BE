@@ -8,12 +8,14 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
             return "[Empty Body]";
 
         if (!request.Body.CanSeek)
+        {
             request.EnableBuffering();
+            request.Body.Seek(0, SeekOrigin.Begin);
+        }
 
-        request.Body.Position = 0;
         using var reader = new StreamReader(request.Body, leaveOpen: true);
         var bodyText = await reader.ReadToEndAsync();
-        request.Body.Position = 0;
+        request.Body.Seek(0, SeekOrigin.Begin); // Reset lại vị trí
 
         return string.IsNullOrWhiteSpace(bodyText)
             ? "[Empty Body]"
@@ -25,8 +27,7 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
     private static async Task<string> ReadResponseBody(Stream responseBodyStream, int maxLength = 1000)
     {
         responseBodyStream.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(responseBodyStream, leaveOpen: true);
-        var bodyText = await reader.ReadToEndAsync();
+        var bodyText = await new StreamReader(responseBodyStream, leaveOpen: true).ReadToEndAsync();
         responseBodyStream.Seek(0, SeekOrigin.Begin);
 
         return string.IsNullOrWhiteSpace(bodyText)
