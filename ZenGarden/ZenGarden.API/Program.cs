@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using Amazon.Extensions.NETCore.Setup;
 using AspNetCoreRateLimit;
-using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
@@ -22,9 +22,6 @@ using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
-
-_ = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.Configuration.AddJsonFile("appsettings.json", false, true);
 
 builder.Services.AddControllers()
     .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
@@ -61,7 +58,9 @@ builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
 builder.Services.AddScoped<IUserXpLogRepository, UserXpLogRepository>();
 builder.Services.AddScoped<IBagItemRepository, BagItemRepository>();
 builder.Services.AddScoped<IPurchaseHistoryRepository, PurchaseHistoryRepository>();
-
+builder.Services.AddScoped<IXpConfigService, XpConfigService>();
+builder.Services.AddScoped<IUserChallengeRepository, UserChallengeRepository>();
+builder.Services.AddScoped<IChallengeTaskRepository, ChallengeTaskRepository>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
@@ -76,7 +75,6 @@ builder.Services.AddDbContext<ZenGardenContext>(options =>
         x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
 );
 
-// Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
     throw new InvalidOperationException("JWT Key is missing in configuration.");
@@ -104,10 +102,8 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.OperationFilter<FileUploadOperation>();
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
-    // ✅ Hỗ trợ IFormFile trong Swagger
 
 
-    // ✅ Xác định kiểu dữ liệu cho IFormFile
     c.MapType<FileObject>(() => new OpenApiSchema
     {
         Type = "object",
@@ -170,13 +166,7 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
-builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
-builder.Services.AddScoped<IValidator<CreateTaskDto>, CreateTaskValidator>();
-builder.Services.AddScoped<IValidator<SuggestFocusMethodDto>, SuggestFocusMethodValidator>();
-builder.Services.AddScoped<IValidator<UpdateTaskDto>, UpdateTaskValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidator>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IFocusMethodService, FocusMethodService>();
 builder.Services.AddScoped<IBagService, BagService>();
@@ -194,7 +184,10 @@ builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IS3Service, S3Service>();
 builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddControllers()
+    .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
 builder.Services.AddScoped<IXpConfigService, XpConfigService>();
+
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
@@ -228,6 +221,7 @@ app.UseCors("AllowAll");
 
 app.UseMiddleware<JwtMiddleware>();
 app.UseMiddleware<UserContextMiddleware>();
+app.UseMiddleware<PerformanceMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
 app.UseMiddleware<ValidationMiddleware>();

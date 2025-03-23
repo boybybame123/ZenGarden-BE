@@ -1,13 +1,14 @@
 ﻿using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IChallengeService
 {
-    Task<List<Challenge>> GetAllChallengeAsync();
-    Task<Challenge> GetChallengeByIdAsync(int ChallengeId);
-    Task CreateChallengeAsync(ChallengeDto Challenge);
-    Task UpdateChallengeAsync(ChallengeDto Challenge);
-    Task DeleteChallengeAsync(int ChallengeId);
+    Task<List<ChallengeDto>> GetAllChallengesAsync();
+    Task<ChallengeDto> GetChallengeByIdAsync(int challengeId);
+    Task<ChallengeDto> CreateChallengeAsync(int userId, CreateChallengeDto dto);
+    Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto);
+    Task UpdateChallengeAsync(UpdateChallengeDto challenge);
+    Task<bool> CancelChallengeAsync(int challengeId, int userId);
+    Task<bool> LeaveChallengeAsync(int userId, int challengeId);
 }

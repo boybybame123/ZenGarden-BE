@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 using System.Net;
-using System.Text.Json;
+using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Middleware;
 
@@ -13,13 +12,6 @@ public class ExceptionHandlingMiddleware(
     IWebHostEnvironment env,
     IConfiguration config)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    private readonly bool _enableOpenAiCheck = config.GetValue<bool>("MiddlewareSettings:EnableOpenAICheck");
-
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -38,32 +30,52 @@ public class ExceptionHandlingMiddleware(
         var response = context.Response;
         response.ContentType = "application/json";
 
+        if (exception is ValidationException validationException)
+        {
+            var validationErrors = validationException.Errors
+                .Select(e => new { e.PropertyName, e.ErrorMessage })
+                .ToList();
+
+            response.StatusCode = (int)HttpStatusCode.BadRequest;
+            await response.WriteAsJsonAsync(new
+            {
+                response.StatusCode,
+                Message = "Validation failed",
+                Errors = validationErrors
+            });
+            return;
+        }
+
         var statusCode = exception switch
         {
             ArgumentNullException => (int)HttpStatusCode.BadRequest,
-            ValidationException => (int)HttpStatusCode.UnprocessableEntity,
+            System.ComponentModel.DataAnnotations.ValidationException => (int)HttpStatusCode.UnprocessableEntity,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             InvalidOperationException => (int)HttpStatusCode.BadRequest,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-            DbException => (int)HttpStatusCode.ServiceUnavailable,
-            DbUpdateException => (int)HttpStatusCode.Conflict,
+            DbException or DbUpdateException => (int)HttpStatusCode.Conflict,
             _ => (int)HttpStatusCode.InternalServerError
         };
 
-        if (_enableOpenAiCheck &&
-            exception.Message.Contains("OpenAI API request failed", StringComparison.OrdinalIgnoreCase))
-            statusCode = (int)HttpStatusCode.ServiceUnavailable;
+        var showDetail = env.IsDevelopment() || config.GetValue("MiddlewareSettings:ShowDetailedErrors", false);
 
-        var errorResponse = new ErrorResponse
+        var errorId = Guid.NewGuid().ToString();
+        var traceId = context.TraceIdentifier;
+
+        logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}", errorId, traceId,
+            context.Request.Path);
+
+        var problemDetails = new ProblemDetails
         {
-            StatusCode = statusCode,
-            Message = exception.Message,
-            Details = env.IsDevelopment()
-                ? exception.StackTrace
-                : "An unexpected error occurred. Please try again later."
+            Status = statusCode,
+            Title = "An error occurred",
+            Detail = showDetail ? exception.Message : "An unexpected error occurred. Please try again later.",
+            Instance = context.Request.Path
         };
+        problemDetails.Extensions.Add("errorId", errorId);
+        problemDetails.Extensions.Add("traceId", traceId);
 
         response.StatusCode = statusCode;
-        await response.WriteAsync(JsonSerializer.Serialize(errorResponse, JsonOptions));
+        await response.WriteAsJsonAsync(problemDetails);
     }
 }

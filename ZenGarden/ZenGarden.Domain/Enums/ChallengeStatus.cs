@@ -2,6 +2,8 @@
 
 public enum ChallengeStatus
 {
-    InActive,
-    Active
+    Pending = 0,
+    Active = 1,
+    Completed = 2,
+    Canceled = 3
 }

@@ -33,7 +33,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         var task = await _taskService.GetTaskByUserTreeIdAsync(userTreeId);
         return Ok(task);
     }
-    
+
     [HttpGet("by-user-id/{userId:int}")]
     public async Task<IActionResult> GetTasksByUserId(int userId)
     {

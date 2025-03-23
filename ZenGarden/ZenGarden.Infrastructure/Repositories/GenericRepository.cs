@@ -64,6 +64,25 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         await Task.Run(() => _dbSet.Remove(entity));
     }
 
+    public virtual async Task AddRangeAsync(IEnumerable<T> entities)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        var entityList = entities.ToList();
+        if (entityList.Count == 0) return;
+
+        await _dbSet.AddRangeAsync(entityList);
+    }
+
+    public virtual async Task UpdateRangeAsync(IEnumerable<T> entities)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        var entityList = entities.ToList();
+        if (entityList.Count == 0) return;
+
+        _dbSet.UpdateRange(entityList);
+        await Task.CompletedTask;
+    }
+
     public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.AnyAsync(predicate);

@@ -2,6 +2,6 @@
 
 public enum UserChallengeRole
 {
-    organizer,
-    participant
+    Organizer,
+    Participant
 }

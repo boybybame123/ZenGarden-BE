@@ -176,6 +176,8 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.ChallengeName).HasMaxLength(255);
 
+            entity.Property(e => e.Reward).HasColumnType("int");
+
             entity.Property(e => e.Status)
                 .HasConversion<int>()
                 .IsRequired();
@@ -950,21 +952,16 @@ public class ZenGardenContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("usertree_ibfk_2");
             entity.HasOne(ut => ut.TreeOwner)
-                  .WithMany()
-                  .HasForeignKey(ut => ut.TreeOwnerId)
-                  .IsRequired()
-                  .OnDelete(DeleteBehavior.Cascade);
-
+                .WithMany()
+                .HasForeignKey(ut => ut.TreeOwnerId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
 
 
             entity.HasOne(d => d.TreeXpConfig)
                 .WithMany(p => p.UserTrees)
                 .HasForeignKey(d => d.LevelId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-
-
-
         });
 
 
