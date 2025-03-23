@@ -53,6 +53,29 @@ public class PurchaseService : IPurchaseService
             if (item.Cost == null || wallet.Balance < item.Cost.Value)
                 return "Insufficient balance.";
 
+
+            if (item.ItemDetail?.MonthlyPurchaseLimit is int limit && limit > 0)
+            {
+                // 2. Đếm số lần user đã mua trong tháng này
+                var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                int purchaseCount = await _purchaseHistoryRepo.CountPurchaseThisMonth(userId, itemId, startOfMonth);
+
+                if (purchaseCount >= limit)
+                {
+                    return "Purchase limit for this month reached.";
+                }
+            }
+            if (item.ItemDetail?.IsUnique == true)
+            {
+                var bagitem = await _bagItemRepo.GetByBagAndItemAsync(userId, itemId);
+                if (bagitem != null)
+                {
+                    return "Item is unique and can only be purchased once.";
+                }
+            }
+
+
+
             // Trừ tiền
             wallet.Balance -= item.Cost.Value;
             _walletRepo.Update(wallet);

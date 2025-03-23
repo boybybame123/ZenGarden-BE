@@ -75,8 +75,7 @@ public class UserService(
         if (user.Status != userUpdate.Status)
             userUpdate.Status = user.Status;
 
-        if (!string.IsNullOrEmpty(user.ImageUrl))
-            userUpdate.ImageUrl = user.ImageUrl;
+
 
 
         userRepository.Update(userUpdate);
@@ -146,7 +145,7 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
 
-        newUser.ImageUrl = "";
+       
 
         await unitOfWork.BeginTransactionAsync();
         try

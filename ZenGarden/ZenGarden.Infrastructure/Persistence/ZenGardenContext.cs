@@ -501,50 +501,56 @@ public class ZenGardenContext : DbContext
         {
             entity.HasKey(e => e.TradeId).HasName("PRIMARY");
 
-            entity.HasIndex(e => e.UserBid, "UserBID");
+            entity.HasIndex(e => e.TreeAid, "TreeAid");
 
-            entity.HasIndex(e => e.UserTreeAid, "UserTreeAID");
+            entity.HasIndex(e => e.TreeOwnerAid, "TreeOwnerAID");
 
-            entity.HasIndex(e => e.UserTreeBid, "UserTreeBID");
+            entity.HasIndex(e => e.TreeOwnerBid, "TreeOwnerBID");
 
-            entity.HasIndex(e => new { e.UserAid, e.UserBid }, "idx_tradehistory_user");
+            entity.HasIndex(e => e.DesiredTreeAID, "DesiredTreeAID");
 
             entity.Property(e => e.TradeId).HasColumnName("TradeID");
 
             entity.Property(e => e.Status)
-                .HasConversion<int>()
-                .IsRequired();
+                  .HasConversion<int>()
+                  .IsRequired();
 
             entity.Property(e => e.CompletedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+                  .HasColumnType("timestamp")
+                  .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.Property(e => e.RequestedAt)
-                .HasColumnType("timestamp")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                  .HasColumnType("timestamp")
+                  .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.TradeFee)
-                .HasPrecision(10, 2)
-                .HasDefaultValueSql("'0.00'");
-            entity.Property(e => e.UserAid).HasColumnName("UserAID");
-            entity.Property(e => e.UserBid).HasColumnName("UserBID");
-            entity.Property(e => e.UserTreeAid).HasColumnName("UserTreeAID");
-            entity.Property(e => e.UserTreeBid).HasColumnName("UserTreeBID");
+                  .HasPrecision(10, 2)
+                  .HasDefaultValueSql("'0.00'");
 
-            entity.HasOne(d => d.UserA).WithMany(p => p.TradeHistoryUserA)
-                .HasForeignKey(d => d.UserAid)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(th => th.TreeA)
+                  .WithMany(th => th.TradeHistoryTreeA)
+                  .HasForeignKey(th => th.TreeAid)
+                  .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(d => d.UserB).WithMany(p => p.TradeHistoryUserB)
-                .HasForeignKey(d => d.UserBid)
-                .HasConstraintName("tradehistory_ibfk_2");
+            // Desired Tree
+            entity.HasOne(th => th.DesiredTree)
+                  .WithMany(th => th.TradeHistoryDesiredTree)
+                  .HasForeignKey(th => th.DesiredTreeAID)
+                  .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(d => d.UserTreeA).WithMany(p => p.TradeHistoryUserTreeA)
-                .HasForeignKey(d => d.UserTreeAid)
-                .HasConstraintName("tradehistory_ibfk_3");
+            entity.HasOne(th => th.TreeOwnerA)
+                  .WithMany(u => u.TradeHistoryUserA) // Nếu Users.cs có ICollection
+                  .HasForeignKey(th => th.TreeOwnerAid)
+                  .HasConstraintName("FK_TradeHistory_TreeOwnerA")
+                  .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(d => d.UserTreeB).WithMany(p => p.TradeHistoryUserTreeB)
-                .HasForeignKey(d => d.UserTreeBid)
-                .HasConstraintName("tradehistory_ibfk_4");
+            // ✅ Map TreeOwnerB → Users.UserId
+            entity.HasOne(th => th.TreeOwnerB)
+                  .WithMany(u => u.TradeHistoryUserB) // Nếu Users.cs có ICollection
+                  .HasForeignKey(th => th.TreeOwnerBid)
+                  .HasConstraintName("FK_TradeHistory_TreeOwnerB")
+                  .OnDelete(DeleteBehavior.Restrict);
+
+
         });
 
         modelBuilder.Entity<Transactions>(entity =>
@@ -729,6 +735,9 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.UserConfigId)
                 .ValueGeneratedOnAdd()
                 .HasColumnName("UserConfigID");
+            entity.Property(e => e.ImageUrl)
+                .IsRequired()
+                .HasMaxLength(255);
 
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
@@ -842,9 +851,7 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.Phone)
                 .IsRequired()
                 .HasMaxLength(20);
-            entity.Property(e => e.ImageUrl)
-                .IsRequired()
-                .HasMaxLength(255);
+
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
 

@@ -85,6 +85,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<bool>("isEquipped")
+                        .HasColumnType("tinyint(1)");
+
                     b.HasKey("BagItemId")
                         .HasName("PRIMARY");
 
@@ -347,6 +350,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<string>("Effect")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsUnique")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("ItemId")
                         .HasColumnType("int")
                         .HasColumnName("ItemID");
@@ -354,6 +360,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<string>("MediaUrl")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<int?>("MonthlyPurchaseLimit")
+                        .HasColumnType("int");
 
                     b.Property<int>("Sold")
                         .HasColumnType("int");
@@ -634,6 +643,9 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int?>("DesiredTreeAID")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("RequestedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
@@ -648,35 +660,28 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasDefaultValueSql("'0.00'");
 
+                    b.Property<int?>("TreeAid")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TreeOwnerAid")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TreeOwnerBid")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<int?>("UserAid")
-                        .HasColumnType("int")
-                        .HasColumnName("UserAID");
-
-                    b.Property<int?>("UserBid")
-                        .HasColumnType("int")
-                        .HasColumnName("UserBID");
-
-                    b.Property<int?>("UserTreeAid")
-                        .HasColumnType("int")
-                        .HasColumnName("UserTreeAID");
-
-                    b.Property<int?>("UserTreeBid")
-                        .HasColumnType("int")
-                        .HasColumnName("UserTreeBID");
 
                     b.HasKey("TradeId")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "UserBid" }, "UserBID");
+                    b.HasIndex(new[] { "DesiredTreeAID" }, "DesiredTreeAID");
 
-                    b.HasIndex(new[] { "UserTreeAid" }, "UserTreeAID");
+                    b.HasIndex(new[] { "TreeAid" }, "TreeAid");
 
-                    b.HasIndex(new[] { "UserTreeBid" }, "UserTreeBID");
+                    b.HasIndex(new[] { "TreeOwnerAid" }, "TreeOwnerAID");
 
-                    b.HasIndex(new[] { "UserAid", "UserBid" }, "idx_tradehistory_user");
+                    b.HasIndex(new[] { "TreeOwnerBid" }, "TreeOwnerBID");
 
                     b.ToTable("TradeHistory");
                 });
@@ -927,6 +932,11 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
                     b.Property<string>("SoundConfig")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)")
@@ -1164,11 +1174,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("OtpCodeHash")
                         .HasMaxLength(255)
@@ -1433,33 +1438,35 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.TradeHistory", b =>
                 {
-                    b.HasOne("ZenGarden.Domain.Entities.Users", "UserA")
+                    b.HasOne("ZenGarden.Domain.Entities.Tree", "DesiredTree")
+                        .WithMany("TradeHistoryDesiredTree")
+                        .HasForeignKey("DesiredTreeAID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ZenGarden.Domain.Entities.Tree", "TreeA")
+                        .WithMany("TradeHistoryTreeA")
+                        .HasForeignKey("TreeAid")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "TreeOwnerA")
                         .WithMany("TradeHistoryUserA")
-                        .HasForeignKey("UserAid")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("TreeOwnerAid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_TradeHistory_TreeOwnerA");
 
-                    b.HasOne("ZenGarden.Domain.Entities.Users", "UserB")
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "TreeOwnerB")
                         .WithMany("TradeHistoryUserB")
-                        .HasForeignKey("UserBid")
-                        .HasConstraintName("tradehistory_ibfk_2");
+                        .HasForeignKey("TreeOwnerBid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_TradeHistory_TreeOwnerB");
 
-                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTreeA")
-                        .WithMany("TradeHistoryUserTreeA")
-                        .HasForeignKey("UserTreeAid")
-                        .HasConstraintName("tradehistory_ibfk_3");
+                    b.Navigation("DesiredTree");
 
-                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTreeB")
-                        .WithMany("TradeHistoryUserTreeB")
-                        .HasForeignKey("UserTreeBid")
-                        .HasConstraintName("tradehistory_ibfk_4");
+                    b.Navigation("TreeA");
 
-                    b.Navigation("UserA");
+                    b.Navigation("TreeOwnerA");
 
-                    b.Navigation("UserB");
-
-                    b.Navigation("UserTreeA");
-
-                    b.Navigation("UserTreeB");
+                    b.Navigation("TreeOwnerB");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Transactions", b =>
@@ -1687,6 +1694,10 @@ namespace ZenGarden.Infrastructure.Migrations
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Tree", b =>
                 {
+                    b.Navigation("TradeHistoryDesiredTree");
+
+                    b.Navigation("TradeHistoryTreeA");
+
                     b.Navigation("UserTree");
                 });
 
@@ -1698,10 +1709,6 @@ namespace ZenGarden.Infrastructure.Migrations
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
                 {
                     b.Navigation("Tasks");
-
-                    b.Navigation("TradeHistoryUserTreeA");
-
-                    b.Navigation("TradeHistoryUserTreeB");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpConfig", b =>
