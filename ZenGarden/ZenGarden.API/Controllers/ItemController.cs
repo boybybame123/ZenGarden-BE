@@ -69,16 +69,9 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
+
+
     [HttpPost("create-item")]
-    [Produces("application/json")]
-    public async Task<IActionResult> CreateItem(ItemDto item)
-    {
-        await _itemService.CreateItemAsync(item);
-        return Ok(new { message = "item created successfully" });
-    }
-
-
-    [HttpPost("upload-and-create-item")]
     public async Task<IActionResult> UploadAndCreateItem([FromForm] ItemDto request)
     {
         // Upload file lên S3
