@@ -29,6 +29,10 @@ public partial class ItemDetail
 
     public int Sold { get; set; } = 0; // Số lần bán 
 
+    public bool IsUnique { get; set; } = false; // TRUE nếu chỉ mua 1 lần
+
+    public int? MonthlyPurchaseLimit { get; set; } = 0; // Số lần mua hàng tháng (0 là không giới hạn)
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

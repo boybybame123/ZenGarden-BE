@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ZenGarden.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreateVIII : Migration
+    public partial class InitialCreateI : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -245,6 +245,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     Duration = table.Column<string>(type: "text", nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Sold = table.Column<int>(type: "int", nullable: false),
+                    IsUnique = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    MonthlyPurchaseLimit = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -283,8 +285,6 @@ namespace ZenGarden.Infrastructure.Migrations
                     OtpCodeHash = table.Column<string>(type: "varchar(255)", unicode: false, maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     OtpExpiry = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    ImageUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_general_ci")
-                        .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
                 },
@@ -387,6 +387,54 @@ namespace ZenGarden.Infrastructure.Migrations
                 .Annotation("Relational:Collation", "utf8mb4_general_ci");
 
             migrationBuilder.CreateTable(
+                name: "TradeHistory",
+                columns: table => new
+                {
+                    TradeID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    TreeAid = table.Column<int>(type: "int", nullable: true),
+                    DesiredTreeAID = table.Column<int>(type: "int", nullable: true),
+                    TreeOwnerAid = table.Column<int>(type: "int", nullable: true),
+                    TreeOwnerBid = table.Column<int>(type: "int", nullable: true),
+                    TradeFee = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "'0.00'"),
+                    RequestedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PRIMARY", x => x.TradeID);
+                    table.ForeignKey(
+                        name: "FK_TradeHistory_TreeOwnerA",
+                        column: x => x.TreeOwnerAid,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TradeHistory_TreeOwnerB",
+                        column: x => x.TreeOwnerBid,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TradeHistory_Tree_DesiredTreeAID",
+                        column: x => x.DesiredTreeAID,
+                        principalTable: "Tree",
+                        principalColumn: "TreeID",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_TradeHistory_Tree_TreeAid",
+                        column: x => x.TreeAid,
+                        principalTable: "Tree",
+                        principalColumn: "TreeID",
+                        onDelete: ReferentialAction.SetNull);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_general_ci");
+
+            migrationBuilder.CreateTable(
                 name: "UserChallenges",
                 columns: table => new
                 {
@@ -430,6 +478,8 @@ namespace ZenGarden.Infrastructure.Migrations
                     BackgroundConfig = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     SoundConfig = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true, collation: "utf8mb4_general_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ImageUrl = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false, collation: "utf8mb4_general_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
@@ -593,6 +643,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     BagID = table.Column<int>(type: "int", nullable: true),
                     ItemID = table.Column<int>(type: "int", nullable: true),
                     Quantity = table.Column<int>(type: "int", nullable: true),
+                    isEquipped = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
@@ -663,51 +714,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         principalTable: "UserTree",
                         principalColumn: "UserTreeID",
                         onDelete: ReferentialAction.SetNull);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4")
-                .Annotation("Relational:Collation", "utf8mb4_general_ci");
-
-            migrationBuilder.CreateTable(
-                name: "TradeHistory",
-                columns: table => new
-                {
-                    TradeID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    UserAID = table.Column<int>(type: "int", nullable: true),
-                    UserBID = table.Column<int>(type: "int", nullable: true),
-                    UserTreeAID = table.Column<int>(type: "int", nullable: true),
-                    UserTreeBID = table.Column<int>(type: "int", nullable: true),
-                    TradeFee = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "'0.00'"),
-                    RequestedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PRIMARY", x => x.TradeID);
-                    table.ForeignKey(
-                        name: "FK_TradeHistory_Users_UserAID",
-                        column: x => x.UserAID,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "tradehistory_ibfk_2",
-                        column: x => x.UserBID,
-                        principalTable: "Users",
-                        principalColumn: "UserId");
-                    table.ForeignKey(
-                        name: "tradehistory_ibfk_3",
-                        column: x => x.UserTreeAID,
-                        principalTable: "UserTree",
-                        principalColumn: "UserTreeID");
-                    table.ForeignKey(
-                        name: "tradehistory_ibfk_4",
-                        column: x => x.UserTreeBID,
-                        principalTable: "UserTree",
-                        principalColumn: "UserTreeID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_general_ci");
@@ -872,24 +878,24 @@ namespace ZenGarden.Infrastructure.Migrations
                 column: "UserTreeID");
 
             migrationBuilder.CreateIndex(
-                name: "idx_tradehistory_user",
+                name: "DesiredTreeAID",
                 table: "TradeHistory",
-                columns: new[] { "UserAID", "UserBID" });
+                column: "DesiredTreeAID");
 
             migrationBuilder.CreateIndex(
-                name: "UserBID",
+                name: "TreeAid",
                 table: "TradeHistory",
-                column: "UserBID");
+                column: "TreeAid");
 
             migrationBuilder.CreateIndex(
-                name: "UserTreeAID",
+                name: "TreeOwnerAID",
                 table: "TradeHistory",
-                column: "UserTreeAID");
+                column: "TreeOwnerAid");
 
             migrationBuilder.CreateIndex(
-                name: "UserTreeBID",
+                name: "TreeOwnerBID",
                 table: "TradeHistory",
-                column: "UserTreeBID");
+                column: "TreeOwnerBid");
 
             migrationBuilder.CreateIndex(
                 name: "idx_transaction_package",
