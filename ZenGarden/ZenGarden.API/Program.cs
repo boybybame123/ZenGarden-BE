@@ -186,6 +186,8 @@ builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddControllers()
     .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
+builder.Services.AddScoped<IXpConfigService, XpConfigService>();
+
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
