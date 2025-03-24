@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ZenGarden.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.Infrastructure.Migrations
 {
     [DbContext(typeof(ZenGardenContext))]
-    partial class ZenGardenContextModelSnapshot : ModelSnapshot
+    [Migration("20250324050712_InitialCreateIII")]
+    partial class InitialCreateIII
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -126,13 +129,13 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasColumnType("varchar(1000)");
 
                     b.Property<DateTime>("EndDate")
-                        .HasColumnType("timestamp");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Reward")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -389,56 +392,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("ItemDetail");
-                });
-
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime?>("ExpireAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<bool>("IsRead")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnUpdate()
-                        .HasColumnType("timestamp")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("NotificationId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.Packages", b =>
@@ -722,9 +675,6 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<int?>("TreeOwnerAid")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TreeOwnerBUserId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("TreeOwnerBid")
                         .HasColumnType("int");
 
@@ -733,8 +683,6 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasKey("TradeId")
                         .HasName("PRIMARY");
-
-                    b.HasIndex("TreeOwnerBUserId");
 
                     b.HasIndex(new[] { "DesiredTreeAID" }, "DesiredTreeAID");
 
@@ -824,9 +772,6 @@ namespace ZenGarden.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("longtext");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -938,11 +883,6 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Property<int>("ChallengeRole")
                         .HasColumnType("int")
                         .HasColumnName("ChallengeRole");
-
-                    b.Property<int>("CompletedTasks")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -1463,17 +1403,6 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.Navigation("Item");
                 });
 
-            modelBuilder.Entity("ZenGarden.Domain.Entities.Notification", b =>
-                {
-                    b.HasOne("ZenGarden.Domain.Entities.Users", "User")
-                        .WithMany("Notifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ZenGarden.Domain.Entities.PurchaseHistory", b =>
                 {
                     b.HasOne("ZenGarden.Domain.Entities.Item", "Item")
@@ -1523,19 +1452,22 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasForeignKey("DesiredTreeAID")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("ZenGarden.Domain.Entities.UserTree", "TreeA")
-                        .WithMany("TradeHistory")
+                    b.HasOne("ZenGarden.Domain.Entities.Tree", "TreeA")
+                        .WithMany("TradeHistoryTreeA")
                         .HasForeignKey("TreeAid")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("ZenGarden.Domain.Entities.Users", "TreeOwnerB")
-                        .WithMany("TradeHistoryUserB")
-                        .HasForeignKey("TreeOwnerBUserId");
-
                     b.HasOne("ZenGarden.Domain.Entities.Users", "TreeOwnerA")
                         .WithMany("TradeHistoryUserA")
+                        .HasForeignKey("TreeOwnerAid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_TradeHistory_TreeOwnerA");
+
+                    b.HasOne("ZenGarden.Domain.Entities.Users", "TreeOwnerB")
+                        .WithMany("TradeHistoryUserB")
                         .HasForeignKey("TreeOwnerBid")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_TradeHistory_TreeOwnerB");
 
                     b.Navigation("DesiredTree");
 
@@ -1773,6 +1705,8 @@ namespace ZenGarden.Infrastructure.Migrations
                 {
                     b.Navigation("TradeHistoryDesiredTree");
 
+                    b.Navigation("TradeHistoryTreeA");
+
                     b.Navigation("UserTree");
                 });
 
@@ -1784,8 +1718,6 @@ namespace ZenGarden.Infrastructure.Migrations
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserTree", b =>
                 {
                     b.Navigation("Tasks");
-
-                    b.Navigation("TradeHistory");
                 });
 
             modelBuilder.Entity("ZenGarden.Domain.Entities.UserXpConfig", b =>
@@ -1796,8 +1728,6 @@ namespace ZenGarden.Infrastructure.Migrations
             modelBuilder.Entity("ZenGarden.Domain.Entities.Users", b =>
                 {
                     b.Navigation("Bag");
-
-                    b.Navigation("Notifications");
 
                     b.Navigation("PurchaseHistory");
 
