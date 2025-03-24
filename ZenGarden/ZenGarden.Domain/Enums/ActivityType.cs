@@ -5,5 +5,6 @@ public enum ActivityType
     TaskXp,
     WebXp,
     DailyXp,
-    StreakXp
+    StreakXp,
+    ItemXp
 }
