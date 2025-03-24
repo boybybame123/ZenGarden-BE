@@ -33,6 +33,7 @@ public partial class Users
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
     public virtual ICollection<UserXpLog> UserXpLog { get; set; } = new List<UserXpLog>();
     public virtual ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual UserConfig? UserConfig { get; set; }
     public virtual Wallet? Wallet { get; set; }
 
