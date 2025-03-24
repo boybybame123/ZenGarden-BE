@@ -24,19 +24,20 @@ namespace ZenGarden.Core.Services
         public async Task<string> CreateTradeRequestAsync(TradeDto traded)
         {
             // Get requester's tree
-            var requesterTree = await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(traded.requesterTreeId, traded.requesterId);
-
-            if (requesterTree == null) return "Tree does not exist";
             
+            var usertree = await userTreeRepository.GetByIdAsync(traded.requesterTreeId);
+           
+            if(usertree == null) return "Tree does not exist";
+            if(usertree.TreeOwnerId != traded.requesterId) return "Tree does not belong to you";
 
-            // Get original tree information to check rating if needed later
-            var treeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId);
-            if (treeA == null) return "Original tree information not found";
+           if (!usertree.FinalTreeId.HasValue) return "Tree is not final";
+
+          
 
             var desiredTree = await treeRepository.GetByIdAsync(traded.requestDesiredTreeId);
             if (desiredTree == null) return "The tree you want to trade does not exist";
             if (!desiredTree.IsActive) return "The tree you want to trade has been deactivated";
-            if (desiredTree.Rarity != treeA.Rarity)
+            if (desiredTree.Rarity != usertree.FinalTree.Rarity)
             {
                 return "Rarity does not match";
             }
@@ -66,15 +67,26 @@ namespace ZenGarden.Core.Services
 
             return "Trade request created successfully, waiting for recipient";
         }
-        public async Task<string> AcceptTradeAsync(int tradeId, int userBId)
+
+
+
+
+
+
+
+        public async Task<string> AcceptTradeAsync(int tradeId, int userBId , int usertreeid)
         {
             var trade = await tradehistoryRepository.GetTradeHistoryByIdAsync(tradeId);
             if (trade == null) return "Không tìm thấy yêu cầu trade";
             if (trade.Status != TradeStatus.Pending) return "Giao dịch không ở trạng thái chờ";
             var treechange = trade.DesiredTreeAID;
             // Lấy UserTree của B
-            var userTreeB = await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(treechange, userBId);
-            
+            var userTreeB = await userTreeRepository.GetByIdAsync(usertreeid);
+            if (userTreeB == null) return "Cây của bạn không tồn tại";
+            if (userTreeB.TreeOwnerId != userBId) return "Cây không thuộc sở hữu của bạn";
+            if(userTreeB.FinalTree != null) return "Tree is not final";
+            if(userTreeB.FinalTree.TreeId != trade.DesiredTreeAID) return "Tree does not match the desired tree";
+
             if (userTreeB.TreeOwnerId == null) return "Cây của bạn không tồn tại";
 
             if (trade.TreeAid == null || trade.TreeOwnerAid == null)
