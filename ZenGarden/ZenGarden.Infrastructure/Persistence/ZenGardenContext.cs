@@ -538,8 +538,6 @@ public class ZenGardenContext : DbContext
                 .HasDefaultValueSql("'0.00'");
 
 
-
-
             // Desired Tree
             entity.HasOne(th => th.DesiredTree)
                 .WithMany(th => th.TradeHistoryDesiredTree)
@@ -551,7 +549,6 @@ public class ZenGardenContext : DbContext
                 .WithMany(th => th.TradeHistoryUserB)
                 .HasForeignKey(th => th.TreeOwnerBid)
                 .OnDelete(DeleteBehavior.SetNull);
-            
 
 
             // Treeowner A
@@ -565,10 +562,6 @@ public class ZenGardenContext : DbContext
                 .WithMany(th => th.TradeHistory)
                 .HasForeignKey(th => th.TreeAid)
                 .OnDelete(DeleteBehavior.SetNull);
-
-
-
-
         });
 
         modelBuilder.Entity<Transactions>(entity =>
@@ -1115,8 +1108,6 @@ public class ZenGardenContext : DbContext
                 .ValueGeneratedOnUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
         });
-
-
 
 
         base.OnModelCreating(modelBuilder);

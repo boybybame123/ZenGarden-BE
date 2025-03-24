@@ -186,6 +186,13 @@ public class TaskService(
 
         if (isUpdated)
         {
+            if (existingTask is { FocusMethodId: not null, TotalDuration: > 0 })
+                await xpConfigService.EnsureXpConfigExists(
+                    existingTask.FocusMethodId.Value,
+                    existingTask.TaskTypeId,
+                    existingTask.TotalDuration.Value
+                );
+
             existingTask.UpdatedAt = DateTime.UtcNow;
             taskRepository.Update(existingTask);
             if (await unitOfWork.CommitAsync() == 0)
@@ -268,6 +275,8 @@ public class TaskService(
                 taskRepository.Update(task);
                 userTreeRepository.Update(task.UserTree);
 
+                await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
+
                 await unitOfWork.CommitAsync();
                 await transaction.CommitAsync();
             }
@@ -278,8 +287,6 @@ public class TaskService(
             }
         }
 
-        await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
-
         var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.TaskId);
         if (challengeTask != null)
         {
@@ -289,6 +296,7 @@ public class TaskService(
             await userChallengeRepository.UpdateProgressAsync(task.UserTree.UserId.Value, challengeTask.ChallengeId);
         }
     }
+
 
     public async Task UpdateOverdueTasksAsync()
     {
@@ -323,18 +331,6 @@ public class TaskService(
 
     private async Task ValidateTaskDto(CreateTaskDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.TaskName) || string.IsNullOrWhiteSpace(dto.TaskDescription))
-            throw new ArgumentException("Task name and description cannot be empty.");
-
-        if (dto.TotalDuration is not > 30)
-            throw new InvalidOperationException("TotalDuration is required and must be greater than 30 minutes.");
-
-        if (dto.WorkDuration is <= 0)
-            throw new ArgumentException("WorkDuration must be greater than 0.");
-
-        if (dto.BreakTime is < 0)
-            throw new ArgumentException("BreakTime must be 0 or greater.");
-
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (taskType == null)
             throw new KeyNotFoundException("TaskType not found.");
