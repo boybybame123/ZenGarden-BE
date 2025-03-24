@@ -536,10 +536,8 @@ public class ZenGardenContext : DbContext
                 .HasPrecision(10, 2)
                 .HasDefaultValueSql("'0.00'");
 
-            entity.HasOne(th => th.TreeA)
-                .WithMany(th => th.TradeHistoryTreeA)
-                .HasForeignKey(th => th.TreeAid)
-                .OnDelete(DeleteBehavior.SetNull);
+
+
 
             // Desired Tree
             entity.HasOne(th => th.DesiredTree)
@@ -547,18 +545,29 @@ public class ZenGardenContext : DbContext
                 .HasForeignKey(th => th.DesiredTreeAID)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(th => th.TreeOwnerA)
-                .WithMany(u => u.TradeHistoryUserA) // Nếu Users.cs có ICollection
-                .HasForeignKey(th => th.TreeOwnerAid)
-                .HasConstraintName("FK_TradeHistory_TreeOwnerA")
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // ✅ Map TreeOwnerB → Users.UserId
+            // Treeowner B
             entity.HasOne(th => th.TreeOwnerB)
-                .WithMany(u => u.TradeHistoryUserB) // Nếu Users.cs có ICollection
+                .WithMany(th => th.TradeHistoryUserB)
                 .HasForeignKey(th => th.TreeOwnerBid)
-                .HasConstraintName("FK_TradeHistory_TreeOwnerB")
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
+            
+
+
+            // Treeowner A
+            entity.HasOne(th => th.TreeOwnerA)
+                .WithMany(th => th.TradeHistoryUserA)
+                .HasForeignKey(th => th.TreeOwnerBid)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // tree A
+            entity.HasOne(th => th.TreeA)
+                .WithMany(th => th.TradeHistory)
+                .HasForeignKey(th => th.TreeAid)
+                .OnDelete(DeleteBehavior.SetNull);
+
+
+
+
         });
 
         modelBuilder.Entity<Transactions>(entity =>

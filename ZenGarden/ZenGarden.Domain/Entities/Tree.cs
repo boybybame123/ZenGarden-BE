@@ -15,5 +15,5 @@ public partial class Tree
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual ICollection<UserTree> UserTree { get; set; } = new List<UserTree>();
     public virtual ICollection<TradeHistory> TradeHistoryDesiredTree { get; set; } = new List<TradeHistory>();
-    public virtual ICollection<TradeHistory> TradeHistoryTreeA { get; set; } = new List<TradeHistory>();
+    
 }

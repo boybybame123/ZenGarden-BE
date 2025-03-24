@@ -19,7 +19,7 @@ public partial class TradeHistory
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public TradeStatus Status { get; set; }
-    public virtual Tree? TreeA { get; set; }
+    public virtual UserTree? TreeA { get; set; }
     public virtual Tree? DesiredTree { get; set; }
     public virtual Users TreeOwnerA { get; set; }
     public virtual Users TreeOwnerB { get; set; }
