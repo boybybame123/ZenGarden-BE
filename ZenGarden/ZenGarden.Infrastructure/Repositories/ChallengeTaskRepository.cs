@@ -14,4 +14,10 @@ public class ChallengeTaskRepository(ZenGardenContext context)
     {
         return await _context.ChallengeTask.Where(ct => ct.ChallengeId == challengeId).ToListAsync();
     }
+
+    public async Task<ChallengeTask?> GetByTaskIdAsync(int taskId)
+    {
+        return await _context.ChallengeTask
+            .FirstOrDefaultAsync(ct => ct.TaskId == taskId);
+    }
 }
