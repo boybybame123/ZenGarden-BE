@@ -24,8 +24,10 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             .NotEmpty().WithMessage("StartDate is required.");
 
         RuleFor(x => x.EndDate)
-            .NotEmpty().WithMessage("EndDate is required.")
-            .GreaterThan(x => x.StartDate).WithMessage("EndDate must be after StartDate.");
+            .GreaterThan(x => x.StartDate).WithMessage("EndDate must be after StartDate.")
+            .Must((dto, endDate) =>
+                !dto.TotalDuration.HasValue || endDate >= dto.StartDate.AddMinutes(dto.TotalDuration.Value))
+            .WithMessage("EndDate must be at least TotalDuration minutes after StartDate.");
 
         RuleFor(x => x.TotalDuration)
             .GreaterThan(30).WithMessage("TotalDuration must be greater than 30 minutes.")
