@@ -29,4 +29,13 @@ public class UserXpLogRepository(ZenGardenContext context) : GenericRepository<U
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<UserXpLog?> GetLastXpLogAsync(int userId)
+    {
+        return await _context.UserXpLog
+            .Where(x => x.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
 }

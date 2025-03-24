@@ -61,7 +61,7 @@ builder.Services.AddScoped<IPurchaseHistoryRepository, PurchaseHistoryRepository
 builder.Services.AddScoped<IXpConfigService, XpConfigService>();
 builder.Services.AddScoped<IUserChallengeRepository, UserChallengeRepository>();
 builder.Services.AddScoped<IChallengeTaskRepository, ChallengeTaskRepository>();
-
+builder.Services.AddScoped<IUserConfigRepository, UserConfigRepository>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -184,6 +184,9 @@ builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IS3Service, S3Service>();
 builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+
+
+
 builder.Services.AddControllers()
     .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
 builder.Services.AddScoped<IXpConfigService, XpConfigService>();

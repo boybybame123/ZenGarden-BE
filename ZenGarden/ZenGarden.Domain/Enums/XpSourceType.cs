@@ -4,5 +4,6 @@ public enum XpSourceType
 {
     DailyLogin,
     StreakBonus,
-    WebInteraction
+    WebInteraction,
+    ItemBoost
 }
