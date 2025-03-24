@@ -188,7 +188,6 @@ builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 
 
-
 builder.Services.AddControllers()
     .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
 builder.Services.AddScoped<IXpConfigService, XpConfigService>();

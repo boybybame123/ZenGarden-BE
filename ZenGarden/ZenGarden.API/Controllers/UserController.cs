@@ -18,7 +18,6 @@ public class UserController(IUserService userService) : ControllerBase
     }
 
 
-
     [HttpGet("{userId:int}")]
     public async Task<IActionResult> GetUserById(int userId)
     {

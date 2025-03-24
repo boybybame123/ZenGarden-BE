@@ -65,9 +65,21 @@ public class ChallengeService(
             {
                 var tasks = new List<TaskDto>();
 
-                foreach (var taskDto in dto.Tasks)
+                foreach (var safeTaskDto in dto.Tasks.Select(taskDto => new CreateTaskDto
+                         {
+                             TaskName = taskDto.TaskName,
+                             TaskDescription = taskDto.TaskDescription,
+                             TotalDuration = taskDto.TotalDuration ?? 30,
+                             StartDate = dto.StartDate ?? DateTime.UtcNow,
+                             EndDate = dto.EndDate ?? dto.StartDate?.AddDays(7) ?? DateTime.UtcNow.AddDays(7),
+                             WorkDuration = taskDto.WorkDuration ?? 25,
+                             BreakTime = taskDto.BreakTime ?? 5,
+                             TaskTypeId = taskDto.TaskTypeId,
+                             UserTreeId = taskDto.UserTreeId > 0 ? taskDto.UserTreeId : null,
+                             FocusMethodId = taskDto.FocusMethodId > 0 ? taskDto.FocusMethodId : null
+                         }))
                 {
-                    var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(taskDto);
+                    var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(safeTaskDto);
                     tasks.Add(createdTask);
                 }
 
@@ -150,7 +162,6 @@ public class ChallengeService(
             throw;
         }
     }
-
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
     {
