@@ -46,6 +46,11 @@ public class MappingProfile : Profile
         CreateMap<CreateChallengeDto, Challenge>();
         CreateMap<UpdateChallengeDto, Challenge>();
 
+        CreateMap<UserChallenge, UserChallengeProgressDto>()
+            .ForMember(dest => dest.UserName,
+                opt => opt.MapFrom(src => src.User != null ? src.User.UserName : "Unknown"))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
     }
 
     private static double CalculateXpToNextLevel(UserTree userTree)

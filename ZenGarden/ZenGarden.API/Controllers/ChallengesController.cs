@@ -17,7 +17,6 @@ public class ChallengesController(IChallengeService challengeService) : Controll
     public async Task<IActionResult> GetChallenge()
     {
         var challenge = await _challengeService.GetAllChallengesAsync();
-        Console.WriteLine(challenge.ToList());
         return Ok(challenge);
     }
 
@@ -91,5 +90,32 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         if (!success) return BadRequest("Failed to cancel the challenge.");
 
         return Ok(new { Message = "Challenge has been canceled successfully." });
+    }
+
+    [HttpGet("{challengeId:int}/ranking")]
+    [Authorize]
+    public async Task<IActionResult> GetChallengeRankings(int challengeId)
+    {
+        var rankings = await _challengeService.GetChallengeRankingsAsync(challengeId);
+
+        if (rankings.Count == 0)
+            return NotFound("No participants found for this challenge.");
+
+        return Ok(rankings);
+    }
+
+    [HttpGet("progress/{challengeId:int}")]
+    [Authorize]
+    public async Task<IActionResult> GetUserChallengeProgress(int challengeId)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var progressDto = await challengeService.GetUserChallengeProgressAsync(userId, challengeId);
+        if (progressDto == null)
+            return NotFound(new { Message = "You are not part of this challenge." });
+
+        return Ok(progressDto);
     }
 }

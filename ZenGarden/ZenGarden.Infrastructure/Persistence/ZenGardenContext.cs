@@ -186,6 +186,14 @@ public class ZenGardenContext : DbContext
                 .HasMaxLength(1000)
                 .IsUnicode(false);
 
+            entity.Property(e => e.StartDate)
+                .HasColumnType("timestamp")
+                .IsRequired();
+
+            entity.Property(e => e.EndDate)
+                .HasColumnType("timestamp")
+                .IsRequired();
+
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .ValueGeneratedOnAdd()
@@ -514,45 +522,43 @@ public class ZenGardenContext : DbContext
             entity.Property(e => e.TradeId).HasColumnName("TradeID");
 
             entity.Property(e => e.Status)
-                  .HasConversion<int>()
-                  .IsRequired();
+                .HasConversion<int>()
+                .IsRequired();
 
             entity.Property(e => e.CompletedAt)
-                  .HasColumnType("timestamp")
-                  .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
             entity.Property(e => e.RequestedAt)
-                  .HasColumnType("timestamp")
-                  .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.TradeFee)
-                  .HasPrecision(10, 2)
-                  .HasDefaultValueSql("'0.00'");
+                .HasPrecision(10, 2)
+                .HasDefaultValueSql("'0.00'");
 
             entity.HasOne(th => th.TreeA)
-                  .WithMany(th => th.TradeHistoryTreeA)
-                  .HasForeignKey(th => th.TreeAid)
-                  .OnDelete(DeleteBehavior.SetNull);
+                .WithMany(th => th.TradeHistoryTreeA)
+                .HasForeignKey(th => th.TreeAid)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Desired Tree
             entity.HasOne(th => th.DesiredTree)
-                  .WithMany(th => th.TradeHistoryDesiredTree)
-                  .HasForeignKey(th => th.DesiredTreeAID)
-                  .OnDelete(DeleteBehavior.SetNull);
+                .WithMany(th => th.TradeHistoryDesiredTree)
+                .HasForeignKey(th => th.DesiredTreeAID)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(th => th.TreeOwnerA)
-                  .WithMany(u => u.TradeHistoryUserA) // Nếu Users.cs có ICollection
-                  .HasForeignKey(th => th.TreeOwnerAid)
-                  .HasConstraintName("FK_TradeHistory_TreeOwnerA")
-                  .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(u => u.TradeHistoryUserA) // Nếu Users.cs có ICollection
+                .HasForeignKey(th => th.TreeOwnerAid)
+                .HasConstraintName("FK_TradeHistory_TreeOwnerA")
+                .OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Map TreeOwnerB → Users.UserId
             entity.HasOne(th => th.TreeOwnerB)
-                  .WithMany(u => u.TradeHistoryUserB) // Nếu Users.cs có ICollection
-                  .HasForeignKey(th => th.TreeOwnerBid)
-                  .HasConstraintName("FK_TradeHistory_TreeOwnerB")
-                  .OnDelete(DeleteBehavior.Restrict);
-
-
+                .WithMany(u => u.TradeHistoryUserB) // Nếu Users.cs có ICollection
+                .HasForeignKey(th => th.TreeOwnerBid)
+                .HasConstraintName("FK_TradeHistory_TreeOwnerB")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Transactions>(entity =>
@@ -705,6 +711,8 @@ public class ZenGardenContext : DbContext
                 .HasConversion<int>()
                 .HasColumnName("Status")
                 .IsRequired();
+
+            entity.Property(e => e.CompletedTasks).HasColumnType("int").HasDefaultValue(0);
             entity.Property(e => e.ChallengeRole)
                 .HasConversion<int>()
                 .HasColumnName("ChallengeRole")

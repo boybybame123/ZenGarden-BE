@@ -77,8 +77,6 @@ public class UserService(
             userUpdate.Status = user.Status;
 
 
-
-
         userRepository.Update(userUpdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
@@ -146,7 +144,6 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
 
-       
 
         await unitOfWork.BeginTransactionAsync();
         try

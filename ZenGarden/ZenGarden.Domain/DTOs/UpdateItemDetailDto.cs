@@ -18,10 +18,9 @@ public class UpdateItemDetailDto
 
     public string MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
 
-    public string Effect { get; set; } 
+    public string Effect { get; set; }
 
     public int? Duration { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
-
 
 
     public bool IsUnique { get; set; } = false; // TRUE nếu chỉ mua 1 lần

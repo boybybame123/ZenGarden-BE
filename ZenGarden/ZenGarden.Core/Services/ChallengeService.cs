@@ -15,10 +15,9 @@ public class ChallengeService(
     IChallengeTaskRepository challengeTaskRepository,
     IUserTreeRepository userTreeRepository,
     ITaskTypeRepository taskTypeRepository,
-    IFocusMethodRepository focusMethodRepository,
-    IFocusMethodService focusMethodService,
     IWalletRepository walletRepository,
     IUserRepository userRepository,
+    ITaskService taskService,
     IMapper mapper)
     : IChallengeService
 {
@@ -37,8 +36,9 @@ public class ChallengeService(
                 if (wallet == null)
                     throw new InvalidOperationException("Wallet not found.");
 
-                const decimal challengeCost = 100;
-                if (wallet.Balance <= challengeCost)
+                decimal challengeCost = dto.Reward;
+
+                if (wallet.Balance < challengeCost)
                     throw new InvalidOperationException("Not enough ZenCoin to create challenge.");
 
                 wallet.Balance -= challengeCost;
@@ -63,16 +63,13 @@ public class ChallengeService(
 
             if (dto.Tasks is { Count: > 0 })
             {
-                var tasks = dto.Tasks.Select(taskDto => new Tasks
-                {
-                    TaskName = taskDto.TaskName,
-                    TaskDescription = taskDto.TaskDescription,
-                    Status = TasksStatus.NotStarted,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList();
+                var tasks = new List<TaskDto>();
 
-                await taskRepository.AddRangeAsync(tasks);
-                await unitOfWork.CommitAsync();
+                foreach (var taskDto in dto.Tasks)
+                {
+                    var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(taskDto);
+                    tasks.Add(createdTask);
+                }
 
                 var challengeTasks = tasks.Select(task => new ChallengeTask
                 {
@@ -80,8 +77,10 @@ public class ChallengeService(
                     TaskId = task.TaskId,
                     CreatedAt = DateTime.UtcNow
                 }).ToList();
+
                 await challengeTaskRepository.AddRangeAsync(challengeTasks);
             }
+
 
             await unitOfWork.CommitAsync();
             await transaction.CommitAsync();
@@ -98,29 +97,16 @@ public class ChallengeService(
 
     public async Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
     {
-        var challenge = await challengeRepository.GetByIdAsync(challengeId);
-        if (challenge == null)
-            throw new KeyNotFoundException("Challenge not found!");
+        await ValidateJoinChallenge(userId, challengeId, joinChallengeDto);
 
-        var existingUserChallenge = await userChallengeRepository.GetUserChallengeAsync(userId, challengeId);
-        if (existingUserChallenge != null)
-            throw new InvalidOperationException("You have already joined this challenge!");
+        var challenge = await challengeRepository.GetByIdAsync(challengeId)
+                        ?? throw new KeyNotFoundException("Challenge not found!");
 
-        var userTree = await userTreeRepository.GetByIdAsync(joinChallengeDto.UserTreeId);
-        if (userTree == null || userTree.UserId != userId)
-            throw new ArgumentException("Invalid tree selection!");
-
-        if (joinChallengeDto.TaskTypeId.HasValue)
-        {
-            var existingTaskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
-            if (existingTaskType == null)
-                throw new KeyNotFoundException("TaskType not found.");
-        }
 
         await using var transaction = await unitOfWork.BeginTransactionAsync();
         try
         {
-            var userChallenge = new UserChallenge
+            await userChallengeRepository.CreateAsync(new UserChallenge
             {
                 ChallengeId = challengeId,
                 UserId = userId,
@@ -128,9 +114,7 @@ public class ChallengeService(
                 Status = UserChallengeStatus.InProgress,
                 JoinedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
-            };
-
-            await userChallengeRepository.CreateAsync(userChallenge);
+            });
 
             var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
             var newTasks = new List<Tasks>();
@@ -139,45 +123,24 @@ public class ChallengeService(
             {
                 if (ct.Tasks == null) continue;
 
-                FocusMethodDto selectedMethod;
-                if (ct.Tasks.FocusMethodId.HasValue)
-                {
-                    selectedMethod = (await focusMethodRepository.GetDtoByIdAsync(ct.Tasks.FocusMethodId.Value))!;
-                }
-                else
-                {
-                    selectedMethod = await focusMethodService.SuggestFocusMethodAsync(new SuggestFocusMethodDto
-                    {
-                        TaskName = ct.Tasks.TaskName,
-                        TaskDescription = ct.Tasks.TaskDescription,
-                        TotalDuration = ct.Tasks.TotalDuration,
-                        StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
-                        EndDate = ct.Tasks.EndDate ?? challenge.EndDate
-                    });
-
-                    if (selectedMethod == null)
-                        throw new InvalidOperationException("No valid focus method found.");
-                }
-
-                var newTask = new Tasks
+                var createTaskDto = new CreateTaskDto
                 {
                     TaskTypeId = joinChallengeDto.TaskTypeId ?? 0,
                     UserTreeId = joinChallengeDto.UserTreeId,
-                    FocusMethodId = selectedMethod.FocusMethodId,
                     TaskName = ct.Tasks.TaskName,
                     TaskDescription = ct.Tasks.TaskDescription,
                     TotalDuration = ct.Tasks.TotalDuration,
-                    WorkDuration = selectedMethod.DefaultDuration ?? 25,
-                    BreakTime = selectedMethod.DefaultBreak ?? 5,
-                    Status = TasksStatus.NotStarted,
-                    CreatedAt = DateTime.UtcNow
+                    StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
+                    EndDate = ct.Tasks.EndDate ?? challenge.EndDate
                 };
 
-                newTasks.Add(newTask);
+                var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(createTaskDto);
+                newTasks.Add(mapper.Map<Tasks>(createdTask));
             }
 
             await taskRepository.AddRangeAsync(newTasks);
             await transaction.CommitAsync();
+            await unitOfWork.CommitAsync();
 
             return true;
         }
@@ -187,6 +150,7 @@ public class ChallengeService(
             throw;
         }
     }
+
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
     {
@@ -293,5 +257,41 @@ public class ChallengeService(
             await transaction.RollbackAsync();
             throw;
         }
+    }
+
+    public async Task<List<UserChallengeRankingDto>> GetChallengeRankingsAsync(int challengeId)
+    {
+        var userChallenges = await userChallengeRepository.GetRankedUserChallengesAsync(challengeId);
+
+        return userChallenges.Select(uc => new UserChallengeRankingDto
+        {
+            UserId = uc.UserId,
+            UserName = uc.User?.UserName ?? "Unknown",
+            Progress = uc.Progress,
+            CompletedTasks = uc.CompletedTasks
+        }).ToList();
+    }
+
+    public async Task<UserChallengeProgressDto?> GetUserChallengeProgressAsync(int userId, int challengeId)
+    {
+        var userChallenge = await userChallengeRepository.GetUserProgressAsync(userId, challengeId);
+        return userChallenge == null ? null : mapper.Map<UserChallengeProgressDto>(userChallenge);
+    }
+
+    private async Task ValidateJoinChallenge(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
+    {
+        if (await challengeRepository.GetByIdAsync(challengeId) == null)
+            throw new KeyNotFoundException("Challenge not found!");
+
+        if (await userChallengeRepository.GetUserChallengeAsync(userId, challengeId) != null)
+            throw new InvalidOperationException("You have already joined this challenge!");
+
+        var userTree = await userTreeRepository.GetByIdAsync(joinChallengeDto.UserTreeId);
+        if (userTree == null || userTree.UserId != userId)
+            throw new ArgumentException("Invalid tree selection!");
+
+        if (joinChallengeDto.TaskTypeId.HasValue &&
+            await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value) == null)
+            throw new KeyNotFoundException("TaskType not found.");
     }
 }
