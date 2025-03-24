@@ -21,7 +21,7 @@ public class MappingProfile : Profile
             .ReverseMap();
         CreateMap<Packages, PackageDto>().ReverseMap();
         CreateMap<UserTree, CreateUserTreeDto>().ReverseMap();
-        CreateMap<Tree, TreeDto>();
+        CreateMap<Tree, TreeDto>().ReverseMap();
         CreateMap<Challenge, ChallengeDto>().ReverseMap();
         CreateMap<FocusMethod, FocusMethodDto>()
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.Name));
@@ -45,6 +45,7 @@ public class MappingProfile : Profile
         CreateMap<Challenge, ChallengeDto>().ReverseMap();
         CreateMap<CreateChallengeDto, Challenge>();
         CreateMap<UpdateChallengeDto, Challenge>();
+
     }
 
     private static double CalculateXpToNextLevel(UserTree userTree)

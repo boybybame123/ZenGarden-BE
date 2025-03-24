@@ -25,8 +25,9 @@ namespace ZenGarden.Core.Services
         {
             // Get requester's tree
             var requesterTree = await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(traded.requesterTreeId, traded.requesterId);
+
             if (requesterTree == null) return "Tree does not exist";
-        
+            
 
             // Get original tree information to check rating if needed later
             var treeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId);

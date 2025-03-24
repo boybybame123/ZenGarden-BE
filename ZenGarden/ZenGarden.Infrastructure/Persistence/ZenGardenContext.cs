@@ -910,7 +910,7 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("UserID");
 
             entity.Property(e => e.TreeOwnerId)
-                .HasColumnName("TreeID");
+                .HasColumnName("OwnerID");
 
 
             entity.Property(e => e.LevelId)

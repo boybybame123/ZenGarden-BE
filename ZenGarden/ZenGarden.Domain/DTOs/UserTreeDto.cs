@@ -5,7 +5,7 @@ public class UserTreeDto
     public int UserTreeId { get; set; }
     public int UserId { get; set; }
     public string? UserName { get; set; }
-
+    public int TreeOwnerId { get; set; }
     public string? Name { get; set; }
     public int LevelId { get; set; }
     public double XpToNextLevel { get; set; }
