@@ -7,4 +7,5 @@ public interface IUserTreeRepository : IGenericRepository<UserTree>
     Task<UserTree?> GetUserTreeDetailAsync(int userTreeId);
     Task<List<UserTree>> GetAllUserTreesAsync();
     Task<List<UserTree>> GetUserTreeByUserdIdAsync(int userId);
+    Task<UserTree?> GetUserTreeByTreeIdAndOwnerIdAsync(int? treeId, int ownerId);
 }
