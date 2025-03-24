@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
@@ -20,10 +21,10 @@ namespace ZenGarden.Core.Services
         IUnitOfWork unitOfWork,
         IMapper mapper) : ITradeTreeService
     {
-        public async Task<string> CreateTradeRequestAsync(int requesterId, int requesterTreeId, int requestDesiredTreeId, decimal tradeFee = 0)
+        public async Task<string> CreateTradeRequestAsync(TradeDto traded)
         {
             // Get requester's tree
-            var requesterTree = await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(requesterTreeId, requesterId);
+            var requesterTree = await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(traded.requesterTreeId, traded.requesterId);
             if (requesterTree == null) return "Tree does not exist";
         
 
@@ -31,21 +32,28 @@ namespace ZenGarden.Core.Services
             var treeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId);
             if (treeA == null) return "Original tree information not found";
 
-            var desiredTree = await treeRepository.GetByIdAsync(requestDesiredTreeId);
+            var desiredTree = await treeRepository.GetByIdAsync(traded.requestDesiredTreeId);
             if (desiredTree == null) return "The tree you want to trade does not exist";
             if (!desiredTree.IsActive) return "The tree you want to trade has been deactivated";
             if (desiredTree.Rarity != treeA.Rarity)
             {
                 return "Rarity does not match";
             }
+            var tradeFee = 50;
+            if (desiredTree.Rarity == "Rare")
+                 tradeFee = 100;
+            if (desiredTree.Rarity == "Super Rare")
+                tradeFee = 200;            
+            if (desiredTree.Rarity == "Ultra Rare")
+                tradeFee = 300;
 
             // Create trade (B and DesiredTree not yet specified)
             var trade = new TradeHistory
             {
-                TreeOwnerAid = requesterId,
+                TreeOwnerAid = traded.requesterId,
                 TreeOwnerBid = null, // B is not known yet
-                TreeAid = requesterTreeId,
-                DesiredTreeAID = requestDesiredTreeId,
+                TreeAid = traded.requesterTreeId,
+                DesiredTreeAID = traded.requestDesiredTreeId,
                 TradeFee = tradeFee,
                 RequestedAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
@@ -84,7 +92,7 @@ namespace ZenGarden.Core.Services
             return "Chấp nhận giao dịch thành công";
         }
 
-
+        
 
 
 

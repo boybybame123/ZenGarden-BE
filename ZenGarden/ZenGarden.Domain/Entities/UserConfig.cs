@@ -9,5 +9,5 @@ public class UserConfig
     public string? ImageUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public virtual required Users User { get; set; }
+    public virtual  Users? User { get; set; }
 }

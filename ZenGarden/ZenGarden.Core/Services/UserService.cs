@@ -14,6 +14,7 @@ public class UserService(
     IWalletRepository walletRepository,
     IUserXpConfigRepository userXpConfigRepository,
     IUserExperienceRepository userExperienceRepository,
+    IUserConfigRepository userConfigRepository,
     IUnitOfWork unitOfWork,
     IMapper mapper) : IUserService
 {
@@ -169,11 +170,19 @@ public class UserService(
                 StreakDays = 0,
                 CreatedAt = DateTime.UtcNow
             };
+            var userConfig = new UserConfig
+            {
+                UserId = newUser.UserId,
+                BackgroundConfig = "",
+                SoundConfig = "",
+                ImageUrl = "",
+                CreatedAt = DateTime.UtcNow
+            };
 
             await walletRepository.CreateAsync(wallet);
             await bagRepository.CreateAsync(bag);
             await userExperienceRepository.CreateAsync(userExperience);
-
+            await userConfigRepository.CreateAsync(userConfig);
             await unitOfWork.CommitAsync();
             await unitOfWork.CommitTransactionAsync();
             return newUser;

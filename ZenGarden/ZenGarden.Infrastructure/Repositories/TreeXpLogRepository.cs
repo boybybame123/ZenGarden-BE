@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
@@ -16,6 +16,16 @@ public class TreeXpLogRepository(ZenGardenContext context)
             .Where(x => x.TaskId == taskId)
             .ToListAsync();
     }
+    public async Task<TreeXpLog?> GetLatestTreeXpLogByUserTreeIdAsync(int userTreeId)
+    {
+        return await _context.TreeXpLog
+            .Include(log => log.Tasks)
+            .Where(log => log.Tasks.UserTreeId == userTreeId)
+            .OrderByDescending(log => log.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
+
 
 
 }
