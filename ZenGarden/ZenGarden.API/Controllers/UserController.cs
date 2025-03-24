@@ -17,12 +17,7 @@ public class UserController(IUserService userService) : ControllerBase
         return Ok(users);
     }
 
-    [HttpGet("filter")]
-    public async Task<IActionResult> GetUsers([FromQuery] UserFilterDto filter)
-    {
-        var users = await _userService.GetAllUserFilterAsync(filter);
-        return Ok(users);
-    }
+
 
     [HttpGet("{userId:int}")]
     public async Task<IActionResult> GetUserById(int userId)
