@@ -69,8 +69,6 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
-
-
     [HttpPost("create-item")]
     public async Task<IActionResult> UploadAndCreateItem([FromForm] ItemDto request)
     {

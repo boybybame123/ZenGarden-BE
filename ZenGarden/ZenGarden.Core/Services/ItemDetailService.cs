@@ -53,10 +53,7 @@ public class ItemDetailService(
             if (itemDetail.File != null)
             {
                 var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
-                if (mediaUrl != null)
-                {
-                    updateItemDetail.MediaUrl = mediaUrl;
-                }
+                if (mediaUrl != null) updateItemDetail.MediaUrl = mediaUrl;
             }
 
             itemDetailRepository.Update(updateItemDetail);

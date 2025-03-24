@@ -12,10 +12,8 @@ public class PurchaseHistoryRepository(ZenGardenContext context)
     {
         return await context.PurchaseHistory
             .Where(ph => ph.UserId == userId
-                      && ph.ItemId == itemId
-                      && ph.CreatedAt >= startOfMonth)
+                         && ph.ItemId == itemId
+                         && ph.CreatedAt >= startOfMonth)
             .CountAsync();
     }
-
-
 }

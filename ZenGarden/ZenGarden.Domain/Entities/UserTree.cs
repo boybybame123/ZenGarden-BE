@@ -14,8 +14,6 @@ public partial class UserTree
     public int? UserId { get; set; }
     public int? FinalTreeId { get; set; }
     public int? TreeOwnerId { get; set; }
-
-
     public required string Name { get; set; }
     public int LevelId { get; set; } = 1;
     public double TotalXp { get; set; } = 0;
