@@ -4,7 +4,7 @@ public class CreateTaskDto
 {
     public int? FocusMethodId { get; set; }
     public int TaskTypeId { get; set; }
-    public int UserTreeId { get; set; }
+    public int? UserTreeId { get; set; }
     public string? TaskName { get; set; }
     public string? TaskDescription { get; set; }
     public int? TotalDuration { get; set; }

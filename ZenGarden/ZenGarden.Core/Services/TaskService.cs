@@ -124,9 +124,63 @@ public class TaskService(
             isUpdated = true;
         }
 
-        if (updateTaskDto.TotalDuration.HasValue && existingTask.TotalDuration != updateTaskDto.TotalDuration.Value)
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote) &&
+            existingTask.TaskNote != updateTaskDto.TaskNote)
+        {
+            existingTask.TaskNote = updateTaskDto.TaskNote;
+            isUpdated = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult) &&
+            existingTask.TaskResult != updateTaskDto.TaskResult)
+        {
+            existingTask.TaskResult = updateTaskDto.TaskResult;
+            isUpdated = true;
+        }
+
+        if (updateTaskDto.TotalDuration.HasValue &&
+            existingTask.TotalDuration != updateTaskDto.TotalDuration.Value)
         {
             existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
+            isUpdated = true;
+        }
+
+        if (updateTaskDto.WorkDuration.HasValue &&
+            existingTask.WorkDuration != updateTaskDto.WorkDuration.Value)
+        {
+            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
+            isUpdated = true;
+        }
+
+        if (updateTaskDto.BreakTime.HasValue &&
+            existingTask.BreakTime != updateTaskDto.BreakTime.Value)
+        {
+            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+            isUpdated = true;
+        }
+
+        if (updateTaskDto.StartDate.HasValue &&
+            existingTask.StartDate != updateTaskDto.StartDate.Value)
+        {
+            existingTask.StartDate = updateTaskDto.StartDate.Value;
+            isUpdated = true;
+        }
+
+        if (updateTaskDto.EndDate.HasValue &&
+            existingTask.EndDate != updateTaskDto.EndDate.Value)
+        {
+            existingTask.EndDate = updateTaskDto.EndDate.Value;
+            isUpdated = true;
+        }
+
+        if (updateTaskDto.FocusMethodId.HasValue &&
+            existingTask.FocusMethodId != updateTaskDto.FocusMethodId.Value)
+        {
+            var focusMethod = await focusMethodRepository.GetByIdAsync(updateTaskDto.FocusMethodId.Value);
+            if (focusMethod == null)
+                throw new KeyNotFoundException($"FocusMethod with ID {updateTaskDto.FocusMethodId.Value} not found.");
+
+            existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
             isUpdated = true;
         }
 

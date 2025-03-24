@@ -13,6 +13,7 @@ public class UpdateTaskDto
     public string? TaskResult { get; set; }
 
     public int? TotalDuration { get; set; }
+    public int? FocusMethodId { get; set; }
 
     public int? WorkDuration { get; set; }
 

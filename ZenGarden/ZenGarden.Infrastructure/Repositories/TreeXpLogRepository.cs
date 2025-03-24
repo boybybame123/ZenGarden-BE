@@ -16,6 +16,7 @@ public class TreeXpLogRepository(ZenGardenContext context)
             .Where(x => x.TaskId == taskId)
             .ToListAsync();
     }
+
     public async Task<TreeXpLog?> GetLatestTreeXpLogByUserTreeIdAsync(int userTreeId)
     {
         return await _context.TreeXpLog
@@ -24,8 +25,4 @@ public class TreeXpLogRepository(ZenGardenContext context)
             .OrderByDescending(log => log.CreatedAt)
             .FirstOrDefaultAsync();
     }
-
-
-
-
 }
