@@ -18,9 +18,9 @@ namespace ZenGarden.API.Controllers
             return Ok(trade);
         }
         [HttpPut("accept")]
-        public async Task<IActionResult> AcceptTrade(int tradeid , int userbid)
+        public async Task<IActionResult> AcceptTrade(int tradeid , int userbid, int usertreeid )
         {
-            var trade = await tradeTreeService.AcceptTradeAsync(tradeid,userbid);
+            var trade = await tradeTreeService.AcceptTradeAsync(tradeid,userbid, usertreeid);
             return Ok(trade);
         }
 

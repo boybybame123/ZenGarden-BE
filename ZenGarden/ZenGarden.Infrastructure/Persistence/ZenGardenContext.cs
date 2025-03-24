@@ -43,6 +43,7 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<UserXpConfig> UserXpConfig { get; set; }
     public virtual DbSet<UserXpLog> UserXpLog { get; set; }
     public virtual DbSet<Wallet> Wallet { get; set; }
+    public virtual DbSet<Notification> Notifications { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -1097,6 +1098,25 @@ public class ZenGardenContext : DbContext
                 .HasForeignKey(d => d.TaskTypeId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.NotificationId);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.IsRead).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        });
+
+
 
 
         base.OnModelCreating(modelBuilder);
