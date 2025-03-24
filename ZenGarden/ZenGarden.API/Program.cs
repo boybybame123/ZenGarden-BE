@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ZenGarden.API.Hubs;
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
@@ -211,8 +212,9 @@ if (string.IsNullOrEmpty(deepInfraApiKey))
     throw new InvalidOperationException("DeepInfra API Key is missing.");
 
 builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = deepInfraApiKey; });
-
-
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<RealtimeBackgroundService>(); // ✅ Để Controller resolve được
+builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
@@ -222,7 +224,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowAll");
-
+app.MapHub<NotificationHub>("/hubs/notification");
 app.UseMiddleware<JwtMiddleware>();
 app.UseMiddleware<UserContextMiddleware>();
 app.UseMiddleware<PerformanceMiddleware>();

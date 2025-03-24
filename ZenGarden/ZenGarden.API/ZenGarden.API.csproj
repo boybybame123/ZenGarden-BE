@@ -9,33 +9,34 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNetCoreRateLimit" Version="5.0.0"/>
-        <PackageReference Include="AutoMapper" Version="14.0.0"/>
-        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400"/>
-        <PackageReference Include="FluentValidation.AspNetCore" Version="11.0.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.13"/>
-        <PackageReference Include="Microsoft.AspNetCore.OData" Version="8.2.7"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.13"/>
+        <PackageReference Include="AspNetCoreRateLimit" Version="5.0.0" />
+        <PackageReference Include="AutoMapper" Version="14.0.0" />
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400" />
+        <PackageReference Include="FluentValidation.AspNetCore" Version="11.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.13" />
+        <PackageReference Include="Microsoft.AspNetCore.OData" Version="8.2.7" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.13" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.11">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\ZenGarden.Core\ZenGarden.Core.csproj"/>
-        <ProjectReference Include="..\ZenGarden.Infrastructure\ZenGarden.Infrastructure.csproj"/>
+        <ProjectReference Include="..\ZenGarden.Core\ZenGarden.Core.csproj" />
+        <ProjectReference Include="..\ZenGarden.Infrastructure\ZenGarden.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Create.cshtml"/>
-        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Delete.cshtml"/>
-        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Details.cshtml"/>
-        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Edit.cshtml"/>
-        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Index.cshtml"/>
-        <_ContentIncludedByDefault Remove="Views\Shared\_ValidationScriptsPartial.cshtml"/>
+        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Create.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Delete.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Details.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Edit.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\PurchaseHistories\Index.cshtml" />
+        <_ContentIncludedByDefault Remove="Views\Shared\_ValidationScriptsPartial.cshtml" />
     </ItemGroup>
 
 </Project>
