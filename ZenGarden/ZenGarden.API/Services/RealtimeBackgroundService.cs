@@ -35,7 +35,7 @@ public class RealtimeBackgroundService : BackgroundService
             }
 
             //await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
 
         }
