@@ -437,6 +437,9 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp");
+            
+            entity.Property(e => e.PausedAt)
+                .HasColumnType("timestamp");
 
             entity.Property(e => e.StartDate)
                 .HasColumnType("timestamp");
