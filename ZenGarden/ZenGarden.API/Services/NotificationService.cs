@@ -32,7 +32,7 @@ public class NotificationService : INotificationService
         _logger.LogInformation($"✅ Notification saved and pushed to user {userId}");
 
         // Bắn đúng user
-        await _hubContext.Clients.User(userId.ToString())
+        await _hubContext.Clients.All
                          .SendAsync("ReceiveNotification", noti.Content, noti.CreatedAt);
         _logger.LogInformation($"✅ [SignalR] Pushed to user {userId}: {noti.Content}");
     }
