@@ -26,8 +26,29 @@ public class UserTreeService(
     {
         var userTree = await userTreeRepository.GetUserTreeDetailAsync(userTreeId)
                        ?? throw new KeyNotFoundException("UserTree not found");
-        return mapper.Map<UserTreeDto>(userTree);
+
+        var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
+        var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
+
+        var userTreeDto = mapper.Map<UserTreeDto>(userTree);
+
+        if (userTree.IsMaxLevel && maxLevelConfig != null)
+        {
+            userTreeDto.LevelId = maxLevelConfig.LevelId + 1;
+            userTreeDto.XpToNextLevel = 0;
+        }
+        else if (nextLevelConfig != null)
+        {
+            userTreeDto.XpToNextLevel = nextLevelConfig.XpThreshold - userTree.TotalXp;
+        }
+        else
+        {
+            userTreeDto.XpToNextLevel = 0;
+        }
+
+        return userTreeDto;
     }
+
 
     public async Task AddAsync(CreateUserTreeDto createUserTreeDto)
     {
@@ -76,15 +97,23 @@ public class UserTreeService(
 
     public async Task CheckAndSetMaxLevelAsync(UserTree userTree)
     {
-        var maxXpThreshold = await treeXpConfigRepository.GetMaxXpThresholdAsync();
-        if (userTree.TotalXp >= maxXpThreshold)
+        var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
+        if (nextLevelConfig != null && userTree.TotalXp >= nextLevelConfig.XpThreshold)
+        {
+            userTree.LevelId = nextLevelConfig.LevelId;
+        }
+
+        var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
+        if (maxLevelConfig != null && userTree.TotalXp >= maxLevelConfig.XpThreshold)
         {
             userTree.TreeStatus = TreeStatus.MaxLevel;
             userTree.IsMaxLevel = true;
             var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
-            if (finalTreeId != null) userTree.FinalTreeId = finalTreeId;
+            if (finalTreeId != null) 
+                userTree.FinalTreeId = finalTreeId;
         }
     }
+
 
 
     public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid)

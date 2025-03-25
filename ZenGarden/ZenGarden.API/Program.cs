@@ -19,6 +19,7 @@ using ZenGarden.Core.Mappings;
 using ZenGarden.Core.Services;
 using ZenGarden.Domain.Config;
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Infrastructure.BackgroundJobs;
 using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Infrastructure.Repositories;
 
@@ -188,11 +189,11 @@ builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 
 
-
 builder.Services.AddControllers()
     .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
 builder.Services.AddScoped<IXpConfigService, XpConfigService>();
-
+builder.Services.AddHostedService<AutoPauseTaskJob>();
+builder.Services.AddHostedService<OverdueTaskJob>();
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 

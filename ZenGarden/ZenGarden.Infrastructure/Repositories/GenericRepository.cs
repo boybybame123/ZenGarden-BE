@@ -57,11 +57,12 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         ArgumentNullException.ThrowIfNull(entity);
         _context.Entry(entity).State = EntityState.Modified;
     }
-    public virtual async Task UpdateAsync(T entity)
-    {
-        ArgumentNullException.ThrowIfNull(entity);
-        await Task.Run(() => _dbSet.Update(entity));
-    }
+
+    // public virtual async Task UpdateAsync(T entity)
+    // {
+    //     ArgumentNullException.ThrowIfNull(entity);
+    //     await Task.Run(() => _dbSet.Update(entity));
+    // }
 
     public virtual async Task RemoveAsync(T entity)
     {

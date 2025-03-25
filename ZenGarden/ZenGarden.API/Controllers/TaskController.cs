@@ -37,7 +37,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("by-user-id/{userId:int}")]
     public async Task<IActionResult> GetTasksByUserId(int userId)
     {
-        var task = await _taskService.GetTaskByUserTreeIdAsync(userId);
+        var task = await _taskService.GetTaskByUserIdAsync(userId);
         return Ok(task);
     }
 
@@ -92,5 +92,11 @@ public class TaskController(ITaskService taskService) : ControllerBase
     {
         var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
         return Ok(new { taskId, xpEarned });
+    }
+    [HttpPut("pause/{taskId:int}")]
+    public async Task<IActionResult> PauseTask(int taskId)
+    {
+        await _taskService.PauseTaskAsync(taskId);
+        return Ok(new { message = "Task paused successfully." });
     }
 }

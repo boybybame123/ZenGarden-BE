@@ -37,5 +37,4 @@ public class UserXpLogRepository(ZenGardenContext context) : GenericRepository<U
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync();
     }
-
 }
