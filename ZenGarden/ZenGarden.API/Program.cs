@@ -219,7 +219,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<RealtimeBackgroundService>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
+//builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
 
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
