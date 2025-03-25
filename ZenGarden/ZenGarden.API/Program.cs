@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -214,8 +215,11 @@ if (string.IsNullOrEmpty(deepInfraApiKey))
 
 builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = deepInfraApiKey; });
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<RealtimeBackgroundService>(); // ✅ Để Controller resolve được
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<RealtimeBackgroundService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
+
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
