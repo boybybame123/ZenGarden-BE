@@ -7,7 +7,7 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork, IMapper mapper) : IItemService
+public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork, IMapper mapper, INotificationService notificationService) : IItemService
 {
     public async Task<List<ItemDto>> GetAllItemsAsync()
     {
@@ -22,7 +22,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
             throw;
         }
 
-
+       await notificationService.PushNotificationAsync(1, "Item", "Get all items");
         return mapper.Map<List<ItemDto>>(items);
     }
 
