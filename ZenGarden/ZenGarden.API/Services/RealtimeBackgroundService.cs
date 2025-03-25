@@ -34,7 +34,9 @@ public class RealtimeBackgroundService : BackgroundService
                 await notiService.PushNotificationAsync(1, "Ping Server", message);
             }
 
-            await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
+            //await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+
 
         }
     }
