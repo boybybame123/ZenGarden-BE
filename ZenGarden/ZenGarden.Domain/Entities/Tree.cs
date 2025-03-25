@@ -11,6 +11,7 @@ public partial class Tree
     public string Name { get; set; }
     public string Rarity { get; set; }
     public string ImageUrl { get; set; }
+    public string Description { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
