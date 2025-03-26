@@ -404,6 +404,10 @@ public class TaskService(
     public async Task AutoPauseTasksAsync()
     {
         var thresholdTime = DateTime.UtcNow.AddMinutes(-10);
+        if (thresholdTime == default)
+        {
+            throw new ArgumentException("Threshold time cannot be default or null.");
+        }
 
         var inProgressTasks = await taskRepository.GetTasksInProgressBeforeAsync(thresholdTime);
         foreach (var task in inProgressTasks)

@@ -84,10 +84,12 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<List<Tasks>> GetTasksInProgressBeforeAsync(DateTime thresholdTime)
     {
         return await _context.Tasks
-            .Where(t => t.Status == TasksStatus.InProgress && t.StartedAt < thresholdTime)
+            .Where(t => t.Status == TasksStatus.InProgress &&
+                        t.StartedAt.HasValue &&
+                        t.StartedAt.Value < thresholdTime)
             .ToListAsync();
     }
-
+    
     public async Task<Tasks?> GetActiveTaskByUserTreeIdAsync(int userTreeId)
     {
         return await _context.Tasks
