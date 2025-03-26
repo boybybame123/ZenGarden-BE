@@ -16,8 +16,6 @@ public class TaskService(
     ITaskTypeRepository taskTypeRepository,
     ITreeXpLogRepository treeXpLogRepository,
     IUserTreeService userTreeService,
-    IUserXpLogRepository userXpLogRepository,
-    IUserXpLogService userXpLogService,
     IFocusMethodService focusMethodService,
     IXpConfigService xpConfigService,
     IUserChallengeRepository userChallengeRepository,
@@ -58,6 +56,7 @@ public class TaskService(
                 {
                     taskDto.RemainingTime = task.TotalDuration ?? 0;
                 }
+
                 break;
             }
             case TasksStatus.NotStarted:
@@ -68,11 +67,11 @@ public class TaskService(
                 taskDto.RemainingTime = task.TotalDuration ?? 0;
                 break;
         }
-    
+
         return taskDto;
     }
 
-    
+
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
         var tasks = await taskRepository.GetTasksByUserIdAsync(userId);
@@ -248,53 +247,45 @@ public class TaskService(
     }
 
     public async Task StartTaskAsync(int taskId, int userId)
-{
-    var task = await taskRepository.GetByIdAsync(taskId)
-               ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-
-    if (task.Status == TasksStatus.InProgress)
-        throw new InvalidOperationException("Task is already in progress.");
-
-    var existingInProgressTask = await taskRepository.GetUserTaskInProgressAsync(userId);
-    if (existingInProgressTask != null && existingInProgressTask.TaskId != taskId)
-        throw new InvalidOperationException(
-            $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
-
-    var today = DateTime.UtcNow.Date;
-    var checkInLog = await userXpLogRepository.GetUserCheckInLogAsync(userId, today);
-
-    if (task.Status == TasksStatus.NotStarted)
     {
-        if (checkInLog == null)
-            await userXpLogService.CheckInAndGetXpAsync(userId);
+        var task = await taskRepository.GetByIdAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        task.StartedAt = DateTime.UtcNow;
-        task.Status = TasksStatus.InProgress;
-    }
-    else if (task is { Status: TasksStatus.Paused, PausedAt: not null, StartedAt: not null })
-    {
-        var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
-        var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
+        if (task.Status == TasksStatus.InProgress)
+            throw new InvalidOperationException("Task is already in progress.");
 
-        if (remainingTime <= 0)
-            throw new InvalidOperationException("Task has already expired.");
+        var existingInProgressTask = await taskRepository.GetUserTaskInProgressAsync(userId);
+        if (existingInProgressTask != null && existingInProgressTask.TaskId != taskId)
+            throw new InvalidOperationException(
+                $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
 
-        if (task.PausedAt.Value.Date < today && checkInLog == null)
-            await userXpLogService.CheckInAndGetXpAsync(userId);
+        if (task.Status == TasksStatus.NotStarted)
+        {
+            task.StartedAt = DateTime.UtcNow;
+            task.Status = TasksStatus.InProgress;
+        }
+        else if (task is { Status: TasksStatus.Paused, PausedAt: not null, StartedAt: not null })
+        {
+            var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
+            var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
 
-        task.StartedAt = DateTime.UtcNow;
-        task.Status = TasksStatus.InProgress;
-    }
-    else
-    {
-        throw new InvalidOperationException("Task cannot be started from the current state.");
+            if (remainingTime <= 0)
+                throw new InvalidOperationException("Task has already expired.");
+
+            task.StartedAt = DateTime.UtcNow;
+            task.Status = TasksStatus.InProgress;
+        }
+        else
+        {
+            throw new InvalidOperationException("Task cannot be started from the current state.");
+        }
+
+        taskRepository.Update(task);
+
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to start the task.");
     }
 
-    taskRepository.Update(task);
-    if (await unitOfWork.CommitAsync() == 0)
-        throw new InvalidOperationException("Failed to start the task.");
-}
-    
     public async Task CompleteTaskAsync(int taskId)
     {
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
@@ -332,7 +323,6 @@ public class TaskService(
                 taskRepository.Update(task);
                 userTreeRepository.Update(task.UserTree);
 
-                
 
                 await unitOfWork.CommitAsync();
                 await transaction.CommitAsync();
@@ -385,7 +375,7 @@ public class TaskService(
 
         return xpConfig.BaseXp * xpConfig.XpMultiplier;
     }
-    
+
     public async Task PauseTaskAsync(int taskId)
     {
         var task = await taskRepository.GetByIdAsync(taskId)
@@ -411,21 +401,13 @@ public class TaskService(
             throw new InvalidOperationException("Failed to pause the task.");
     }
 
-
-    private async Task ValidateTaskDto(CreateTaskDto dto)
-    {
-        var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
-        if (taskType == null)
-            throw new KeyNotFoundException("TaskType not found.");
-
-        var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId);
-        if (userTree == null)
-            throw new KeyNotFoundException("UserTree not found.");
-    }
-    
     public async Task AutoPauseTasksAsync()
     {
         var thresholdTime = DateTime.UtcNow.AddMinutes(-10);
+        if (thresholdTime == default)
+        {
+            throw new ArgumentException("Threshold time cannot be default or null.");
+        }
 
         var inProgressTasks = await taskRepository.GetTasksInProgressBeforeAsync(thresholdTime);
         foreach (var task in inProgressTasks)
@@ -437,6 +419,18 @@ public class TaskService(
 
         if (inProgressTasks.Count > 0)
             await unitOfWork.CommitAsync();
+    }
+
+
+    private async Task ValidateTaskDto(CreateTaskDto dto)
+    {
+        var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
+        if (taskType == null)
+            throw new KeyNotFoundException("TaskType not found.");
+
+        var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId);
+        if (userTree == null)
+            throw new KeyNotFoundException("UserTree not found.");
     }
 
 

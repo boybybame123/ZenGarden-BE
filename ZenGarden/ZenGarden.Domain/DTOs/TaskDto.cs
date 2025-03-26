@@ -16,7 +16,7 @@ public class TaskDto
     public DateTime? CreatedAt { get; set; }
     public string? TaskNote { get; set; }
     public string? TaskResult { get; set; }
-    public int? RemainingTime  { get; set; }
+    public int? RemainingTime { get; set; }
     public string? UserTreeName { get; set; }
     public string? TaskTypeName { get; set; }
     public string? FocusMethodName { get; set; }

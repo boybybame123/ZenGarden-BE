@@ -1,3 +1,5 @@
+using ZenGarden.Domain.Enums;
+
 namespace ZenGarden.Domain.DTOs;
 
 public class UserTreeDto
@@ -11,7 +13,7 @@ public class UserTreeDto
     public double XpToNextLevel { get; set; }
     public double TotalXp { get; set; }
     public bool IsMaxLevel { get; set; }
-    public string? TreeStatus { get; set; }
+    public TreeStatus? TreeStatus { get; set; }
 
     public int? FinalTreeId { get; set; }
     public string? FinalTreeName { get; set; }

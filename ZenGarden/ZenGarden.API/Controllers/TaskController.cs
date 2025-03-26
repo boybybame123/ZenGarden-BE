@@ -93,6 +93,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
         return Ok(new { taskId, xpEarned });
     }
+
     [HttpPut("pause/{taskId:int}")]
     public async Task<IActionResult> PauseTask(int taskId)
     {

@@ -4,6 +4,6 @@ namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IUserXpLogService
 {
-    Task<UserXpLogDto?> GetUserCheckInLogAsync(int userId, DateTime date);
+    Task<List<DateTime>> GetUserCheckInHistoryAsync(int userId, int month, int year);
     Task<double> CheckInAndGetXpAsync(int userId);
 }

@@ -15,6 +15,8 @@ public class UserService(
     IUserXpConfigRepository userXpConfigRepository,
     IUserExperienceRepository userExperienceRepository,
     IUserConfigRepository userConfigRepository,
+    IUserTreeService userTreeService,
+    IUserTreeRepository userTreeRepository,
     IUnitOfWork unitOfWork,
     IMapper mapper) : IUserService
 {
@@ -234,6 +236,12 @@ public class UserService(
         return true;
     }
 
+    public async Task OnUserLoginAsync(int userId)
+    {
+        var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
+
+        foreach (var tree in userTrees) await userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId);
+    }
 
     private static string GenerateRandomUsername()
     {

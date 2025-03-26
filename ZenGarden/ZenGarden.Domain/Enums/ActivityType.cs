@@ -6,5 +6,6 @@ public enum ActivityType
     WebXp,
     DailyXp,
     StreakXp,
+    Decay,
     ItemXp
 }
