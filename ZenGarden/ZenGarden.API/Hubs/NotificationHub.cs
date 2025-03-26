@@ -9,4 +9,13 @@ public class NotificationHub : Hub
     {
         await Clients.All.SendAsync("ReceiveMessage", message);
     }
+    public async Task SendToUser(string userId, string title, string message)
+    {
+        await Clients.User(userId).SendAsync("ReceiveNotification", title, message);
+    }
+        public async Task BroadcastNotification(string title, string message)
+    {
+        await Clients.All.SendAsync("ReceiveNotification", title, message);
+    }
+
 }
