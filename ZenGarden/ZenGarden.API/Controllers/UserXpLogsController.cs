@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.API.Controllers;
@@ -8,21 +10,35 @@ namespace ZenGarden.API.Controllers;
 public class UserXpLogsController(IUserXpLogService userXpLogService)
     : ControllerBase
 {
-    [HttpGet("confirm-focus/{userId:int}")]
-    public async Task<IActionResult> GetUserCheckInLog(int userId, [FromQuery] DateTime date)
+    [Authorize]
+    [HttpGet("checkin-history")]
+    public async Task<IActionResult> GetUserCheckInHistory([FromQuery] int? month, [FromQuery] int? year)
     {
-        var log = await userXpLogService.GetUserCheckInLogAsync(userId, date);
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized(new { error = "Invalid or missing user ID." });
 
-        if (log == null)
-            return NotFound(new { message = "User has not checked in on this date." });
+        var currentDate = DateTime.UtcNow;
+        var targetMonth = month ?? currentDate.Month;
+        var targetYear = year ?? currentDate.Year;
 
-        return Ok(log);
+        var history = await userXpLogService.GetUserCheckInHistoryAsync(userId, targetMonth, targetYear);
+        return Ok(history);
     }
 
-    [HttpPost("claim-daily-xp/{userId:int}")]
-    public async Task<IActionResult> CheckInUser(int userId)
+
+    [Authorize]
+    [HttpPost("claim-daily-xp")]
+    public async Task<IActionResult> CheckInUser()
     {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized(new { error = "Invalid or missing user ID." });
+
         var xpEarned = await userXpLogService.CheckInAndGetXpAsync(userId);
+        if (xpEarned == 0)
+            return BadRequest(new { message = "Already checked in today." });
+
         return Ok(new { message = "Check-in successful!", xpEarned });
     }
 }

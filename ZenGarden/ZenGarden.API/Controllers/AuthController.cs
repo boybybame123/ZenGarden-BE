@@ -32,6 +32,7 @@ public class AuthController(
         var refreshToken = tokenService.GenerateRefreshToken();
 
         await userService.UpdateUserRefreshTokenAsync(user.UserId, refreshToken, DateTime.UtcNow.AddDays(7));
+        await userService.OnUserLoginAsync(user.UserId);
 
         return Ok(new { Token = accessToken, RefreshToken = refreshToken });
     }

@@ -437,7 +437,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp");
-            
+
             entity.Property(e => e.PausedAt)
                 .HasColumnType("timestamp");
 
@@ -949,7 +949,7 @@ public class ZenGardenContext : DbContext
 
             entity.Property(e => e.TreeStatus)
                 .HasConversion<int>()
-                .HasDefaultValue(TreeStatus.Growing);
+                .HasDefaultValue(TreeStatus.Seed);
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")

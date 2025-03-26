@@ -18,7 +18,7 @@ public partial class UserTree
     public int LevelId { get; set; } = 1;
     public double TotalXp { get; set; } = 0;
     public bool IsMaxLevel { get; set; } = false;
-    public TreeStatus TreeStatus { get; set; } = TreeStatus.Growing;
+    public TreeStatus? TreeStatus { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Tree? FinalTree { get; set; }
