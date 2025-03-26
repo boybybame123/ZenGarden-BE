@@ -13,11 +13,11 @@ public class UserXpLogService(
     IMapper mapper)
     : IUserXpLogService
 {
-    public async Task<UserXpLogDto?> GetUserCheckInLogAsync(int userId, DateTime date)
+    public async Task<List<DateTime>> GetUserCheckInHistoryAsync(int userId, int month, int year)
     {
-        var userXpLog = await userXpLogRepository.GetUserCheckInLogAsync(userId, date);
+        var checkIns = await userXpLogRepository.GetUserCheckInsByMonthAsync(userId, month, year);
 
-        return userXpLog == null ? null : mapper.Map<UserXpLogDto>(userXpLog);
+        return checkIns.Select(log => log.CreatedAt.Date).Distinct().ToList();
     }
 
 
@@ -26,25 +26,43 @@ public class UserXpLogService(
         const int xpBase = 10;
         const double streakBonusRate = 0.1;
         const int maxStreakDays = 7;
+        
+        var today = DateTime.UtcNow.Date;
+        
+        var existingCheckIn = await userXpLogRepository.GetUserCheckInLogAsync(userId, today);
+        if (existingCheckIn != null)
+            return 0;
 
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
         if (userExp == null)
-            throw new KeyNotFoundException("User experience record not found.");
+        {
+            userExp = new UserExperience
+            {
+                UserId = userId,
+                TotalXp = 0,
+                StreakDays = 0,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await userExperienceRepository.CreateAsync(userExp);
+        }
 
         var lastCheckIn = await userXpLogRepository.GetLastCheckInLogAsync(userId);
 
-        int streakDays;
+        var streakDays = 1;
         if (lastCheckIn != null)
         {
             var daysSinceLastCheckIn = (DateTime.UtcNow.Date - lastCheckIn.CreatedAt.Date).Days;
-            streakDays = daysSinceLastCheckIn == 1 ? Math.Min(userExp.StreakDays + 1, maxStreakDays) : 1;
-        }
-        else
-        {
-            streakDays = 1;
+
+            streakDays = daysSinceLastCheckIn switch
+            {
+                1 => Math.Min(userExp.StreakDays + 1, maxStreakDays),
+                > 1 => 1,
+                _ => streakDays
+            };
         }
 
-        var streakMultiplier = 1 + ((streakDays - 1) * streakBonusRate);
+        var streakMultiplier = 1 + (streakDays - 1) * streakBonusRate;
         var xpEarned = xpBase * streakMultiplier;
 
         userExp.TotalXp += xpEarned;
@@ -59,10 +77,8 @@ public class UserXpLogService(
             XpSource = XpSourceType.DailyLogin,
             CreatedAt = DateTime.UtcNow
         };
-
         await userXpLogRepository.CreateAsync(log);
 
         return xpEarned;
     }
-
 }

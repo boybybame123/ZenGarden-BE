@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ZenGarden.API.Hubs;
 using ZenGarden.API.Middleware;
+using ZenGarden.API.Services;
 using ZenGarden.API.Validations;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;

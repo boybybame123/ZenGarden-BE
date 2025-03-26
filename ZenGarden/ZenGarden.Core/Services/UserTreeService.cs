@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -12,6 +13,9 @@ public class UserTreeService(
     IUserTreeRepository userTreeRepository,
     ITreeRepository treeRepository,
     ITreeXpConfigRepository treeXpConfigRepository,
+    ITreeXpLogRepository treeXpLogRepository,
+    ITaskRepository taskRepository,
+    ILogger<UserTreeService> logger,
     IMapper mapper)
     : IUserTreeService
 {
@@ -99,9 +103,8 @@ public class UserTreeService(
     {
         var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
         if (nextLevelConfig != null && userTree.TotalXp >= nextLevelConfig.XpThreshold)
-        {
             userTree.LevelId = nextLevelConfig.LevelId;
-        }
+        if (userTree is { TreeStatus: TreeStatus.Seed, TotalXp: > 0 }) userTree.TreeStatus = TreeStatus.Growing;
 
         var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
         if (maxLevelConfig != null && userTree.TotalXp >= maxLevelConfig.XpThreshold)
@@ -109,17 +112,59 @@ public class UserTreeService(
             userTree.TreeStatus = TreeStatus.MaxLevel;
             userTree.IsMaxLevel = true;
             var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
-            if (finalTreeId != null) 
+            if (finalTreeId != null)
                 userTree.FinalTreeId = finalTreeId;
         }
     }
 
 
-
     public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userid)
     {
-        var userTrees = await userTreeRepository.GetUserTreeByUserdIdAsync(userid);
+        var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userid);
         return mapper.Map<List<UserTreeDto>>(userTrees);
+    }
+
+    public async Task UpdateSpecificTreeHealthAsync(int userTreeId)
+    {
+        const int dailyXpDecayRate = 10;
+
+        var userTree = await userTreeRepository.GetByIdAsync(userTreeId);
+        if (userTree == null
+            || userTree.TreeStatus == TreeStatus.Withered
+            || userTree.TreeStatus == TreeStatus.MaxLevel
+            || userTree.TreeStatus == TreeStatus.Seed)
+            return;
+
+        var activeTask = await taskRepository.GetActiveTaskByUserTreeIdAsync(userTreeId);
+        if (activeTask == null ||
+            (activeTask.Status != TasksStatus.InProgress && activeTask.Status != TasksStatus.Paused))
+            return;
+
+        var lastUpdatedDate = userTree.UpdatedAt.Date;
+        var currentDate = DateTime.UtcNow.Date;
+        if (currentDate <= lastUpdatedDate)
+            return;
+
+        var daysSinceLastCheckIn = (currentDate - lastUpdatedDate).Days;
+        var xpDecay = daysSinceLastCheckIn * dailyXpDecayRate;
+        userTree.TotalXp = Math.Max(0, userTree.TotalXp - xpDecay);
+
+        if (userTree.TotalXp == 0) userTree.TreeStatus = TreeStatus.Withered;
+
+        userTree.UpdatedAt = DateTime.UtcNow;
+
+
+        var log = new TreeXpLog
+        {
+            TaskId = activeTask.TaskId,
+            XpAmount = -xpDecay,
+            ActivityType = ActivityType.Decay,
+            CreatedAt = DateTime.UtcNow
+        };
+        await treeXpLogRepository.CreateAsync(log);
+
+        userTreeRepository.Update(userTree);
+        await unitOfWork.CommitAsync();
     }
 
     private async Task<int?> AssignRandomFinalTreeIdAsync()

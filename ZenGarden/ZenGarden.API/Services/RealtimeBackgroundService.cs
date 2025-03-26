@@ -1,28 +1,53 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ZenGarden.API.Hubs;
 
-public class RealtimeBackgroundService : BackgroundService
+namespace ZenGarden.API.Services;
+
+public class RealtimeBackgroundService(
+    IHubContext<NotificationHub> hubContext,
+    ILogger<RealtimeBackgroundService> logger,
+    IConfiguration configuration)
+    : BackgroundService
 {
-    private readonly IHubContext<NotificationHub> _hubContext;
-    private readonly ILogger<RealtimeBackgroundService> _logger;
-
-    public RealtimeBackgroundService(IHubContext<NotificationHub> hubContext, ILogger<RealtimeBackgroundService> logger)
-    {
-        _hubContext = hubContext;
-        _logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        var delayTime = configuration.GetValue("RealtimeSettings:DelayInSeconds", 10) * 1000;
+
+        try
         {
-            var message = $"Ping real-time từ server: {DateTime.Now}";
-            _logger.LogInformation("Push realtime: " + message);
+            logger.LogInformation("RealtimeBackgroundService started at {Time}", DateTime.UtcNow);
 
-            // ✅ Tự động bắn về tất cả client SignalR
-            await _hubContext.Clients.All.SendAsync("ReceiveMessage", message);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                var message = $"Ping real-time from server: {DateTime.Now}";
+                try
+                {
+                    logger.LogInformation("Sending real-time message: {Message} at {Time}", message, DateTime.UtcNow);
+                    await hubContext.Clients.All.SendAsync("ReceiveMessage", message, stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error while sending real-time message at {Time}", DateTime.UtcNow);
+                }
 
-            await Task.Delay(1000, stoppingToken); // Mỗi 10s tự bắn 1 lần
+                try
+                {
+                    await Task.Delay(delayTime, stoppingToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    logger.LogInformation("RealtimeBackgroundService is stopping at {Time}", DateTime.UtcNow);
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "RealtimeBackgroundService encountered a critical error at {Time}", DateTime.UtcNow);
+        }
+        finally
+        {
+            logger.LogInformation("RealtimeBackgroundService stopped at {Time}", DateTime.UtcNow);
         }
     }
 }
