@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Infrastructure.Persistence;
 
-public class ZenGardenContext : DbContext
+public class ZenGardenContext : DbContext, IDataProtectionKeyContext
 {
     public ZenGardenContext()
     {
@@ -45,6 +46,8 @@ public class ZenGardenContext : DbContext
     public virtual DbSet<Wallet> Wallet { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
 
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -72,6 +75,7 @@ public class ZenGardenContext : DbContext
         modelBuilder
             .UseCollation("utf8mb4_general_ci")
             .HasCharSet("utf8mb4");
+        modelBuilder.Entity<DataProtectionKey>().ToTable("DataProtectionKeys");
 
         modelBuilder.Entity<Bag>(entity =>
         {

@@ -139,7 +139,7 @@ public class TaskService(
     }
 
 
-    public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto, IFormFile? taskResultFile = null)
+    public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
     {
         var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId);
         if (existingTask == null)
@@ -170,23 +170,11 @@ public class TaskService(
             isUpdated = true;
         }
 
-        if (taskResultFile != null)
+        var updatedTaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult);
+        if (!string.IsNullOrWhiteSpace(updatedTaskResult) && existingTask.TaskResult != updatedTaskResult)
         {
-            var uploadedUrl = await s3Service.UploadFileAsync(taskResultFile);
-            existingTask.TaskResult = uploadedUrl;
+            existingTask.TaskResult = updatedTaskResult;
             isUpdated = true;
-        }
-        else if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
-        {
-            if (Uri.IsWellFormedUriString(updateTaskDto.TaskResult, UriKind.Absolute))
-            {
-                existingTask.TaskResult = updateTaskDto.TaskResult;
-                isUpdated = true;
-            }
-            else
-            {
-                throw new ArgumentException("Invalid TaskResult URL.");
-            }
         }
 
         if (updateTaskDto.TotalDuration.HasValue &&
@@ -433,6 +421,21 @@ public class TaskService(
 
         if (inProgressTasks.Count > 0)
             await unitOfWork.CommitAsync();
+    }
+
+    private async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
+    {
+        if (taskResultFile != null)
+            return await s3Service.UploadFileAsync(taskResultFile);
+
+        if (!string.IsNullOrWhiteSpace(taskResultUrl))
+        {
+            if (Uri.IsWellFormedUriString(taskResultUrl, UriKind.Absolute))
+                return taskResultUrl;
+            throw new ArgumentException("Invalid TaskResult URL.");
+        }
+
+        return string.Empty;
     }
 
 
