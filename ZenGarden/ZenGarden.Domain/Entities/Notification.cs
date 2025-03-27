@@ -12,5 +12,5 @@ public class Notification
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ExpireAt { get; set; }
 
-    public virtual Users User { get; set; }
+    public virtual Users? User { get; set; }
 }

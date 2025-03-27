@@ -5,11 +5,11 @@ namespace ZenGarden.Domain.DTOs;
 public class UpdateItemDto
 {
     public int ItemId { get; set; }
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
-    public string Rarity { get; set; }
+    public string? Rarity { get; set; }
 
     public decimal? Cost { get; set; }
 

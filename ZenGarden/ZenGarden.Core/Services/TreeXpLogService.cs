@@ -11,7 +11,7 @@ public class TreeXpLogService(ITreeXpLogRepository treeXpLogRepository) : ITreeX
         return await treeXpLogRepository.GetTreeXpLogByTaskIdAsync(taskId);
     }
 
-    public async Task<TreeXpLog> GetTreeXpLogByLogIdAsync(int logId)
+    public async Task<TreeXpLog?> GetTreeXpLogByLogIdAsync(int logId)
     {
         return await treeXpLogRepository.GetByIdAsync(logId);
     }

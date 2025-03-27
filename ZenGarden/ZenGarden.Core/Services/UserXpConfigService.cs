@@ -11,37 +11,37 @@ public class UserXpConfigService(
     IUnitOfWork unitOfWork,
     IMapper mapper) : IUserXpConfigService
 {
-    public async Task CreateUserXpConfigAsync(UserXpConfigDto UserXpConfig)
+    public async Task CreateUserXpConfigAsync(UserXpConfigDto userXpConfig)
     {
-        var newUserXp = mapper.Map<UserXpConfig>(UserXpConfig);
+        var newUserXp = mapper.Map<UserXpConfig>(userXpConfig);
 
         await userXpConfigRepository.CreateAsync(newUserXp);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to create item.");
     }
 
-    public async Task DeleteUserXpConfigAsync(int UserXpConfigId)
+    public async Task DeleteUserXpConfigAsync(int userXpConfigId)
     {
-        var i = await userXpConfigRepository.GetByIdAsync(UserXpConfigId);
+        var i = await userXpConfigRepository.GetByIdAsync(userXpConfigId);
 
         if (i == null)
-            throw new KeyNotFoundException($"Item with ID {UserXpConfigId} not found.");
+            throw new KeyNotFoundException($"Item with ID {userXpConfigId} not found.");
         await userXpConfigRepository.RemoveAsync(i);
     }
 
-    public async Task<UserXpConfig?> GetUserXpConfigByIdAsync(int UserXpConfigId)
+    public async Task<UserXpConfig?> GetUserXpConfigByIdAsync(int userXpConfigId)
     {
-        var i = await userXpConfigRepository.GetByIdAsync(UserXpConfigId);
+        var i = await userXpConfigRepository.GetByIdAsync(userXpConfigId);
         return i;
     }
 
-    public async Task UpdateUserXpConfigAsync(UserXpConfigDto UserXpConfig)
+    public async Task UpdateUserXpConfigAsync(UserXpConfigDto userXpConfig)
     {
-        var i = await userXpConfigRepository.GetByIdAsync(UserXpConfig.LevelId);
+        var i = await userXpConfigRepository.GetByIdAsync(userXpConfig.LevelId);
 
         if (i == null)
-            throw new KeyNotFoundException($"Item with ID {UserXpConfig.LevelId} not found.");
-        if (i.XpThreshold != null && i.XpThreshold >= 0) i.XpThreshold = UserXpConfig.XpThreshold;
+            throw new KeyNotFoundException($"Item with ID {userXpConfig.LevelId} not found.");
+        if (i.XpThreshold >= 0) i.XpThreshold = userXpConfig.XpThreshold;
 
         userXpConfigRepository.Update(i);
         if (await unitOfWork.CommitAsync() == 0)
@@ -53,7 +53,7 @@ public class UserXpConfigService(
         var i = await userXpConfigRepository.GetAllAsync();
         try
         {
-            var a = mapper.Map<List<UserXpConfigDto>>(i);
+            mapper.Map<List<UserXpConfigDto>>(i);
         }
         catch (Exception e)
         {

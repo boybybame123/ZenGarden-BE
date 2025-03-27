@@ -8,9 +8,11 @@ namespace ZenGarden.Infrastructure.Repositories;
 public class ChallengeRepository(ZenGardenContext context)
     : GenericRepository<Challenge>(context), IChallengeRepository
 {
-    public async Task<List<Challenge>> GetCallengeAll()
+    private readonly ZenGardenContext _context = context;
+
+    public async Task<List<Challenge>> GetChallengeAll()
     {
-        return await context.Challenge
+        return await _context.Challenge
             .Include(u => u.ChallengeType)
             .Include(u => u.UserChallenges)
             .Include(u => u.ChallengeTasks)
@@ -21,7 +23,7 @@ public class ChallengeRepository(ZenGardenContext context)
 
     public async Task<Challenge?> GetByIdChallengeAsync(int id)
     {
-        return await context.Challenge
+        return await _context.Challenge
             .Include(u => u.ChallengeType)
             .Include(u => u.UserChallenges)
             .Include(u => u.ChallengeTasks)

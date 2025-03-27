@@ -17,7 +17,7 @@ public class TransactionsDto
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public virtual UserDto User { get; set; }
-    public virtual WalletDto Wallet { get; set; }
-    public virtual PackageDto Package { get; set; }
+    public UserDto? User { get; set; }
+    public WalletDto? Wallet { get; set; }
+    public PackageDto? Package { get; set; }
 }

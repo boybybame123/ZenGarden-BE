@@ -14,7 +14,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         var items = await itemRepository.GetAllItemAsync();
         try
         {
-            var i = mapper.Map<List<ItemDto>>(items);
+            mapper.Map<List<ItemDto>>(items);
         }
         catch (Exception e)
         {
@@ -22,7 +22,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
             throw;
         }
 
-       await notificationService.PushNotificationAsync(1, "Item", "Get all items");
+        await notificationService.PushNotificationAsync(1, "Item", "Get all items");
         return mapper.Map<List<ItemDto>>(items);
     }
 
@@ -59,7 +59,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         }
 
 
-        itemRepository.Update(updateItem);
+        if (updateItem != null) itemRepository.Update(updateItem);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update item.");
     }

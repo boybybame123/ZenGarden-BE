@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using ZenGarden.Domain.Enums;
 
+#nullable enable
 namespace ZenGarden.Domain.Entities;
 
 public partial class TradeHistory
@@ -21,7 +22,7 @@ public partial class TradeHistory
     public TradeStatus Status { get; set; }
     public virtual UserTree? TreeA { get; set; }
     public virtual Tree? DesiredTree { get; set; }
-    public virtual Users TreeOwnerA { get; set; }
-    public virtual Users TreeOwnerB { get; set; }
+    public virtual Users? TreeOwnerA { get; set; }
+    public virtual Users? TreeOwnerB { get; set; }
   
 }
