@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -21,10 +22,13 @@ public class PurchaseController : ControllerBase
     [HttpPost("buy")]
     public async Task<IActionResult> BuyItem([FromBody] PurchaseRequest request)
     {
-        if (request == null || request.UserId <= 0 || request.ItemId <= 0)
-            return BadRequest("Invalid data");
 
-        var result = await _purchaseService.PurchaseItem(request.UserId, request.ItemId);
+
+        var userId = Convert.ToInt32(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+
+
+        var result = await _purchaseService.PurchaseItem(userId, request.ItemId);
         if (result == "Purchase successful.")
             return Ok(new { message = result });
 

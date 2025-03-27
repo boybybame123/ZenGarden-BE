@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System;
 using ZenGarden.API.Hubs;
+using ZenGarden.Infrastructure.Persistence;
+using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
 
 public class NotificationService : INotificationService
 {
@@ -26,14 +26,16 @@ public class NotificationService : INotificationService
             Content = $"{title}: {content}",
             CreatedAt = DateTime.UtcNow
         };
+
         _db.Notifications.Add(noti);
         await _db.SaveChangesAsync();
 
         _logger.LogInformation($"✅ Notification saved and pushed to user {userId}");
 
-        // Bắn đúng user
-        await _hubContext.Clients.All
+        // Gửi đến đúng user qua NotificationHub
+        await _hubContext.Clients.User(userId.ToString())
                          .SendAsync("ReceiveNotification", noti.Content, noti.CreatedAt);
-        _logger.LogInformation($"✅ [SignalR] Pushed to user {userId}: {noti.Content}");
+
+        _logger.LogInformation($"📢 [SignalR] Sent to user {userId}: {noti.Content}");
     }
 }

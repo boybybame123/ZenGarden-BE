@@ -1,4 +1,5 @@
-﻿using ZenGarden.Core.Interfaces.IRepositories;
+﻿using Microsoft.AspNetCore.SignalR;
+using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -11,7 +12,7 @@ public class PurchaseService : IPurchaseService
     private readonly IBagRepository _bagRepo;
     private readonly IItemDetailRepository _itemDetailRepo;
     private readonly IItemRepository _itemRepo;
-    private INotificationService _notificationService;
+    private  INotificationService _notificationService;
 
     private readonly IPurchaseHistoryRepository _purchaseHistoryRepo;
     private readonly IUnitOfWork _unitOfWork;
