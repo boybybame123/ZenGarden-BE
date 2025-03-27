@@ -128,7 +128,9 @@ public class UserTreeService(
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
         var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
 
-        var userTreeDtos = await Task.WhenAll(userTrees.Select(async userTree =>
+        var userTreeDtos = new List<UserTreeDto>();
+
+        foreach (var userTree in userTrees)
         {
             var userTreeDto = mapper.Map<UserTreeDto>(userTree);
             var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
@@ -147,10 +149,10 @@ public class UserTreeService(
                 userTreeDto.XpToNextLevel = 0;
             }
 
-            return userTreeDto;
-        }));
+            userTreeDtos.Add(userTreeDto);
+        }
 
-        return userTreeDtos.ToList();
+        return userTreeDtos;
     }
 
     public async Task UpdateSpecificTreeHealthAsync(int userTreeId)
