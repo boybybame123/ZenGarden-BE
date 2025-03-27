@@ -2,5 +2,5 @@
 
 public interface IUseItemService
 {
-    Task<string> UseItemAsync(int userId, int itemId, int usertreeId);
+    Task<string> UseItemAsync(int userId, int itemId, int? usertreeId);
 }

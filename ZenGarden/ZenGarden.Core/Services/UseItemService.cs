@@ -14,7 +14,7 @@ public class UseItemService(
     IUnitOfWork unitOfWork
 ) : IUseItemService
 {
-    public async Task<string> UseItemAsync(int userId, int itemId, int usertreeId)
+    public async Task<string> UseItemAsync(int userId, int itemId, int? usertreeId)
     {
         var item = await bagItemRepository.GetByIdAsync(itemId);
         if (item == null || item.Quantity <= 0)
@@ -26,31 +26,31 @@ public class UseItemService(
             return "UserConfig không tồn tại";
 
         double percent = 0;
-        if (itemDetail.Type is "TreeXp" or "UserXp")
+        if (item.Item.Type is ItemType.Xp_boostUser or ItemType.xp_boostTree)
             percent = double.TryParse(itemDetail.Effect, out var effect) ? effect : 0;
 
         if (percent <= 0)
             return "Hiệu ứng item không hợp lệ";
 
         // ✅ Apply item vào UserConfig
-        switch (itemDetail.Type)
+        switch (item.Item.Type)
         {
-            case "background":
+            case ItemType.Background:
                 userConfig.BackgroundConfig = itemDetail.MediaUrl;
                 break;
-            case "music":
+            case ItemType.Music:
                 userConfig.SoundConfig = itemDetail.MediaUrl;
                 break;
-            case "image":
+            case ItemType.Avatar:
                 userConfig.ImageUrl = itemDetail.MediaUrl;
                 break;
-            case "TreeXp":
-                var treeXpResult = await AddXpByPercentAsync(userId, usertreeId, percent, 1);
+            case ItemType.xp_boostTree:
+                var treeXpResult = await AddXpByPercentAsync(userId, usertreeId ?? 0, percent, 1);
                 if (!treeXpResult.success) return treeXpResult.message;
                 item.Quantity -= 1;
                 break;
-            case "UserXp":
-                var userXpResult = await AddXpByPercentAsync(userId, usertreeId, percent, 2);
+            case ItemType.Xp_boostUser:
+                var userXpResult = await AddXpByPercentAsync(userId, usertreeId ?? 0, percent, 2);
                 if (!userXpResult.success) return userXpResult.message;
                 item.Quantity -= 1;
                 break;

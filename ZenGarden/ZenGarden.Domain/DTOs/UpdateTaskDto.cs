@@ -22,6 +22,8 @@ public class UpdateTaskDto
 
     public int? BreakTime { get; set; }
 
+    IFormFile? TaskResultFile { get; set; } = null;
+
     public DateTime? StartDate { get; set; }
 
     public DateTime? EndDate { get; set; }
