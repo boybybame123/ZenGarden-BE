@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json.Serialization;
 using Amazon.Extensions.NETCore.Setup;
-using Amazon.S3;
 using AspNetCoreRateLimit;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +11,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ZenGarden.API.Filters;
 using ZenGarden.API.Hubs;
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Services;
@@ -192,6 +192,8 @@ builder.Services.AddScoped<IUserXpLogService, UserXpLogService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ZenGardenContext>();
 
 builder.Services.AddControllers()
     .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
@@ -201,21 +203,6 @@ builder.Services.AddHostedService<OverdueTaskJob>();
 
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
-
-var awsSection = builder.Configuration.GetSection("AWS");
-var s3Client = new AmazonS3Client(
-    awsSection["AccessKey"],
-    awsSection["SecretKey"],
-    new AmazonS3Config { ServiceURL = awsSection["ServiceURL"], ForcePathStyle = true });
-
-var bucketName = awsSection["BucketName"];
-
-builder.Services.AddDataProtection()
-    .AddKeyManagementOptions(options =>
-    {
-        if (!string.IsNullOrWhiteSpace(bucketName)) options.XmlRepository = new S3XmlRepository(s3Client, bucketName);
-    })
-    .SetApplicationName("ZenGarden");
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));

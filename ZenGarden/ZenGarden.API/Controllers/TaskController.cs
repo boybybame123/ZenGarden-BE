@@ -50,14 +50,12 @@ public class TaskController(ITaskService taskService) : ControllerBase
 
     [HttpPut("Update-Task/{taskId:int}")]
     public async Task<IActionResult> UpdateTask(
-        int taskId,
-        [FromForm] UpdateTaskDto task,
-        [FromForm] IFormFile? taskResultFile = null)
+        int taskId, [FromBody] UpdateTaskDto task)
     {
         if (taskId != task.TaskId)
             return BadRequest(new { message = "Task ID mismatch" });
 
-        await _taskService.UpdateTaskAsync(task, taskResultFile);
+        await _taskService.UpdateTaskAsync(task);
         return Ok(new { message = "Task updated successfully" });
     }
 

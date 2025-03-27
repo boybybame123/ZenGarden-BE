@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace ZenGarden.Domain.DTOs;
 
 public class UpdateTaskDto
@@ -11,6 +13,7 @@ public class UpdateTaskDto
     public string? TaskNote { get; set; }
 
     public string? TaskResult { get; set; }
+    public IFormFile? TaskFile { get; set; }
 
     public int? TotalDuration { get; set; }
     public int? FocusMethodId { get; set; }
