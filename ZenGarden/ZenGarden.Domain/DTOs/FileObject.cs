@@ -2,7 +2,7 @@
 
 public class FileObject
 {
-    public required string  FileName { get; set; }
+    public required string FileName { get; set; }
 
     public required string FileBase64 { get; set; }
 

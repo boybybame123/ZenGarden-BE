@@ -107,6 +107,7 @@ public class UserTreeService(
 
             userTree.LevelId = nextLevelConfig.LevelId;
         }
+
         if (userTree is { TreeStatus: TreeStatus.Seed, TotalXp: > 0 })
             userTree.TreeStatus = TreeStatus.Growing;
 

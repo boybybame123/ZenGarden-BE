@@ -52,6 +52,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
     public async Task<IActionResult> UpdateTask(
         int taskId,
         [FromForm] UpdateTaskDto task)
+
     {
         if (taskId != task.TaskId)
             return BadRequest(new { message = "Task ID mismatch" });
@@ -59,7 +60,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.UpdateTaskAsync(task);
         return Ok(new { message = "Task updated successfully" });
     }
-
 
 
     [HttpPost("create-task")]

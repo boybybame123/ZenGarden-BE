@@ -144,7 +144,7 @@ public class TaskService(
         var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId);
         if (existingTask == null)
             throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
-        
+
         if (existingTask.Status != TasksStatus.InProgress && existingTask.Status != TasksStatus.Paused)
             throw new InvalidOperationException("Only tasks in 'InProgress' or 'Paused' state can be completed.");
 
@@ -421,10 +421,7 @@ public class TaskService(
     public async Task AutoPauseTasksAsync()
     {
         var thresholdTime = DateTime.UtcNow.AddMinutes(-10);
-        if (thresholdTime == default)
-        {
-            throw new ArgumentException("Threshold time cannot be default or null.");
-        }
+        if (thresholdTime == default) throw new ArgumentException("Threshold time cannot be default or null.");
 
         var inProgressTasks = await taskRepository.GetTasksInProgressBeforeAsync(thresholdTime);
         foreach (var task in inProgressTasks)
