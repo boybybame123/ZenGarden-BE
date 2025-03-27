@@ -7,7 +7,11 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork, IMapper mapper, INotificationService notificationService) : IItemService
+public class ItemService(
+    IItemRepository itemRepository,
+    IUnitOfWork unitOfWork,
+    IMapper mapper,
+    INotificationService notificationService) : IItemService
 {
     public async Task<List<ItemDto>> GetAllItemsAsync()
     {

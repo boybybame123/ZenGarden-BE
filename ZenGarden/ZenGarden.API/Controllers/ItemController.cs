@@ -77,7 +77,9 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
             return BadRequest(new { message = "File is required" });
 
         // Upload file to S3
-        var mediaUrl = await _s3Service.UploadFileAsync(request.File); // Null forgiving operator is safe here due to the earlier null check
+        var mediaUrl =
+            await _s3Service.UploadFileAsync(request
+                .File); // Null forgiving operator is safe here due to the earlier null check
 
         if (string.IsNullOrEmpty(mediaUrl))
             return BadRequest(new { message = "File upload failed" });

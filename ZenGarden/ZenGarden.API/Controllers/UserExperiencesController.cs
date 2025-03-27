@@ -56,10 +56,7 @@ public class UserExperiencesController(ZenGardenContext context) : ControllerBas
     public async Task<ActionResult<UserExperience>> PostUserExperience(UserExperience? userExperience)
     {
         // Check if userExperience is null and return a BadRequest
-        if (userExperience == null)
-        {
-            return BadRequest(new { message = "UserExperience cannot be null." });
-        }
+        if (userExperience == null) return BadRequest(new { message = "UserExperience cannot be null." });
 
         // Add the new user experience to the database
         context.UserExperience.Add(userExperience);

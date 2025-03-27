@@ -7,7 +7,7 @@ public interface ITaskService
 {
     Task<List<TaskDto>> GetAllTaskAsync();
     Task<TaskDto?> GetTaskByIdAsync(int taskId);
-    Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto); 
+    Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto);
     Task UpdateTaskAsync(UpdateTaskDto updateTaskDto, IFormFile? taskResultFile = null);
     Task DeleteTaskAsync(int taskId);
     Task StartTaskAsync(int taskId, int userId);

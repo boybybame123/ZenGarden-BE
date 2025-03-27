@@ -37,15 +37,14 @@ public class UserXpLogRepository(ZenGardenContext context) : GenericRepository<U
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync();
     }
-    
+
     public async Task<List<UserXpLog>> GetUserCheckInsByMonthAsync(int userId, int month, int year)
     {
         return await _context.UserXpLog
-            .Where(log => log.UserId == userId 
-                          && log.CreatedAt.Month == month 
-                          && log.CreatedAt.Year == year 
-                          && log.XpSource == XpSourceType.DailyLogin) 
+            .Where(log => log.UserId == userId
+                          && log.CreatedAt.Month == month
+                          && log.CreatedAt.Year == year
+                          && log.XpSource == XpSourceType.DailyLogin)
             .ToListAsync();
     }
-
 }

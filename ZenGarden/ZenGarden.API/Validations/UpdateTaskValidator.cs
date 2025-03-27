@@ -38,9 +38,9 @@ public class UpdateTaskValidator : AbstractValidator<UpdateTaskDto>
             .WithMessage("BreakTime must be non-negative.");
 
         RuleFor(x => x)
-            .Must(x => !x.TotalDuration.HasValue || 
-                       !x.WorkDuration.HasValue || 
-                       !x.BreakTime.HasValue || 
+            .Must(x => !x.TotalDuration.HasValue ||
+                       !x.WorkDuration.HasValue ||
+                       !x.BreakTime.HasValue ||
                        x.WorkDuration + x.BreakTime <= x.TotalDuration)
             .WithMessage("WorkDuration + BreakTime must not exceed TotalDuration.");
 
