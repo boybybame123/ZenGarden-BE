@@ -1,7 +1,5 @@
-using AutoMapper;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
@@ -9,8 +7,7 @@ namespace ZenGarden.Core.Services;
 
 public class UserXpLogService(
     IUserXpLogRepository userXpLogRepository,
-    IUserExperienceRepository userExperienceRepository,
-    IMapper mapper)
+    IUserExperienceRepository userExperienceRepository)
     : IUserXpLogService
 {
     public async Task<List<DateTime>> GetUserCheckInHistoryAsync(int userId, int month, int year)
@@ -26,9 +23,9 @@ public class UserXpLogService(
         const int xpBase = 10;
         const double streakBonusRate = 0.1;
         const int maxStreakDays = 7;
-        
+
         var today = DateTime.UtcNow.Date;
-        
+
         var existingCheckIn = await userXpLogRepository.GetUserCheckInLogAsync(userId, today);
         if (existingCheckIn != null)
             return 0;

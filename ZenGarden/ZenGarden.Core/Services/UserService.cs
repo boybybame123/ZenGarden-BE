@@ -26,14 +26,6 @@ public class UserService(
         return mapper.Map<List<UserDto>>(users);
     }
 
-    public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
-    {
-        var userFilterResult = await userRepository.GetAllAsync(filter);
-        if (userFilterResult.Data == null)
-            throw new KeyNotFoundException("User not found.");
-        return userFilterResult.Data;
-    }
-
     public async Task<Users?> GetUserByIdAsync(int userId)
     {
         return await userRepository.GetByIdAsync(userId)
@@ -44,17 +36,6 @@ public class UserService(
     public async Task<Users?> GetUserByEmailAsync(string email)
     {
         return await userRepository.GetByEmailAsync(email);
-    }
-
-    public async Task CreateUserAsync(Users user)
-    {
-        var existingUser = await userRepository.GetByEmailAsync(user.Email);
-        if (existingUser != null)
-            throw new InvalidOperationException($"User with email {user.Email} already exists.");
-
-        await userRepository.CreateAsync(user);
-        if (await unitOfWork.CommitAsync() == 0)
-            throw new InvalidOperationException("Failed to create user.");
     }
 
 
@@ -241,6 +222,25 @@ public class UserService(
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
 
         foreach (var tree in userTrees) await userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId);
+    }
+
+    public async Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter)
+    {
+        var userFilterResult = await userRepository.GetAllAsync(filter);
+        if (userFilterResult.Data == null)
+            throw new KeyNotFoundException("User not found.");
+        return userFilterResult.Data;
+    }
+
+    public async Task CreateUserAsync(Users user)
+    {
+        var existingUser = await userRepository.GetByEmailAsync(user.Email);
+        if (existingUser != null)
+            throw new InvalidOperationException($"User with email {user.Email} already exists.");
+
+        await userRepository.CreateAsync(user);
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to create user.");
     }
 
     private static string GenerateRandomUsername()

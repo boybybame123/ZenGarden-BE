@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ZenGarden.API.Hubs;
 
@@ -17,6 +17,7 @@ public class NotificationHub : Hub
             Connections[userId] = Context.ConnectionId;
             Console.WriteLine($"✅ User {userId} connected with {Context.ConnectionId}");
         }
+
         return base.OnConnectedAsync();
     }
 
@@ -28,19 +29,17 @@ public class NotificationHub : Hub
             Connections.TryRemove(userId, out _);
             Console.WriteLine($"❌ User {userId} disconnected");
         }
+
         return base.OnDisconnectedAsync(exception);
     }
 
     // Hàm gửi tin nhắn tới một user cụ thể
     public async Task SendNotificationToUser(string userId, string message)
     {
-        if (Connections.TryGetValue(userId, out string? connectionId))
+        if (Connections.TryGetValue(userId, out var connectionId))
         {
             await Clients.Client(connectionId).SendAsync("ReceiveNotification", message);
             Console.WriteLine($"📢 Sent notification to user {userId}: {message}");
         }
     }
-
-
-
 }

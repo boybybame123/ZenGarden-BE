@@ -1,14 +1,11 @@
-﻿using AutoMapper;
-using ZenGarden.Core.Interfaces.IRepositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Services;
 
 public class TradeHistoryService(
-    ITradeHistoryRepository tradeHistoryRepository,
-    IUnitOfWork unitOfWork,
-    IMapper mapper) : ITradeHistoryService
+    ITradeHistoryRepository tradeHistoryRepository) : ITradeHistoryService
 {
     public Task<TradeHistory> CreateTradeHistoryAsync(TradeHistory tradeHistory)
     {

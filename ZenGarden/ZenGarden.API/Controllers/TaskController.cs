@@ -50,8 +50,8 @@ public class TaskController(ITaskService taskService) : ControllerBase
 
     [HttpPut("Update-Task/{taskId:int}")]
     public async Task<IActionResult> UpdateTask(
-        int taskId, 
-        [FromForm] UpdateTaskDto task, 
+        int taskId,
+        [FromForm] UpdateTaskDto task,
         [FromForm] IFormFile? taskResultFile = null)
     {
         if (taskId != task.TaskId)
@@ -60,7 +60,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.UpdateTaskAsync(task, taskResultFile);
         return Ok(new { message = "Task updated successfully" });
     }
-
 
 
     [HttpPost("create-task")]

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
 namespace ZenGarden.API.Hubs;
+
 public class CustomUserIdProvider : IUserIdProvider
 {
     public string? GetUserId(HubConnectionContext connection)

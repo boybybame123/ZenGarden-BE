@@ -89,7 +89,7 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
                         t.StartedAt.Value < thresholdTime)
             .ToListAsync();
     }
-    
+
     public async Task<Tasks?> GetActiveTaskByUserTreeIdAsync(int userTreeId)
     {
         return await _context.Tasks

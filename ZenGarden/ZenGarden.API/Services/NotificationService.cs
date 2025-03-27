@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ZenGarden.API.Hubs;
-using ZenGarden.Infrastructure.Persistence;
-using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Infrastructure.Persistence;
 
 public class NotificationService : INotificationService
 {
@@ -11,7 +10,8 @@ public class NotificationService : INotificationService
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<NotificationService> _logger;
 
-    public NotificationService(ZenGardenContext db, IHubContext<NotificationHub> hubContext, ILogger<NotificationService> logger)
+    public NotificationService(ZenGardenContext db, IHubContext<NotificationHub> hubContext,
+        ILogger<NotificationService> logger)
     {
         _db = db;
         _hubContext = hubContext;
@@ -34,7 +34,7 @@ public class NotificationService : INotificationService
 
         // Gửi đến đúng user qua NotificationHub
         await _hubContext.Clients.User(userId.ToString())
-                         .SendAsync("ReceiveNotification", noti.Content, noti.CreatedAt);
+            .SendAsync("ReceiveNotification", noti.Content, noti.CreatedAt);
 
         _logger.LogInformation($"📢 [SignalR] Sent to user {userId}: {noti.Content}");
     }
