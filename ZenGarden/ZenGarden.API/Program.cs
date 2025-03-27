@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json.Serialization;
 using Amazon.Extensions.NETCore.Setup;
+using Amazon.S3;
 using AspNetCoreRateLimit;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -201,9 +202,20 @@ builder.Services.AddHostedService<OverdueTaskJob>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 
-var keysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
+var awsSection = builder.Configuration.GetSection("AWS");
+var s3Client = new AmazonS3Client(
+    awsSection["AccessKey"],
+    awsSection["SecretKey"],
+    new AmazonS3Config { ServiceURL = awsSection["ServiceURL"], ForcePathStyle = true });
+
+var bucketName = awsSection["BucketName"];
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+    .AddKeyManagementOptions(options =>
+    {
+        if (!string.IsNullOrWhiteSpace(bucketName)) options.XmlRepository = new S3XmlRepository(s3Client, bucketName);
+    })
+    .SetApplicationName("ZenGarden");
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
@@ -244,6 +256,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.UseDeveloperExceptionPage();
-
 
 app.Run();
