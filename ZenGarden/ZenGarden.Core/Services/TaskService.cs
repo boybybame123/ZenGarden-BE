@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -20,6 +21,7 @@ public class TaskService(
     IXpConfigService xpConfigService,
     IUserChallengeRepository userChallengeRepository,
     IChallengeTaskRepository challengeTaskRepository,
+    IS3Service s3Service,
     IMapper mapper) : ITaskService
 {
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -137,11 +139,14 @@ public class TaskService(
     }
 
 
-    public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
+    public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto, IFormFile? taskResultFile = null)
     {
         var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId);
         if (existingTask == null)
             throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
+        
+        if (existingTask.Status != TasksStatus.InProgress && existingTask.Status != TasksStatus.Paused)
+            throw new InvalidOperationException("Only tasks in 'InProgress' or 'Paused' state can be completed.");
 
         var isUpdated = false;
 
@@ -165,11 +170,23 @@ public class TaskService(
             isUpdated = true;
         }
 
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult) &&
-            existingTask.TaskResult != updateTaskDto.TaskResult)
+        if (taskResultFile != null)
         {
-            existingTask.TaskResult = updateTaskDto.TaskResult;
+            var uploadedUrl = await s3Service.UploadFileAsync(taskResultFile);
+            existingTask.TaskResult = uploadedUrl;
             isUpdated = true;
+        }
+        else if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
+        {
+            if (Uri.IsWellFormedUriString(updateTaskDto.TaskResult, UriKind.Absolute))
+            {
+                existingTask.TaskResult = updateTaskDto.TaskResult;
+                isUpdated = true;
+            }
+            else
+            {
+                throw new ArgumentException("Invalid TaskResult URL.");
+            }
         }
 
         if (updateTaskDto.TotalDuration.HasValue &&

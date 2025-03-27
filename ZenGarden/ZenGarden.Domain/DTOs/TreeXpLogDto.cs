@@ -10,5 +10,5 @@ public class TreeXpLogDto
     public int XpAmount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public TaskDto Tasks { get; set; }
+    public TaskDto? Tasks { get; set; }
 }

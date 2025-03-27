@@ -21,7 +21,7 @@ public class TreeXpLogRepository(ZenGardenContext context)
     {
         return await _context.TreeXpLog
             .Include(log => log.Tasks)
-            .Where(log => log.Tasks.UserTreeId == userTreeId)
+            .Where(log => log.Tasks != null && log.Tasks.UserTreeId == userTreeId)
             .OrderByDescending(log => log.CreatedAt)
             .FirstOrDefaultAsync();
     }
