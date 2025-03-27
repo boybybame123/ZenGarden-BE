@@ -14,8 +14,6 @@ public class UpdateItemDetailDto
     public string? Description { get; set; } // Mô tả item
 
 
-    public string? Type { get; set; } // Loại item (background, music, xp_boost, xp_protect)
-
     public string? MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
 
     public string? Effect { get; set; }

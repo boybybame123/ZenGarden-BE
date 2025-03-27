@@ -51,7 +51,7 @@ public class ItemService(IItemRepository itemRepository, IUnitOfWork unitOfWork,
         if (updateItem != null)
         {
             updateItem.Name = item.Name ?? updateItem.Name;
-            updateItem.Type = item.Type ?? updateItem.Type;
+            updateItem.Type = item.Type != null ? item.Type : updateItem.Type;
             updateItem.Rarity = item.Rarity ?? updateItem.Rarity;
             updateItem.Cost = item.Cost ?? updateItem.Cost;
             updateItem.Status = item.Status;

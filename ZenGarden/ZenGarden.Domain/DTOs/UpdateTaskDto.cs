@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace ZenGarden.Domain.DTOs;
 
 public class UpdateTaskDto
@@ -18,6 +20,8 @@ public class UpdateTaskDto
     public int? WorkDuration { get; set; }
 
     public int? BreakTime { get; set; }
+
+    IFormFile? TaskResultFile { get; set; } = null;
 
     public DateTime? StartDate { get; set; }
 
