@@ -7,9 +7,11 @@ namespace ZenGarden.Infrastructure.Repositories;
 
 public class BagItemRepository(ZenGardenContext context) : GenericRepository<BagItem>(context), IBagItemRepository
 {
+    private readonly ZenGardenContext _context = context;
+
     public async Task<BagItem?> GetByBagAndItemAsync(int bagId, int itemId)
     {
-        return await context.BagItem
+        return await _context.BagItem
             .FirstOrDefaultAsync(bi => bi.BagId == bagId && bi.ItemId == itemId);
     }
 }

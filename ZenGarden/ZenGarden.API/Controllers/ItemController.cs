@@ -61,7 +61,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
-    [HttpPut("update-itemdetail")]
+    [HttpPut("update-item-detail")]
     public async Task<IActionResult> UpdateItemDetail(UpdateItemDetailDto itemDetail)
     {
         await _itemDetailService.UpdateItemDetailAsync(itemDetail);
@@ -72,18 +72,26 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     [HttpPost("create-item")]
     public async Task<IActionResult> UploadAndCreateItem([FromForm] ItemDto request)
     {
-        // Upload file lên S3
-        var mediaUrl = await _s3Service.UploadFileAsync(request.File);
+        // Validate the uploaded file
+        if (request.File == null)
+            return BadRequest(new { message = "File is required" });
 
+        // Upload file to S3
+        var mediaUrl = await _s3Service.UploadFileAsync(request.File); // Null forgiving operator is safe here due to the earlier null check
 
-        // Convert ItemJson => ItemDto
+        if (string.IsNullOrEmpty(mediaUrl))
+            return BadRequest(new { message = "File upload failed" });
 
-        // Gán mediaUrl
+        // Ensure ItemDetail is not null and assign MediaUrl
+        if (request.ItemDetail == null)
+            return BadRequest(new { message = "ItemDetail is required." });
+
         request.ItemDetail.MediaUrl = mediaUrl;
 
-        // Lưu DB
+        // Save item to database (any exceptions here will be handled by middleware)
         await _itemService.CreateItemAsync(request);
 
+        // Return successful response
         return Ok(new { message = "Item created successfully", mediaUrl });
     }
 }

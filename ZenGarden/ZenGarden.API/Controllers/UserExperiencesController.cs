@@ -7,27 +7,20 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserExperiencesController : ControllerBase
+public class UserExperiencesController(ZenGardenContext context) : ControllerBase
 {
-    private readonly ZenGardenContext _context;
-
-    public UserExperiencesController(ZenGardenContext context)
-    {
-        _context = context;
-    }
-
     // GET: api/UserExperiences
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserExperience>>> GetUserExperience()
     {
-        return await _context.UserExperience.ToListAsync();
+        return await context.UserExperience.ToListAsync();
     }
 
     // GET: api/UserExperiences/5
     [HttpGet("{id}")]
     public async Task<ActionResult<UserExperience>> GetUserExperience(int id)
     {
-        var userExperience = await _context.UserExperience.FindAsync(id);
+        var userExperience = await context.UserExperience.FindAsync(id);
 
         if (userExperience == null) return NotFound();
 
@@ -41,11 +34,11 @@ public class UserExperiencesController : ControllerBase
     {
         if (id != userExperience.UserExperienceId) return BadRequest();
 
-        _context.Entry(userExperience).State = EntityState.Modified;
+        context.Entry(userExperience).State = EntityState.Modified;
 
         try
         {
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -62,9 +55,17 @@ public class UserExperiencesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserExperience>> PostUserExperience(UserExperience? userExperience)
     {
-        _context.UserExperience.Add(userExperience);
-        await _context.SaveChangesAsync();
+        // Check if userExperience is null and return a BadRequest
+        if (userExperience == null)
+        {
+            return BadRequest(new { message = "UserExperience cannot be null." });
+        }
 
+        // Add the new user experience to the database
+        context.UserExperience.Add(userExperience);
+        await context.SaveChangesAsync();
+
+        // Return the created user experience with a 201 Created status
         return CreatedAtAction("GetUserExperience", new { id = userExperience.UserExperienceId }, userExperience);
     }
 
@@ -72,17 +73,17 @@ public class UserExperiencesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUserExperience(int id)
     {
-        var userExperience = await _context.UserExperience.FindAsync(id);
+        var userExperience = await context.UserExperience.FindAsync(id);
         if (userExperience == null) return NotFound();
 
-        _context.UserExperience.Remove(userExperience);
-        await _context.SaveChangesAsync();
+        context.UserExperience.Remove(userExperience);
+        await context.SaveChangesAsync();
 
         return NoContent();
     }
 
     private bool UserExperienceExists(int id)
     {
-        return _context.UserExperience.Any(e => e.UserExperienceId == id);
+        return context.UserExperience.Any(e => e.UserExperienceId == id);
     }
 }
