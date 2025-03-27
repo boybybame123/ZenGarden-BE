@@ -48,12 +48,20 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "task deleted successfully" });
     }
 
-    [HttpPut("Update-Task")]
-    public async Task<IActionResult> UpdateTask(UpdateTaskDto task)
+    [HttpPut("Update-Task/{taskId:int}")]
+    public async Task<IActionResult> UpdateTask(
+        int taskId, 
+        [FromForm] UpdateTaskDto task, 
+        [FromForm] IFormFile? taskResultFile = null)
     {
-        await _taskService.UpdateTaskAsync(task);
-        return Ok(new { message = "task updated successfully" });
+        if (taskId != task.TaskId)
+            return BadRequest(new { message = "Task ID mismatch" });
+
+        await _taskService.UpdateTaskAsync(task, taskResultFile);
+        return Ok(new { message = "Task updated successfully" });
     }
+
+
 
     [HttpPost("create-task")]
     public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
