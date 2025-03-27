@@ -1,21 +1,46 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
+using System.Security.Claims;
 
 namespace ZenGarden.API.Hubs;
 
 public class NotificationHub : Hub
 {
     // Ví dụ hàm đơn giản nhận tin nhắn từ client (có thể mở rộng)
-    public async Task SendMessage(string message)
+    private static readonly ConcurrentDictionary<string, string> _connections = new();
+
+    public override Task OnConnectedAsync()
     {
-        await Clients.All.SendAsync("ReceiveMessage", message);
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId != null)
+        {
+            _connections[userId] = Context.ConnectionId;
+            Console.WriteLine($"✅ User {userId} connected with {Context.ConnectionId}");
+        }
+        return base.OnConnectedAsync();
     }
-    public async Task SendToUser(string userId, string title, string message)
+
+    public override Task OnDisconnectedAsync(Exception? exception)
     {
-        await Clients.User(userId).SendAsync("ReceiveNotification", title, message);
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId != null && _connections.ContainsKey(userId))
+        {
+            _connections.TryRemove(userId, out _);
+            Console.WriteLine($"❌ User {userId} disconnected");
+        }
+        return base.OnDisconnectedAsync(exception);
     }
-        public async Task BroadcastNotification(string title, string message)
+
+    // Hàm gửi tin nhắn tới một user cụ thể
+    public async Task SendNotificationToUser(string userId, string message)
     {
-        await Clients.All.SendAsync("ReceiveNotification", title, message);
+        if (_connections.TryGetValue(userId, out string? connectionId))
+        {
+            await Clients.Client(connectionId).SendAsync("ReceiveNotification", message);
+            Console.WriteLine($"📢 Sent notification to user {userId}: {message}");
+        }
     }
+
+
 
 }
