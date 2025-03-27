@@ -286,7 +286,9 @@ public class ZenGardenContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Rarity).HasMaxLength(50);
-            entity.Property(e => e.Type).HasMaxLength(50);
+            entity.Property(e => e.Type)
+                .HasConversion<int>()
+                .IsRequired();
 
             entity.Property(e => e.Status)
                 .HasConversion<int>()
@@ -303,7 +305,7 @@ public class ZenGardenContext : DbContext
                 .HasColumnName("ItemID");
 
             entity.Property(e => e.Description).HasColumnType("text");
-            entity.Property(e => e.Type).HasMaxLength(50);
+          
             entity.Property(e => e.MediaUrl).HasMaxLength(255);
             entity.Property(e => e.Effect).HasColumnType("text");
             entity.Property(e => e.Duration).HasColumnType("text");

@@ -7,7 +7,7 @@ public class UpdateItemDto
     public int ItemId { get; set; }
     public string? Name { get; set; }
 
-    public string? Type { get; set; }
+    public ItemType Type { get; set; }
 
     public string? Rarity { get; set; }
 
