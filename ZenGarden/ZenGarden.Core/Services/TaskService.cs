@@ -142,6 +142,9 @@ public class TaskService(
         var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId);
         if (existingTask == null)
             throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
+        
+        if (existingTask.Status != TasksStatus.InProgress && existingTask.Status != TasksStatus.Paused)
+            throw new InvalidOperationException("Only tasks in 'InProgress' or 'Paused' state can be completed.");
 
         var isUpdated = false;
 
