@@ -10,7 +10,7 @@ namespace ZenGarden.Core.Services;
 
 public class S3Service : IS3Service
 {
-    private readonly string _bucketName;
+    private readonly string? _bucketName;
     private readonly AmazonS3Client _s3Client;
 
     public S3Service(IConfiguration config)
@@ -81,7 +81,7 @@ public class S3Service : IS3Service
         return response.HttpStatusCode == HttpStatusCode.NoContent;
     }
 
-    public async Task<string> GetPreSignedUrlAsync(string key, int expiryInMinutes = 60)
+    public Task<string> GetPreSignedUrlAsync(string key, int expiryInMinutes = 60)
     {
         var request = new GetPreSignedUrlRequest
         {
@@ -90,7 +90,7 @@ public class S3Service : IS3Service
             Expires = DateTime.UtcNow.AddMinutes(expiryInMinutes)
         };
 
-        return _s3Client.GetPreSignedURL(request);
+        return Task.FromResult(_s3Client.GetPreSignedURL(request));
     }
 
     private string GeneratePreSignedUrl(string fileKey, int expiryDuration = 3600)

@@ -21,16 +21,28 @@ public class UpdateTaskValidator : AbstractValidator<UpdateTaskDto>
             .MaximumLength(300).WithMessage("TaskNote must be at most 300 characters.");
 
         RuleFor(x => x.TaskResult)
-            .MaximumLength(300).WithMessage("TaskResult must be at most 300 characters.");
+            .MaximumLength(300).WithMessage("TaskResult must be at most 300 characters.")
+            .Must(uri => string.IsNullOrWhiteSpace(uri) || Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+            .WithMessage("TaskResult must be a valid URL if provided.");
 
         RuleFor(x => x.TotalDuration)
-            .GreaterThan(0).WithMessage("TotalDuration must be greater than 0.");
+            .GreaterThan(0).When(x => x.TotalDuration.HasValue)
+            .WithMessage("TotalDuration must be greater than 0 if provided.");
 
         RuleFor(x => x.WorkDuration)
-            .GreaterThanOrEqualTo(0).WithMessage("WorkDuration must be non-negative.");
+            .GreaterThanOrEqualTo(0).When(x => x.WorkDuration.HasValue)
+            .WithMessage("WorkDuration must be non-negative.");
 
         RuleFor(x => x.BreakTime)
-            .GreaterThanOrEqualTo(0).WithMessage("BreakTime must be non-negative.");
+            .GreaterThanOrEqualTo(0).When(x => x.BreakTime.HasValue)
+            .WithMessage("BreakTime must be non-negative.");
+
+        RuleFor(x => x)
+            .Must(x => !x.TotalDuration.HasValue || 
+                       !x.WorkDuration.HasValue || 
+                       !x.BreakTime.HasValue || 
+                       x.WorkDuration + x.BreakTime <= x.TotalDuration)
+            .WithMessage("WorkDuration + BreakTime must not exceed TotalDuration.");
 
         RuleFor(x => x.FocusMethodId)
             .GreaterThan(0).When(x => x.FocusMethodId.HasValue)
