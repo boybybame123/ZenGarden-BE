@@ -11,7 +11,7 @@ public class PurchaseService : IPurchaseService
     private readonly IBagRepository _bagRepo;
     private readonly IItemDetailRepository _itemDetailRepo;
     private readonly IItemRepository _itemRepo;
-
+    private INotificationService _notificationService;
 
     private readonly IPurchaseHistoryRepository _purchaseHistoryRepo;
     private readonly IUnitOfWork _unitOfWork;
@@ -22,10 +22,12 @@ public class PurchaseService : IPurchaseService
         IItemRepository itemRepo,
         IBagRepository bagRepo,
         IBagItemRepository bagItemRepo,
+        INotificationService notificationService,
         IUnitOfWork unitOfWork,
         IItemDetailRepository itemDetailRepo,
         IPurchaseHistoryRepository purchaseHistoryRepo)
     {
+        _notificationService = notificationService;
         _walletRepo = walletRepo;
         _itemRepo = itemRepo;
         _bagRepo = bagRepo;
@@ -119,7 +121,7 @@ public class PurchaseService : IPurchaseService
                 _itemDetailRepo.Update(itemDetail);
                 await _unitOfWork.CommitAsync();
             }
-
+            await _notificationService.PushNotificationAsync(userId, "Item", "Purchase successful.");
             return "Purchase successful.";
         }
         catch (Exception ex)
