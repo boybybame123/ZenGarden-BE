@@ -50,11 +50,9 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var connectionString = GetConnectionString();
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-        }
+        if (optionsBuilder.IsConfigured) return;
+        var connectionString = GetConnectionString();
+        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
     }
 
     private static string GetConnectionString()
@@ -309,7 +307,7 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
                 .HasColumnName("ItemID");
 
             entity.Property(e => e.Description).HasColumnType("text");
-          
+
             entity.Property(e => e.MediaUrl).HasMaxLength(255);
             entity.Property(e => e.Effect).HasColumnType("text");
             entity.Property(e => e.Duration).HasColumnType("text");

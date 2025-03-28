@@ -22,10 +22,15 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("by-id/{taskId:int}")]
     public async Task<IActionResult> GetTaskById(int taskId)
     {
+        if (taskId <= 0) return BadRequest(new { Message = "Invalid task ID" });
+
         var task = await _taskService.GetTaskByIdAsync(taskId);
-        if (task == null) return NotFound();
+
+        if (task == null) return NotFound(new { Message = $"Task with ID {taskId} not found" });
+
         return Ok(task);
     }
+
 
     [HttpGet("by-user-tree/{userTreeId:int}")]
     public async Task<IActionResult> GetTasksByUserTreeId(int userTreeId)

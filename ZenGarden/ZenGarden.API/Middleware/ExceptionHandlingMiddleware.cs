@@ -3,6 +3,7 @@ using System.Net;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Middleware;
 
@@ -12,7 +13,7 @@ public class ExceptionHandlingMiddleware(
     IWebHostEnvironment env,
     IConfiguration config)
 {
-    public async Task InvokeAsync(HttpContext context)
+    public async Task Invoke(HttpContext context)
     {
         try
         {
@@ -20,7 +21,6 @@ public class ExceptionHandlingMiddleware(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An unhandled exception occurred at {Path}", context.Request.Path);
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -30,52 +30,70 @@ public class ExceptionHandlingMiddleware(
         var response = context.Response;
         response.ContentType = "application/json";
 
-        if (exception is ValidationException validationException)
-        {
-            var validationErrors = validationException.Errors
-                .Select(e => new { e.PropertyName, e.ErrorMessage })
-                .ToList();
+        int statusCode;
+        object errorResponse;
 
-            response.StatusCode = (int)HttpStatusCode.BadRequest;
-            await response.WriteAsJsonAsync(new
-            {
-                response.StatusCode,
-                Message = "Validation failed",
-                Errors = validationErrors
-            });
-            return;
+        switch (exception)
+        {
+            case ValidationException validationException:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new
+                {
+                    StatusCode = statusCode,
+                    Message = "Validation failed",
+                    Errors = validationException.Errors
+                        .Select(e => new { e.PropertyName, e.ErrorMessage })
+                        .ToList()
+                };
+                break;
+
+            case ArgumentNullException:
+            case InvalidOperationException:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new ErrorResponse("Invalid request", exception.Message);
+                break;
+
+            case System.ComponentModel.DataAnnotations.ValidationException:
+                statusCode = (int)HttpStatusCode.UnprocessableEntity;
+                errorResponse = new ErrorResponse("Unprocessable entity", exception.Message);
+                break;
+
+            case KeyNotFoundException:
+                statusCode = (int)HttpStatusCode.NotFound;
+                errorResponse = new ErrorResponse("Resource not found", exception.Message);
+                break;
+
+            case UnauthorizedAccessException:
+                statusCode = (int)HttpStatusCode.Unauthorized;
+                errorResponse = new ErrorResponse("Unauthorized", exception.Message);
+                break;
+
+            case DbException or DbUpdateException:
+                statusCode = (int)HttpStatusCode.Conflict;
+                errorResponse = new ErrorResponse("Database error", exception.Message);
+                break;
+
+            default:
+                statusCode = (int)HttpStatusCode.InternalServerError;
+                var showDetail = env.IsDevelopment() || config.GetValue("MiddlewareSettings:ShowDetailedErrors", false);
+                var errorId = Guid.NewGuid().ToString();
+                var traceId = context.TraceIdentifier;
+
+                logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}",
+                    errorId, traceId, context.Request.Path);
+
+                errorResponse = new ProblemDetails
+                {
+                    Status = statusCode,
+                    Title = "An error occurred",
+                    Detail = showDetail ? exception.Message : "An unexpected error occurred. Please try again later.",
+                    Instance = context.Request.Path,
+                    Extensions = { { "errorId", errorId }, { "traceId", traceId } }
+                };
+                break;
         }
 
-        var statusCode = exception switch
-        {
-            ArgumentNullException => (int)HttpStatusCode.BadRequest,
-            System.ComponentModel.DataAnnotations.ValidationException => (int)HttpStatusCode.UnprocessableEntity,
-            KeyNotFoundException => (int)HttpStatusCode.NotFound,
-            InvalidOperationException => (int)HttpStatusCode.BadRequest,
-            UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-            DbException or DbUpdateException => (int)HttpStatusCode.Conflict,
-            _ => (int)HttpStatusCode.InternalServerError
-        };
-
-        var showDetail = env.IsDevelopment() || config.GetValue("MiddlewareSettings:ShowDetailedErrors", false);
-
-        var errorId = Guid.NewGuid().ToString();
-        var traceId = context.TraceIdentifier;
-
-        logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}", errorId, traceId,
-            context.Request.Path);
-
-        var problemDetails = new ProblemDetails
-        {
-            Status = statusCode,
-            Title = "An error occurred",
-            Detail = showDetail ? exception.Message : "An unexpected error occurred. Please try again later.",
-            Instance = context.Request.Path
-        };
-        problemDetails.Extensions.Add("errorId", errorId);
-        problemDetails.Extensions.Add("traceId", traceId);
-
         response.StatusCode = statusCode;
-        await response.WriteAsJsonAsync(problemDetails);
+        await response.WriteAsJsonAsync(errorResponse);
     }
 }

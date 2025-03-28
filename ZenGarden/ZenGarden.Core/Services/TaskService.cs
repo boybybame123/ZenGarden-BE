@@ -32,8 +32,8 @@ public class TaskService(
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
-        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
-                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId);
+        if (task == null) return null;
 
         var taskDto = mapper.Map<TaskDto>(task);
 
@@ -423,7 +423,7 @@ public class TaskService(
             await unitOfWork.CommitAsync();
     }
 
-    private async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
+    public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
     {
         if (taskResultFile != null)
             return await s3Service.UploadFileAsync(taskResultFile);
@@ -439,7 +439,7 @@ public class TaskService(
     }
 
 
-    private async Task ValidateTaskDto(CreateTaskDto dto)
+    public async Task ValidateTaskDto(CreateTaskDto dto)
     {
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (taskType == null)

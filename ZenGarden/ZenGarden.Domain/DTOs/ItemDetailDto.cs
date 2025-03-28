@@ -10,8 +10,6 @@ public class ItemDetailDto
     public string? Description { get; set; } // Mô tả item
 
 
-
-
     public string? MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
 
     public string? Effect { get; set; } // Chứa JSON hiệu ứng

@@ -22,7 +22,7 @@ public class UpdateTaskDto
 
     public int? BreakTime { get; set; }
 
-    IFormFile? TaskResultFile { get; set; } = null;
+    private IFormFile? TaskResultFile { get; set; } = null;
 
     public DateTime? StartDate { get; set; }
 
