@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.Domain", "ZenGard
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.Shared", "ZenGarden.Shared\ZenGarden.Shared.csproj", "{E11D471E-AD51-47DA-BAF4-7794D4FECB01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenGarden.Test", "ZenGarden.Test\ZenGarden.Test.csproj", "{179A527B-9ED3-4217-A838-BD6A714E3DD7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{E11D471E-AD51-47DA-BAF4-7794D4FECB01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E11D471E-AD51-47DA-BAF4-7794D4FECB01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E11D471E-AD51-47DA-BAF4-7794D4FECB01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{179A527B-9ED3-4217-A838-BD6A714E3DD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{179A527B-9ED3-4217-A838-BD6A714E3DD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{179A527B-9ED3-4217-A838-BD6A714E3DD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{179A527B-9ED3-4217-A838-BD6A714E3DD7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

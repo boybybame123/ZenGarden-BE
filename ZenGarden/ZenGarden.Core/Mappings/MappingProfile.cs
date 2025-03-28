@@ -45,6 +45,9 @@ public class MappingProfile : Profile
         CreateMap<Challenge, ChallengeDto>().ReverseMap();
         CreateMap<CreateChallengeDto, Challenge>();
         CreateMap<UpdateChallengeDto, Challenge>();
+        CreateMap<UpdateTaskDto, Task>()
+            .ForAllMembers(opts => opts.Condition((_, dest, srcMember) => 
+                srcMember != null && !Equals(srcMember, dest)));
 
         CreateMap<UserChallenge, UserChallengeProgressDto>()
             .ForMember(dest => dest.UserName,

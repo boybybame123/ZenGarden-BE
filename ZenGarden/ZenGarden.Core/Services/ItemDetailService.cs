@@ -36,7 +36,6 @@ public class ItemDetailService(
 
         if (updateItemDetail != null)
         {
-
             if (itemDetail.Description != null)
                 updateItemDetail.Description = itemDetail.Description;
             if (itemDetail.Duration.HasValue)
