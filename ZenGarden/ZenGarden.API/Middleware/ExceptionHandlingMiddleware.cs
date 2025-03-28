@@ -30,6 +30,14 @@ public class ExceptionHandlingMiddleware(
         var response = context.Response;
         response.ContentType = "application/json";
 
+        var (statusCode, errorResponse) = GetStatusCodeAndErrorResponse(context, exception);
+        response.StatusCode = statusCode;
+
+        await response.WriteAsJsonAsync(errorResponse);
+    }
+
+    private (int statusCode, object errorResponse) GetStatusCodeAndErrorResponse(HttpContext context, Exception exception)
+    {
         int statusCode;
         object errorResponse;
 
@@ -37,18 +45,21 @@ public class ExceptionHandlingMiddleware(
         {
             case ValidationException validationException:
                 statusCode = (int)HttpStatusCode.BadRequest;
+                var validationErrors = validationException.Errors
+                    .Select(e => new { e.PropertyName, e.ErrorMessage })
+                    .ToList();
+                
+                logger.LogWarning("Validation failed: {@Errors}", validationErrors);
+
                 errorResponse = new
                 {
                     StatusCode = statusCode,
                     Message = "Validation failed",
-                    Errors = validationException.Errors
-                        .Select(e => new { e.PropertyName, e.ErrorMessage })
-                        .ToList()
+                    Errors = validationErrors
                 };
                 break;
 
-            case ArgumentNullException:
-            case InvalidOperationException:
+            case ArgumentNullException or InvalidOperationException:
                 statusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ErrorResponse("Invalid request", exception.Message);
                 break;
@@ -70,6 +81,7 @@ public class ExceptionHandlingMiddleware(
 
             case DbException or DbUpdateException:
                 statusCode = (int)HttpStatusCode.Conflict;
+                logger.LogError(exception, "Database error occurred at {Path}", context.Request.Path);
                 errorResponse = new ErrorResponse("Database error", exception.Message);
                 break;
 
@@ -79,21 +91,30 @@ public class ExceptionHandlingMiddleware(
                 var errorId = Guid.NewGuid().ToString();
                 var traceId = context.TraceIdentifier;
 
-                logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}",
-                    errorId, traceId, context.Request.Path);
+                logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}", errorId, traceId, context.Request.Path);
 
-                errorResponse = new ProblemDetails
+                var problemDetails = new ProblemDetails
                 {
                     Status = statusCode,
                     Title = "An error occurred",
                     Detail = showDetail ? exception.Message : "An unexpected error occurred. Please try again later.",
                     Instance = context.Request.Path,
-                    Extensions = { { "errorId", errorId }, { "traceId", traceId } }
+                    Extensions = new Dictionary<string, object?> 
+                    {
+                        { "errorId", errorId },
+                        { "traceId", traceId }
+                    }
                 };
+
+                if (showDetail)
+                {
+                    problemDetails.Extensions.Add("stackTrace", exception.StackTrace);
+                }
+
+                errorResponse = problemDetails; 
                 break;
         }
 
-        response.StatusCode = statusCode;
-        await response.WriteAsJsonAsync(errorResponse);
+        return (statusCode, errorResponse);
     }
 }

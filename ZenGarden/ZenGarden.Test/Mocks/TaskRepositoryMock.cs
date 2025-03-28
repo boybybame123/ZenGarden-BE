@@ -39,67 +39,60 @@ public static class TaskRepositoryMock
 
         // Mock GetTaskWithDetailsAsync
         mock.Setup(repo => repo.GetTaskWithDetailsAsync(It.IsAny<int>()))
-            .ReturnsAsync((int id) =>
-                new Tasks
-                {
-                    TaskId = id,
-                    Status = id % 2 == 0 ? TasksStatus.Completed : TasksStatus.InProgress,
-                    TotalDuration = 120,
-                    StartedAt = id % 2 == 0 ? null : DateTime.UtcNow.AddMinutes(-30)
-                });
+            .ReturnsAsync((int taskId) =>
+                taskId == 1 ? new Tasks { TaskId = taskId, TaskTypeId = 2, FocusMethodId = 3 } : null);
+
 
         // Mock GetAllWithDetailsAsync
         mock.Setup(repo => repo.GetAllWithDetailsAsync())
-            .ReturnsAsync(new List<Tasks>
-            {
+            .ReturnsAsync([
                 new Tasks { TaskId = 1, Status = TasksStatus.Completed, TotalDuration = 60 },
                 new Tasks { TaskId = 2, Status = TasksStatus.NotStarted, TotalDuration = 30 },
                 new Tasks { TaskId = 3, Status = TasksStatus.InProgress, TotalDuration = 120 }
-            });
+            ]);
 
         // Mock GetTasksByUserTreeIdAsync
         mock.Setup(repo => repo.GetTasksByUserTreeIdAsync(It.IsAny<int>()))
             .ReturnsAsync((int treeId) =>
-                new List<Tasks>
-                {
-                    new Tasks { TaskId = 1, UserTreeId = treeId, Status = TasksStatus.InProgress },
-                    new Tasks { TaskId = 2, UserTreeId = treeId, Status = TasksStatus.Completed }
-                });
+            [
+                new Tasks { TaskId = 1, UserTreeId = treeId, Status = TasksStatus.InProgress },
+                new Tasks { TaskId = 2, UserTreeId = treeId, Status = TasksStatus.Completed }
+            ]);
 
         // Mock GetTasksByUserIdAsync
         mock.Setup(repo => repo.GetTasksByUserIdAsync(It.IsAny<int>()))
             .ReturnsAsync((int userId) =>
-                new List<Tasks>
+            [
+                new Tasks
                 {
-                    new Tasks
+                    TaskId = 1,
+                    UserTree = new UserTree
                     {
-                        TaskId = 1,
-                        UserTree = new UserTree
-                        {
-                            UserId = userId,
-                            Name = "Tree 1", // Giá trị cần thiết cho thuộc tính Name
-                            TreeXpConfig = new TreeXpConfig(), // Giá trị cần thiết cho TreeXpConfig
-                            User = new Users { UserId = userId, UserName = "User 1" }, // Giá trị cần thiết cho User
-                            TreeOwner = new Users
-                                { UserId = userId, UserName = "Owner 1" } // Giá trị cần thiết cho TreeOwner
-                        },
-                        Status = TasksStatus.Completed
+                        UserId = userId,
+                        Name = "Tree 1", // Giá trị cần thiết cho thuộc tính Name
+                        TreeXpConfig = new TreeXpConfig(), // Giá trị cần thiết cho TreeXpConfig
+                        User = new Users { UserId = userId, UserName = "User 1" }, // Giá trị cần thiết cho User
+                        TreeOwner = new Users
+                            { UserId = userId, UserName = "Owner 1" } // Giá trị cần thiết cho TreeOwner
                     },
-                    new Tasks
+                    Status = TasksStatus.Completed
+                },
+
+                new Tasks
+                {
+                    TaskId = 2,
+                    UserTree = new UserTree
                     {
-                        TaskId = 2,
-                        UserTree = new UserTree
-                        {
-                            UserId = userId,
-                            Name = "Tree 2", // Giá trị cần thiết
-                            TreeXpConfig = new TreeXpConfig(), // Giá trị cần thiết cho TreeXpConfig
-                            User = new Users { UserId = userId, UserName = "User 2" }, // Giá trị cần thiết cho User
-                            TreeOwner = new Users
-                                { UserId = userId, UserName = "Owner 2" } // Giá trị cần thiết cho TreeOwner
-                        },
-                        Status = TasksStatus.NotStarted
-                    }
-                });
+                        UserId = userId,
+                        Name = "Tree 2", // Giá trị cần thiết
+                        TreeXpConfig = new TreeXpConfig(), // Giá trị cần thiết cho TreeXpConfig
+                        User = new Users { UserId = userId, UserName = "User 2" }, // Giá trị cần thiết cho User
+                        TreeOwner = new Users
+                            { UserId = userId, UserName = "Owner 2" } // Giá trị cần thiết cho TreeOwner
+                    },
+                    Status = TasksStatus.NotStarted
+                }
+            ]);
 
         // Mock GetOverdueTasksAsync
         mock.Setup(repo => repo.GetOverdueTasksAsync())

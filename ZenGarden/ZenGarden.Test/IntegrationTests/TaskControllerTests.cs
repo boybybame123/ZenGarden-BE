@@ -1,13 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit.Abstractions;
 using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.Test.IntegrationTests;
 
-public class TaskControllerTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public class TaskControllerTests(WebApplicationFactory<Program> factory, ITestOutputHelper output) : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly HttpClient _client = factory.CreateClient(); // Khởi tạo HttpClient
+
 
     [Fact]
     public async Task GetTasks_ShouldReturnAllTasks()
@@ -163,10 +166,16 @@ public class TaskControllerTests(WebApplicationFactory<Program> factory) : IClas
     public async Task CompleteTask_ShouldCompleteTaskSuccessfully()
     {
         // Arrange
-        const int taskId = 1;
+        const int taskId = 2;
 
         // Act
         var response = await _client.PostAsync($"/api/Task/complete-task/{taskId}", null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            output.WriteLine($"Error Response: {errorBody}");
+        }
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -174,6 +183,23 @@ public class TaskControllerTests(WebApplicationFactory<Program> factory) : IClas
         Assert.NotNull(result);
         Assert.Equal("Task completed successfully.", result["message"]);
     }
+    
+    [Fact]
+    public async Task CompleteTask_ShouldHandleInvalidTaskState()
+    {
+        // Arrange
+        const int taskId = 2;
+
+        // Act
+        var response = await _client.PostAsync($"/api/Task/complete-task/{taskId}", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.NotNull(result);
+        Assert.Equal("Only in-progress tasks can be completed.", result["error"]);
+    }
+
 
     [Fact]
     public async Task UpdateOverdueTasks_ShouldUpdateOverdueTasksSuccessfully()
@@ -191,20 +217,23 @@ public class TaskControllerTests(WebApplicationFactory<Program> factory) : IClas
     [Fact]
     public async Task CalculateTaskXp_ShouldReturnTaskXp()
     {
-        // Arrange
-        const int taskId = 1;
+        const int taskId = 2;
 
-        // Act
         var response = await _client.GetAsync($"/api/Task/calculate-xp/{taskId}");
 
-        // Assert
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-        Assert.NotNull(result);
-        Assert.Equal(taskId, result["taskId"]);
-        Assert.True(Convert.ToDouble(result["xpEarned"]) > 0);
-    }
 
+        var result = await response.Content.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
+
+        Assert.NotNull(result);
+        Assert.Contains("taskId", result.Keys);
+        Assert.Contains("xpEarned", result.Keys);
+
+        Assert.Equal(taskId, result["taskId"].GetInt32());
+        Assert.True(result["xpEarned"].GetDouble() > 0);
+
+    }
+    
     [Fact]
     public async Task PauseTask_ShouldPauseTaskSuccessfully()
     {

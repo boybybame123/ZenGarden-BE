@@ -22,89 +22,82 @@ public class ChallengeService(
     : IChallengeService
 {
     public async Task<ChallengeDto> CreateChallengeAsync(int userId, CreateChallengeDto dto)
+{
+    await using var transaction = await unitOfWork.BeginTransactionAsync();
+    try
     {
-        await using var transaction = await unitOfWork.BeginTransactionAsync();
-        try
+        var user = await userRepository.GetByIdAsync(userId) 
+                   ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.Role is { RoleId: 2 })
         {
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user == null)
-                throw new KeyNotFoundException("User not found.");
+            var wallet = await walletRepository.GetByUserIdAsync(userId) 
+                         ?? throw new InvalidOperationException("Wallet not found.");
 
-            if (user.Role is { RoleId: 2 })
+            if (wallet.Balance < dto.Reward)
+                throw new InvalidOperationException("Not enough ZenCoin to create challenge.");
+
+            wallet.Balance -= dto.Reward;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            walletRepository.Update(wallet);
+        }
+
+        var challenge = mapper.Map<Challenge>(dto);
+        challenge.CreatedAt = DateTime.UtcNow;
+        await challengeRepository.CreateAsync(challenge);
+
+        var userChallenge = new UserChallenge
+        {
+            ChallengeId = challenge.ChallengeId,
+            UserId = userId,
+            Progress = 0,
+            ChallengeRole = UserChallengeRole.Organizer,
+            Status = UserChallengeStatus.Active,
+            CreatedAt = DateTime.UtcNow
+        };
+        await userChallengeRepository.CreateAsync(userChallenge);
+
+        if (dto.Tasks is { Count: > 0 })
+        {
+            var challengeTasks = new List<ChallengeTask>();
+
+            foreach (var taskDto in dto.Tasks)
             {
-                var wallet = await walletRepository.GetByUserIdAsync(userId);
-                if (wallet == null)
-                    throw new InvalidOperationException("Wallet not found.");
-
-                decimal challengeCost = dto.Reward;
-
-                if (wallet.Balance < challengeCost)
-                    throw new InvalidOperationException("Not enough ZenCoin to create challenge.");
-
-                wallet.Balance -= challengeCost;
-                wallet.UpdatedAt = DateTime.UtcNow;
-                walletRepository.Update(wallet);
-            }
-
-            var challenge = mapper.Map<Challenge>(dto);
-            challenge.CreatedAt = DateTime.UtcNow;
-            await challengeRepository.CreateAsync(challenge);
-
-            var userChallenge = new UserChallenge
-            {
-                ChallengeId = challenge.ChallengeId,
-                UserId = userId,
-                Progress = 0,
-                ChallengeRole = UserChallengeRole.Organizer,
-                Status = UserChallengeStatus.Active,
-                CreatedAt = DateTime.UtcNow
-            };
-            await userChallengeRepository.CreateAsync(userChallenge);
-
-            if (dto.Tasks is { Count: > 0 })
-            {
-                var tasks = new List<TaskDto>();
-
-                foreach (var safeTaskDto in dto.Tasks.Select(taskDto => new CreateTaskDto
-                         {
-                             TaskName = taskDto.TaskName,
-                             TaskDescription = taskDto.TaskDescription,
-                             TotalDuration = taskDto.TotalDuration ?? 30,
-                             StartDate = dto.StartDate ?? DateTime.UtcNow,
-                             EndDate = dto.EndDate ?? dto.StartDate?.AddDays(7) ?? DateTime.UtcNow.AddDays(7),
-                             WorkDuration = taskDto.WorkDuration ?? 25,
-                             BreakTime = taskDto.BreakTime ?? 5,
-                             TaskTypeId = taskDto.TaskTypeId,
-                             UserTreeId = taskDto.UserTreeId > 0 ? taskDto.UserTreeId : null,
-                             FocusMethodId = taskDto.FocusMethodId > 0 ? taskDto.FocusMethodId : null
-                         }))
+                var safeTaskDto = new CreateTaskDto
                 {
-                    var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(safeTaskDto);
-                    tasks.Add(createdTask);
-                }
+                    TaskName = taskDto.TaskName,
+                    TaskDescription = taskDto.TaskDescription,
+                    TotalDuration = taskDto.TotalDuration ?? 30,
+                    StartDate = dto.StartDate ?? DateTime.UtcNow,
+                    EndDate = dto.EndDate ?? dto.StartDate?.AddDays(7) ?? DateTime.UtcNow.AddDays(7),
+                    WorkDuration = taskDto.WorkDuration ?? 25,
+                    BreakTime = taskDto.BreakTime ?? 5,
+                    TaskTypeId = taskDto.TaskTypeId,
+                    UserTreeId = taskDto.UserTreeId > 0 ? taskDto.UserTreeId : null,
+                    FocusMethodId = taskDto.FocusMethodId > 0 ? taskDto.FocusMethodId : null
+                };
 
-                var challengeTasks = tasks.Select(task => new ChallengeTask
+                var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(safeTaskDto);
+                challengeTasks.Add(new ChallengeTask
                 {
                     ChallengeId = challenge.ChallengeId,
-                    TaskId = task.TaskId,
+                    TaskId = createdTask.TaskId,
                     CreatedAt = DateTime.UtcNow
-                }).ToList();
-
-                await challengeTaskRepository.AddRangeAsync(challengeTasks);
+                });
             }
 
-
-            await unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
-
-            return mapper.Map<ChallengeDto>(challenge);
+            await challengeTaskRepository.AddRangeAsync(challengeTasks);
         }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+
+        await transaction.CommitAsync();
+        return mapper.Map<ChallengeDto>(challenge);
     }
+    finally
+    {
+        await transaction.RollbackAsync();
+    }
+}
+
 
 
     public async Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto)

@@ -86,8 +86,15 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpPost("complete-task/{taskId:int}")]
     public async Task<IActionResult> CompleteTask(int taskId)
     {
-        await _taskService.CompleteTaskAsync(taskId);
-        return Ok(new { message = "Task completed successfully." });
+        try
+        {
+            await _taskService.CompleteTaskAsync(taskId);
+            return Ok(new { message = "Task completed successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPost("update-overdue")]
@@ -100,8 +107,19 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("calculate-xp/{taskId:int}")]
     public async Task<IActionResult> CalculateTaskXp(int taskId)
     {
-        var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
-        return Ok(new { taskId, xpEarned });
+        try
+        {
+            var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
+            return Ok(new { taskId, xpEarned });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPut("pause/{taskId:int}")]

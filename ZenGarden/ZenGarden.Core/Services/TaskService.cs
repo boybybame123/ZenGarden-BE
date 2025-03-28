@@ -1,4 +1,6 @@
 using AutoMapper;
+using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
@@ -22,7 +24,8 @@ public class TaskService(
     IUserChallengeRepository userChallengeRepository,
     IChallengeTaskRepository challengeTaskRepository,
     IS3Service s3Service,
-    IMapper mapper) : ITaskService
+    IMapper mapper,
+    IValidator<CreateTaskDto> createTaskValidator) : ITaskService
 {
     public async Task<List<TaskDto>> GetAllTaskAsync()
     {
@@ -33,7 +36,7 @@ public class TaskService(
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId);
-        if (task == null) return null;
+        if (task == null) throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var taskDto = mapper.Map<TaskDto>(task);
 
@@ -127,8 +130,6 @@ public class TaskService(
 
             await taskRepository.CreateAsync(newTask);
             await transaction.CommitAsync();
-            await unitOfWork.CommitAsync();
-
             return mapper.Map<TaskDto>(newTask);
         }
         catch
@@ -141,103 +142,33 @@ public class TaskService(
 
     public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
     {
-        var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId);
-        if (existingTask == null)
-            throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
+        var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId)
+                           ?? throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
 
-        if (existingTask.Status != TasksStatus.InProgress && existingTask.Status != TasksStatus.Paused)
+        if (existingTask.Status is not (TasksStatus.InProgress or TasksStatus.Paused))
             throw new InvalidOperationException("Only tasks in 'InProgress' or 'Paused' state can be completed.");
 
-        var isUpdated = false;
-
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskName) && existingTask.TaskName != updateTaskDto.TaskName)
-        {
-            existingTask.TaskName = updateTaskDto.TaskName;
-            isUpdated = true;
-        }
-
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription) &&
-            existingTask.TaskDescription != updateTaskDto.TaskDescription)
-        {
-            existingTask.TaskDescription = updateTaskDto.TaskDescription;
-            isUpdated = true;
-        }
-
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote) &&
-            existingTask.TaskNote != updateTaskDto.TaskNote)
-        {
-            existingTask.TaskNote = updateTaskDto.TaskNote;
-            isUpdated = true;
-        }
+        mapper.Map(updateTaskDto, existingTask);
 
         var updatedTaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult);
-        if (!string.IsNullOrWhiteSpace(updatedTaskResult) && existingTask.TaskResult != updatedTaskResult)
-        {
+        if (!string.IsNullOrWhiteSpace(updatedTaskResult))
             existingTask.TaskResult = updatedTaskResult;
-            isUpdated = true;
-        }
 
-        if (updateTaskDto.TotalDuration.HasValue &&
-            existingTask.TotalDuration != updateTaskDto.TotalDuration.Value)
+        if (updateTaskDto.FocusMethodId.HasValue)
         {
-            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
-            isUpdated = true;
-        }
-
-        if (updateTaskDto.WorkDuration.HasValue &&
-            existingTask.WorkDuration != updateTaskDto.WorkDuration.Value)
-        {
-            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
-            isUpdated = true;
-        }
-
-        if (updateTaskDto.BreakTime.HasValue &&
-            existingTask.BreakTime != updateTaskDto.BreakTime.Value)
-        {
-            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
-            isUpdated = true;
-        }
-
-        if (updateTaskDto.StartDate.HasValue &&
-            existingTask.StartDate != updateTaskDto.StartDate.Value)
-        {
-            existingTask.StartDate = updateTaskDto.StartDate.Value;
-            isUpdated = true;
-        }
-
-        if (updateTaskDto.EndDate.HasValue &&
-            existingTask.EndDate != updateTaskDto.EndDate.Value)
-        {
-            existingTask.EndDate = updateTaskDto.EndDate.Value;
-            isUpdated = true;
-        }
-
-        if (updateTaskDto.FocusMethodId.HasValue &&
-            existingTask.FocusMethodId != updateTaskDto.FocusMethodId.Value)
-        {
-            var focusMethod = await focusMethodRepository.GetByIdAsync(updateTaskDto.FocusMethodId.Value);
-            if (focusMethod == null)
-                throw new KeyNotFoundException($"FocusMethod with ID {updateTaskDto.FocusMethodId.Value} not found.");
+            _ = await focusMethodRepository.GetByIdAsync(updateTaskDto.FocusMethodId.Value)
+                ?? throw new KeyNotFoundException($"FocusMethod with ID {updateTaskDto.FocusMethodId.Value} not found.");
 
             existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
-            isUpdated = true;
         }
 
-        if (isUpdated)
-        {
-            if (existingTask is { FocusMethodId: not null, TotalDuration: > 0 })
-                await xpConfigService.EnsureXpConfigExists(
-                    existingTask.FocusMethodId.Value,
-                    existingTask.TaskTypeId,
-                    existingTask.TotalDuration.Value
-                );
+        existingTask.UpdatedAt = DateTime.UtcNow;
+        taskRepository.Update(existingTask);
 
-            existingTask.UpdatedAt = DateTime.UtcNow;
-            taskRepository.Update(existingTask);
-            if (await unitOfWork.CommitAsync() == 0)
-                throw new InvalidOperationException("Failed to update task.");
-        }
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update task.");
     }
+
 
 
     public async Task DeleteTaskAsync(int taskId)
@@ -428,19 +359,21 @@ public class TaskService(
         if (taskResultFile != null)
             return await s3Service.UploadFileAsync(taskResultFile);
 
-        if (!string.IsNullOrWhiteSpace(taskResultUrl))
-        {
-            if (Uri.IsWellFormedUriString(taskResultUrl, UriKind.Absolute))
-                return taskResultUrl;
-            throw new ArgumentException("Invalid TaskResult URL.");
-        }
+        if (string.IsNullOrWhiteSpace(taskResultUrl)) return string.Empty;
+        if (Uri.IsWellFormedUriString(taskResultUrl, UriKind.Absolute))
+            return taskResultUrl;
+        throw new ArgumentException("Invalid TaskResult URL.");
 
-        return string.Empty;
     }
 
 
     public async Task ValidateTaskDto(CreateTaskDto dto)
     {
+        ValidationResult validationResult = await createTaskValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (taskType == null)
             throw new KeyNotFoundException("TaskType not found.");
@@ -473,8 +406,8 @@ public class TaskService(
 
     private static void ValidateTaskForCompletion(Tasks task)
     {
-        if (task.Status != TasksStatus.InProgress)
-            throw new InvalidOperationException("Only in-progress tasks can be completed.");
+        if (task.Status != TasksStatus.InProgress && task.Status != TasksStatus.Paused)
+            throw new InvalidOperationException($"Only 'In Progress' or 'Paused' tasks can be completed. Current status: {task.Status}.");
 
         if (task.UserTree == null)
             throw new InvalidOperationException("Task is not linked to any UserTree.");

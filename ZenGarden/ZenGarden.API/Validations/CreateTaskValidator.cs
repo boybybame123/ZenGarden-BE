@@ -17,9 +17,6 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
         RuleFor(x => x.TaskTypeId)
             .GreaterThan(0).WithMessage("TaskTypeId must be greater than 0.");
 
-        RuleFor(x => x.UserTreeId)
-            .GreaterThan(0).WithMessage("UserTreeId must be greater than 0.");
-
         RuleFor(x => x.StartDate)
             .NotEmpty().WithMessage("StartDate is required.");
 
