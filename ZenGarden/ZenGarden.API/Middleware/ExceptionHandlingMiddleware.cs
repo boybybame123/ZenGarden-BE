@@ -1,7 +1,6 @@
 using System.Data.Common;
 using System.Net;
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Domain.DTOs;
 
@@ -36,7 +35,8 @@ public class ExceptionHandlingMiddleware(
         await response.WriteAsJsonAsync(errorResponse);
     }
 
-    private (int statusCode, object errorResponse) GetStatusCodeAndErrorResponse(HttpContext context, Exception exception)
+    private (int statusCode, object errorResponse) GetStatusCodeAndErrorResponse(HttpContext context,
+        Exception exception)
     {
         int statusCode;
         object errorResponse;
@@ -48,14 +48,14 @@ public class ExceptionHandlingMiddleware(
                 var validationErrors = validationException.Errors
                     .Select(e => new { e.PropertyName, e.ErrorMessage })
                     .ToList();
-                
+
                 logger.LogWarning("Validation failed: {@Errors}", validationErrors);
 
-                errorResponse = new
+                errorResponse = new ErrorResponse
                 {
                     StatusCode = statusCode,
                     Message = "Validation failed",
-                    Errors = validationErrors
+                    Details = validationErrors
                 };
                 break;
 
@@ -71,11 +71,13 @@ public class ExceptionHandlingMiddleware(
 
             case KeyNotFoundException:
                 statusCode = (int)HttpStatusCode.NotFound;
+                logger.LogWarning("Not Found: {Message} - Path: {Path}", exception.Message, context.Request.Path);
                 errorResponse = new ErrorResponse("Resource not found", exception.Message);
                 break;
 
             case UnauthorizedAccessException:
                 statusCode = (int)HttpStatusCode.Unauthorized;
+                logger.LogWarning("Unauthorized access attempt - Path: {Path}", context.Request.Path);
                 errorResponse = new ErrorResponse("Unauthorized", exception.Message);
                 break;
 
@@ -91,27 +93,31 @@ public class ExceptionHandlingMiddleware(
                 var errorId = Guid.NewGuid().ToString();
                 var traceId = context.TraceIdentifier;
 
-                logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}", errorId, traceId, context.Request.Path);
-
-                var problemDetails = new ProblemDetails
-                {
-                    Status = statusCode,
-                    Title = "An error occurred",
-                    Detail = showDetail ? exception.Message : "An unexpected error occurred. Please try again later.",
-                    Instance = context.Request.Path,
-                    Extensions = new Dictionary<string, object?> 
-                    {
-                        { "errorId", errorId },
-                        { "traceId", traceId }
-                    }
-                };
-
                 if (showDetail)
-                {
-                    problemDetails.Extensions.Add("stackTrace", exception.StackTrace);
-                }
+                    logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}. StackTrace: {StackTrace}",
+                        errorId, traceId, context.Request.Path, exception.StackTrace);
+                else
+                    logger.LogError(exception, "Error {ErrorId}, TraceId {TraceId} at {Path}",
+                        errorId, traceId, context.Request.Path);
 
-                errorResponse = problemDetails; 
+                errorResponse = new ErrorResponse
+                {
+                    StatusCode = statusCode,
+                    Message = "An unexpected error occurred. Please try again later.",
+                    Details = showDetail
+                        ? new
+                        {
+                            ErrorId = errorId,
+                            TraceId = traceId,
+                            ExceptionMessage = exception.Message,
+                            exception.StackTrace
+                        }
+                        : new
+                        {
+                            ErrorId = errorId,
+                            TraceId = traceId
+                        }
+                };
                 break;
         }
 

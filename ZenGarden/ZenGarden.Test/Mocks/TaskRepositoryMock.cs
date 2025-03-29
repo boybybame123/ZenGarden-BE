@@ -20,12 +20,7 @@ public static class TaskRepositoryMock
             .Returns(Task.CompletedTask); // Giả lập việc xoá thành công.
 
         // Mock UpdateAsync (kế thừa từ GenericRepository)
-        mock.Setup(repo => repo.Update(It.IsAny<Tasks>()))
-            .Callback<Tasks>(task =>
-            {
-                // Giả lập hành vi nếu cần, ví dụ lưu trạng thái của đối tượng.
-                task.Status = TasksStatus.Completed;
-            });
+        mock.Setup(repo => repo.Update(It.IsAny<Tasks>()));
 
         // Mock GetByIdAsync (kế thừa từ GenericRepository)
         mock.Setup(repo => repo.GetByIdAsync(It.IsAny<int>()))

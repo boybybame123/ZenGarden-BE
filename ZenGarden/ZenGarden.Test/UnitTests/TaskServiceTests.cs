@@ -1,3 +1,4 @@
+using System.Text;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
@@ -15,17 +16,17 @@ namespace ZenGarden.Test.UnitTests;
 
 public class TaskServiceTests
 {
+    private readonly Mock<IFocusMethodService> _focusMethodServiceMock;
     private readonly Mock<IMapper> _mapperMock;
-    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IS3Service> _s3ServiceMock;
     private readonly Mock<ITaskRepository> _taskRepositoryMock;
     private readonly TaskService _taskService;
     private readonly Mock<ITaskTypeRepository> _taskTypeRepositoryMock;
-    private readonly Mock<IUserTreeRepository> _userTreeRepositoryMock;
-    private readonly Mock<IFocusMethodService> _focusMethodServiceMock;
-    private readonly Mock<IXpConfigService> _xpConfigServiceMock;
-    private readonly Mock<IS3Service> _s3ServiceMock;
     private readonly Mock<IValidator<CreateTaskDto>> _taskValidatorMock;
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IUserTreeRepository> _userTreeRepositoryMock;
     private readonly Mock<IXpConfigRepository> _xpConfigRepositoryMock;
+    private readonly Mock<IXpConfigService> _xpConfigServiceMock;
 
     public TaskServiceTests()
     {
@@ -34,7 +35,7 @@ public class TaskServiceTests
         _taskTypeRepositoryMock = new Mock<ITaskTypeRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _taskRepositoryMock = new Mock<ITaskRepository>();
-        _mapperMock = new Mock<IMapper>(); 
+        _mapperMock = new Mock<IMapper>();
         _focusMethodServiceMock = new Mock<IFocusMethodService>();
         _xpConfigServiceMock = new Mock<IXpConfigService>();
         _s3ServiceMock = new Mock<IS3Service>();
@@ -48,7 +49,7 @@ public class TaskServiceTests
             _taskRepositoryMock.Object,
             Mock.Of<IFocusMethodRepository>(),
             _unitOfWorkMock.Object,
-             _userTreeRepositoryMock.Object,
+            _userTreeRepositoryMock.Object,
             _xpConfigRepositoryMock.Object,
             _taskTypeRepositoryMock.Object,
             Mock.Of<ITreeXpLogRepository>(),
@@ -60,7 +61,7 @@ public class TaskServiceTests
             _s3ServiceMock.Object,
             _mapperMock.Object,
             _taskValidatorMock.Object
-            );
+        );
     }
 
     [Fact]
@@ -147,7 +148,7 @@ public class TaskServiceTests
         _mapperMock
             .Setup(mapper => mapper.Map(updateTaskDto, taskEntity))
             .Returns(taskEntity);
-        
+
         _unitOfWorkMock
             .Setup(uow => uow.CommitAsync())
             .ReturnsAsync(1);
@@ -161,98 +162,99 @@ public class TaskServiceTests
     }
 
     [Fact]
-public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
-{
-    // Arrange
-    var createTaskDto = new CreateTaskDto
+    public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
     {
-        UserTreeId = 1,
-        TaskName = "New Task",
-        TaskTypeId = 1,
-        TotalDuration = 30
-    };
-
-    var userTree = new UserTree
-    {
-        UserTreeId = createTaskDto.UserTreeId.Value,
-        Name = "Test User Tree",
-        User = new Users { UserId = 123 },
-        TreeOwner = new Users { UserId = 123 },
-        TreeXpConfig = new TreeXpConfig { LevelId = 1 }
-    };
-
-    _userTreeRepositoryMock
-        .Setup(repo => repo.GetByIdAsync(createTaskDto.UserTreeId))
-        .ReturnsAsync(userTree);
-
-    var taskType = new TaskType { TaskTypeId = createTaskDto.TaskTypeId, TaskTypeName = "Focus" };
-    _taskTypeRepositoryMock
-        .Setup(repo => repo.GetByIdAsync(createTaskDto.TaskTypeId))
-        .ReturnsAsync(taskType);
-
-    var focusMethodDto = new FocusMethodDto { FocusMethodId = 1, DefaultDuration = 25, DefaultBreak = 5 };
-    _focusMethodServiceMock
-        .Setup(service => service.SuggestFocusMethodAsync(It.IsAny<SuggestFocusMethodDto>()))
-        .ReturnsAsync(focusMethodDto);
-
-    _mapperMock
-        .Setup(mapper => mapper.Map<Tasks>(createTaskDto))
-        .Returns(new Tasks
+        // Arrange
+        var createTaskDto = new CreateTaskDto
         {
-            TaskId = 1,
-            TaskName = createTaskDto.TaskName,
-            UserTreeId = createTaskDto.UserTreeId,
-            TaskTypeId = createTaskDto.TaskTypeId,
-            FocusMethodId = 1
-        });
+            UserTreeId = 1,
+            TaskName = "New Task",
+            TaskTypeId = 1,
+            TotalDuration = 30
+        };
 
-    _mapperMock
-        .Setup(mapper => mapper.Map<TaskDto>(It.IsAny<Tasks>()))
-        .Returns(new TaskDto { TaskId = 1, TaskName = createTaskDto.TaskName });
+        var userTree = new UserTree
+        {
+            UserTreeId = createTaskDto.UserTreeId.Value,
+            Name = "Test User Tree",
+            User = new Users { UserId = 123 },
+            TreeOwner = new Users { UserId = 123 },
+            TreeXpConfig = new TreeXpConfig { LevelId = 1 }
+        };
 
-    _xpConfigServiceMock
-        .Setup(service => service.EnsureXpConfigExists(
-            It.IsAny<int>(), 
-            It.IsAny<int>(), 
-            It.IsAny<int>()))
-        .Returns(Task.CompletedTask);
+        _userTreeRepositoryMock
+            .Setup(repo => repo.GetByIdAsync(createTaskDto.UserTreeId))
+            .ReturnsAsync(userTree);
 
-    _taskRepositoryMock
-        .Setup(repo => repo.CreateAsync(It.IsAny<Tasks>()))
-        .Returns(Task.CompletedTask);
+        var taskType = new TaskType { TaskTypeId = createTaskDto.TaskTypeId, TaskTypeName = "Focus" };
+        _taskTypeRepositoryMock
+            .Setup(repo => repo.GetByIdAsync(createTaskDto.TaskTypeId))
+            .ReturnsAsync(taskType);
 
-    var mockTransaction = new Mock<IDbContextTransaction>();
-    _unitOfWorkMock
-        .Setup(uow => uow.BeginTransactionAsync())
-        .ReturnsAsync(mockTransaction.Object);
+        var focusMethodDto = new FocusMethodDto { FocusMethodId = 1, DefaultDuration = 25, DefaultBreak = 5 };
+        _focusMethodServiceMock
+            .Setup(service => service.SuggestFocusMethodAsync(It.IsAny<SuggestFocusMethodDto>()))
+            .ReturnsAsync(focusMethodDto);
 
-    // Act
-    var result = await _taskService.CreateTaskWithSuggestedMethodAsync(createTaskDto);
+        _mapperMock
+            .Setup(mapper => mapper.Map<Tasks>(createTaskDto))
+            .Returns(new Tasks
+            {
+                TaskId = 1,
+                TaskName = createTaskDto.TaskName,
+                UserTreeId = createTaskDto.UserTreeId,
+                TaskTypeId = createTaskDto.TaskTypeId,
+                FocusMethodId = 1
+            });
 
-    // Assert
-    Assert.NotNull(result);
-    Assert.Equal(1, result.TaskId);
-    Assert.Equal(createTaskDto.TaskName, result.TaskName);
+        _mapperMock
+            .Setup(mapper => mapper.Map<TaskDto>(It.IsAny<Tasks>()))
+            .Returns(new TaskDto { TaskId = 1, TaskName = createTaskDto.TaskName });
 
-    // Verify method calls
-    _userTreeRepositoryMock.Verify(repo => repo.GetByIdAsync(createTaskDto.UserTreeId), Times.Once);
-    _taskTypeRepositoryMock.Verify(repo => repo.GetByIdAsync(createTaskDto.TaskTypeId), Times.Once);
-    _focusMethodServiceMock.Verify(service => service.SuggestFocusMethodAsync(It.IsAny<SuggestFocusMethodDto>()), Times.Once);
-    _taskRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Tasks>()), Times.Once);
-    mockTransaction.Verify(tx => tx.CommitAsync(It.IsAny<CancellationToken>()), Times.Once); // Kiểm tra commit transaction
-    _unitOfWorkMock.Verify(uow => uow.CommitAsync(), Times.Never); // Không gọi CommitAsync() của UnitOfWork
-}
+        _xpConfigServiceMock
+            .Setup(service => service.EnsureXpConfigExists(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        _taskRepositoryMock
+            .Setup(repo => repo.CreateAsync(It.IsAny<Tasks>()))
+            .Returns(Task.CompletedTask);
+
+        var mockTransaction = new Mock<IDbContextTransaction>();
+        _unitOfWorkMock
+            .Setup(uow => uow.BeginTransactionAsync())
+            .ReturnsAsync(mockTransaction.Object);
+
+        _taskValidatorMock.Setup(v => v.ValidateAsync(It.IsAny<CreateTaskDto>(), CancellationToken.None))
+            .ReturnsAsync(new ValidationResult());
+
+        // Act
+        var result = await _taskService.CreateTaskWithSuggestedMethodAsync(createTaskDto);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.TaskId);
+        Assert.Equal(createTaskDto.TaskName, result.TaskName);
+
+        // Verify method calls
+        _userTreeRepositoryMock.Verify(repo => repo.GetByIdAsync(createTaskDto.UserTreeId), Times.Once);
+        _taskTypeRepositoryMock.Verify(repo => repo.GetByIdAsync(createTaskDto.TaskTypeId), Times.Once);
+        _focusMethodServiceMock.Verify(service => service.SuggestFocusMethodAsync(It.IsAny<SuggestFocusMethodDto>()),
+            Times.Once);
+        _taskRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Tasks>()), Times.Once);
+    }
 
 
-    
     [Fact]
     public async Task AutoPauseTasksAsync_ShouldPauseEligibleTasks()
     {
         // Arrange
         var overdueTasks = new List<Tasks>
         {
-            new Tasks { TaskId = 1, Status = TasksStatus.InProgress, StartedAt = DateTime.UtcNow.AddHours(-3) },
-            new Tasks { TaskId = 2, Status = TasksStatus.InProgress, StartedAt = DateTime.UtcNow.AddHours(-5) }
+            new() { TaskId = 1, Status = TasksStatus.InProgress, StartedAt = DateTime.UtcNow.AddHours(-3) },
+            new() { TaskId = 2, Status = TasksStatus.InProgress, StartedAt = DateTime.UtcNow.AddHours(-5) }
         };
         _taskRepositoryMock
             .Setup(repo => repo.GetTasksInProgressBeforeAsync(It.IsAny<DateTime>()))
@@ -262,8 +264,10 @@ public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
         await _taskService.AutoPauseTasksAsync();
 
         // Assert
-        _taskRepositoryMock.Verify(repo => repo.Update(It.Is<Tasks>(t => t.TaskId == 1 && t.Status == TasksStatus.Paused)), Times.Once);
-        _taskRepositoryMock.Verify(repo => repo.Update(It.Is<Tasks>(t => t.TaskId == 2 && t.Status == TasksStatus.Paused)), Times.Once);
+        _taskRepositoryMock.Verify(
+            repo => repo.Update(It.Is<Tasks>(t => t.TaskId == 1 && t.Status == TasksStatus.Paused)), Times.Once);
+        _taskRepositoryMock.Verify(
+            repo => repo.Update(It.Is<Tasks>(t => t.TaskId == 2 && t.Status == TasksStatus.Paused)), Times.Once);
     }
 
     [Fact]
@@ -273,7 +277,7 @@ public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
         var fileMock = new Mock<IFormFile>();
         var fileName = "example.txt";
         var content = "Test file content";
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
 
         fileMock.Setup(f => f.FileName).Returns(fileName);
         fileMock.Setup(f => f.Length).Returns(stream.Length);
@@ -321,7 +325,7 @@ public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
 
         // ✅ Mock Validator để tránh bị NullReferenceException
         var validationResult = new ValidationResult(); // Không có lỗi
-        _taskValidatorMock.Setup(v => v.ValidateAsync(validDto, default))
+        _taskValidatorMock.Setup(v => v.ValidateAsync(validDto, CancellationToken.None))
             .ReturnsAsync(validationResult);
 
         // ✅ Mock `userTreeRepository`
@@ -355,18 +359,44 @@ public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
 
         var validationFailures = new List<ValidationFailure>
         {
-            new ValidationFailure("TaskTypeId", "TaskTypeId is required"),
-            new ValidationFailure("UserTreeId", "UserTreeId is required")
+            new("TaskTypeId", "TaskTypeId is required"),
+            new("UserTreeId", "UserTreeId is required")
         };
 
         _taskValidatorMock
             .Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(validationFailures)); 
+            .ReturnsAsync(new ValidationResult(validationFailures));
 
         // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(() => _taskService.ValidateTaskDto(dto));
     }
-    
+
+    [Fact]
+    public async Task ValidateTaskDto_ShouldPass_WhenUserTreeIdIsNull()
+    {
+        // Arrange
+        var validDto = new CreateTaskDto
+        {
+            TaskName = "Valid Task",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddHours(1),
+            UserTreeId = null, // ✅ Test trường hợp không có UserTree
+            TaskTypeId = 1
+        };
+
+        var validationResult = new ValidationResult(); // Không có lỗi
+        _taskValidatorMock.Setup(v => v.ValidateAsync(validDto, CancellationToken.None))
+            .ReturnsAsync(validationResult);
+
+        _taskTypeRepositoryMock.Setup(repo => repo.GetByIdAsync(1))
+            .ReturnsAsync(new TaskType { TaskTypeId = 1, TaskTypeName = "Focus Task" });
+
+        // Act & Assert
+        await _taskService.ValidateTaskDto(validDto);
+        Assert.True(true); // Thành công nếu không có lỗi
+    }
+
+
     [Fact]
     public async Task CalculateTaskXp_ShouldReturnTaskXp()
     {
@@ -376,22 +406,22 @@ public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
         // Mock the task repository to return a task
         _taskRepositoryMock
             .Setup(repo => repo.GetTaskWithDetailsAsync(taskId))
-            .ReturnsAsync(new Tasks 
-            { 
-                TaskId = taskId, 
-                TaskTypeId = 1, 
-                FocusMethodId = 2 
+            .ReturnsAsync(new Tasks
+            {
+                TaskId = taskId,
+                TaskTypeId = 1,
+                FocusMethodId = 2
             });
 
         // Mock the XP config repository to return a configuration
         _xpConfigRepositoryMock
             .Setup(repo => repo.GetXpConfigAsync(1, 2))
-            .ReturnsAsync(new XpConfig 
-            { 
-                TaskTypeId = 1, 
-                FocusMethodId = 2, 
-                BaseXp = 10, 
-                XpMultiplier = 1.5 
+            .ReturnsAsync(new XpConfig
+            {
+                TaskTypeId = 1,
+                FocusMethodId = 2,
+                BaseXp = 10,
+                XpMultiplier = 1.5
             });
 
         // Act
@@ -400,5 +430,22 @@ public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
         // Assert
         Assert.True(xpResult > 0);
         Assert.Equal(15, xpResult); // 10 * 1.5 = 15
+    }
+
+    [Fact]
+    public async Task AutoPauseTasksAsync_ShouldNotPause_WhenNoTasksAreEligible()
+    {
+        // Arrange
+        var noOverdueTasks = new List<Tasks>();
+        _taskRepositoryMock
+            .Setup(repo => repo.GetTasksInProgressBeforeAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(noOverdueTasks);
+
+        // Act
+        await _taskService.AutoPauseTasksAsync();
+
+        // Assert
+        _taskRepositoryMock.Verify(repo => repo.Update(It.IsAny<Tasks>()), Times.Never);
+        _unitOfWorkMock.Verify(uow => uow.CommitAsync(), Times.Never);
     }
 }

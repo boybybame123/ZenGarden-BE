@@ -29,11 +29,6 @@ public class CreateChallengeValidator : AbstractValidator<CreateChallengeDto>
         RuleFor(x => x.EndDate)
             .Must((dto, endDate) => endDate == null || (dto.StartDate != null && endDate > dto.StartDate))
             .WithMessage("End date must be after the start date if provided.");
-
-        RuleFor(x => x.Tasks)
-            .NotNull().WithMessage("Tasks list is required.")
-            .Must(tasks => tasks is not { Count: 0 })
-            .WithMessage("Tasks list cannot be empty."); // Nếu có thì phải có ít nhất 1 task
     }
 
     private static bool BeAValidDate(DateTime? date)
