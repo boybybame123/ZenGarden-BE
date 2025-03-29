@@ -22,16 +22,13 @@ public class ChallengeService(
     : IChallengeService
 {
     public async Task<ChallengeDto> CreateChallengeAsync(int userId, CreateChallengeDto dto)
-{
-    await using var transaction = await unitOfWork.BeginTransactionAsync();
-    try
     {
-        var user = await userRepository.GetByIdAsync(userId) 
+        var user = await userRepository.GetByIdAsync(userId)
                    ?? throw new KeyNotFoundException("User not found.");
 
         if (user.Role is { RoleId: 2 })
         {
-            var wallet = await walletRepository.GetByUserIdAsync(userId) 
+            var wallet = await walletRepository.GetByUserIdAsync(userId)
                          ?? throw new InvalidOperationException("Wallet not found.");
 
             if (wallet.Balance < dto.Reward)
@@ -45,6 +42,7 @@ public class ChallengeService(
         var challenge = mapper.Map<Challenge>(dto);
         challenge.CreatedAt = DateTime.UtcNow;
         await challengeRepository.CreateAsync(challenge);
+        await unitOfWork.CommitAsync();
 
         var userChallenge = new UserChallenge
         {
@@ -56,57 +54,38 @@ public class ChallengeService(
             CreatedAt = DateTime.UtcNow
         };
         await userChallengeRepository.CreateAsync(userChallenge);
+        await unitOfWork.CommitAsync();
 
-        if (dto.Tasks is { Count: > 0 })
-        {
-            var challengeTasks = new List<ChallengeTask>();
-
-            foreach (var taskDto in dto.Tasks)
-            {
-                var safeTaskDto = new CreateTaskDto
-                {
-                    TaskName = taskDto.TaskName,
-                    TaskDescription = taskDto.TaskDescription,
-                    TotalDuration = taskDto.TotalDuration ?? 30,
-                    StartDate = dto.StartDate ?? DateTime.UtcNow,
-                    EndDate = dto.EndDate ?? dto.StartDate?.AddDays(7) ?? DateTime.UtcNow.AddDays(7),
-                    WorkDuration = taskDto.WorkDuration ?? 25,
-                    BreakTime = taskDto.BreakTime ?? 5,
-                    TaskTypeId = taskDto.TaskTypeId,
-                    UserTreeId = taskDto.UserTreeId > 0 ? taskDto.UserTreeId : null,
-                    FocusMethodId = taskDto.FocusMethodId > 0 ? taskDto.FocusMethodId : null
-                };
-
-                var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(safeTaskDto);
-                challengeTasks.Add(new ChallengeTask
-                {
-                    ChallengeId = challenge.ChallengeId,
-                    TaskId = createdTask.TaskId,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
-            await challengeTaskRepository.AddRangeAsync(challengeTasks);
-        }
-
-        await transaction.CommitAsync();
         return mapper.Map<ChallengeDto>(challenge);
     }
-    finally
+
+    public async Task<TaskDto> CreateTaskForChallengeAsync(int challengeId, CreateTaskDto taskDto)
     {
-        await transaction.RollbackAsync();
+        if (await challengeRepository.GetByIdAsync(challengeId) is null)
+            throw new KeyNotFoundException("Challenge not found.");
+
+        var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(taskDto);
+
+        var challengeTask = new ChallengeTask
+        {
+            ChallengeId = challengeId,
+            TaskId = createdTask.TaskId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await challengeTaskRepository.CreateAsync(challengeTask);
+        await unitOfWork.CommitAsync();
+        return createdTask;
     }
-}
-
-
 
     public async Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
     {
-        await ValidateJoinChallenge(userId, challengeId, joinChallengeDto);
-
         var challenge = await challengeRepository.GetByIdAsync(challengeId)
                         ?? throw new KeyNotFoundException("Challenge not found!");
 
+        await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
+        if (challenge.Status == ChallengeStatus.Canceled)
+            throw new InvalidOperationException("This challenge has been canceled and cannot be joined.");
 
         await using var transaction = await unitOfWork.BeginTransactionAsync();
         try
@@ -158,13 +137,13 @@ public class ChallengeService(
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
     {
-        var challenges = await challengeRepository.GetAllAsync();
+        var challenges = await challengeRepository.GetChallengeAll();
         return mapper.Map<List<ChallengeDto>>(challenges);
     }
 
     public async Task<ChallengeDto> GetChallengeByIdAsync(int challengeId)
     {
-        var challenge = await challengeRepository.GetByIdAsync(challengeId);
+        var challenge = await challengeRepository.GetByIdChallengeAsync(challengeId);
         return mapper.Map<ChallengeDto>(challenge);
     }
 
@@ -185,6 +164,9 @@ public class ChallengeService(
         var userChallenge = await userChallengeRepository.GetUserChallengeAsync(userId, challengeId);
         if (userChallenge == null)
             throw new KeyNotFoundException("You are not part of this challenge!");
+
+        if (userChallenge.ChallengeRole == UserChallengeRole.Organizer)
+            throw new InvalidOperationException("Organizer cannot leave the challenge.");
 
         await using var transaction = await unitOfWork.BeginTransactionAsync();
         try
@@ -282,12 +264,12 @@ public class ChallengeService(
         return userChallenge == null ? null : mapper.Map<UserChallengeProgressDto>(userChallenge);
     }
 
-    private async Task ValidateJoinChallenge(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
+    private async Task ValidateJoinChallenge(Challenge challenge, int userId, JoinChallengeDto joinChallengeDto)
     {
-        if (await challengeRepository.GetByIdAsync(challengeId) == null)
+        if (challenge == null)
             throw new KeyNotFoundException("Challenge not found!");
 
-        if (await userChallengeRepository.GetUserChallengeAsync(userId, challengeId) != null)
+        if (await userChallengeRepository.GetUserChallengeAsync(userId, challenge.ChallengeId) != null)
             throw new InvalidOperationException("You have already joined this challenge!");
 
         var userTree = await userTreeRepository.GetByIdAsync(joinChallengeDto.UserTreeId);

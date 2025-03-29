@@ -6,7 +6,7 @@ public class ErrorResponse
     {
     }
 
-    public ErrorResponse(string message, string? details = null)
+    public ErrorResponse(string message, object? details = null)
     {
         StatusCode = 500;
         Message = message;
@@ -15,5 +15,5 @@ public class ErrorResponse
 
     public int StatusCode { get; set; }
     public string Message { get; set; } = string.Empty;
-    public string? Details { get; set; }
+    public object? Details { get; set; }
 }

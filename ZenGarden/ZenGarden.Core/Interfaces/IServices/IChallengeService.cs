@@ -13,4 +13,5 @@ public interface IChallengeService
     Task<bool> LeaveChallengeAsync(int userId, int challengeId);
     Task<List<UserChallengeRankingDto>> GetChallengeRankingsAsync(int challengeId);
     Task<UserChallengeProgressDto?> GetUserChallengeProgressAsync(int userId, int challengeId);
+    Task<TaskDto> CreateTaskForChallengeAsync(int challengeId, CreateTaskDto taskDto);
 }
