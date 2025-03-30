@@ -40,6 +40,14 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         return CreatedAtAction(nameof(GetChallenge), new { challengeId = challenge.ChallengeId }, challenge);
     }
 
+    [HttpPost("tasks/{challengeId:int}")]
+    public async Task<IActionResult> CreateTaskForChallenge(int challengeId, [FromBody] CreateTaskDto taskDto)
+    {
+        var createdTask = await challengeService.CreateTaskForChallengeAsync(challengeId, taskDto);
+        return CreatedAtAction(nameof(CreateTaskForChallenge), new { taskId = createdTask.TaskId }, createdTask);
+    }
+
+
     [HttpPost("join/{challengeId:int}")]
     [Authorize]
     public async Task<IActionResult> JoinChallenge(int challengeId, [FromBody] JoinChallengeDto joinDto)

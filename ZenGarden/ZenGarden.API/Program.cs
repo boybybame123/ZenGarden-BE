@@ -148,7 +148,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", "https://localhost:7262, https://localhost:5153")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -231,17 +231,22 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowAll");
 app.MapHub<NotificationHub>("/hubs/notification");
+app.UseRouting();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<JwtMiddleware>();
 app.UseMiddleware<UserContextMiddleware>();
 app.UseMiddleware<PerformanceMiddleware>();
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseMiddleware<LoggingMiddleware>();
 app.UseMiddleware<ValidationMiddleware>();
 app.UseIpRateLimiting();
-app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseDeveloperExceptionPage();
 
 app.Run();
+
+public partial class Program
+{
+}

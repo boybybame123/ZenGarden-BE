@@ -22,10 +22,15 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("by-id/{taskId:int}")]
     public async Task<IActionResult> GetTaskById(int taskId)
     {
+        if (taskId <= 0) return BadRequest(new { Message = "Invalid task ID" });
+
         var task = await _taskService.GetTaskByIdAsync(taskId);
-        if (task == null) return NotFound();
+
+        if (task == null) return NotFound(new { Message = $"Task with ID {taskId} not found" });
+
         return Ok(task);
     }
+
 
     [HttpGet("by-user-tree/{userTreeId:int}")]
     public async Task<IActionResult> GetTasksByUserTreeId(int userTreeId)
@@ -81,8 +86,15 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpPost("complete-task/{taskId:int}")]
     public async Task<IActionResult> CompleteTask(int taskId)
     {
-        await _taskService.CompleteTaskAsync(taskId);
-        return Ok(new { message = "Task completed successfully." });
+        try
+        {
+            await _taskService.CompleteTaskAsync(taskId);
+            return Ok(new { message = "Task completed successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPost("update-overdue")]
@@ -95,8 +107,19 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("calculate-xp/{taskId:int}")]
     public async Task<IActionResult> CalculateTaskXp(int taskId)
     {
-        var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
-        return Ok(new { taskId, xpEarned });
+        try
+        {
+            var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
+            return Ok(new { taskId, xpEarned });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPut("pause/{taskId:int}")]

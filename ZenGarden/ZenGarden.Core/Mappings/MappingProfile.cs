@@ -42,9 +42,13 @@ public class MappingProfile : Profile
         CreateMap<CreateTaskTypeDto, TaskType>();
         CreateMap<UpdateTaskTypeDto, TaskType>()
             .ForAllMembers(opts => opts.Condition((_, _, srcMember) => srcMember != null));
-        CreateMap<Challenge, ChallengeDto>().ReverseMap();
+        CreateMap<Challenge, ChallengeDto>()
+            .ForMember(dest => dest.Tasks, opt => opt.MapFrom(src => src.ChallengeTasks.Select(ct => ct.Tasks)));
         CreateMap<CreateChallengeDto, Challenge>();
         CreateMap<UpdateChallengeDto, Challenge>();
+        CreateMap<UpdateTaskDto, Task>()
+            .ForAllMembers(opts => opts.Condition((_, dest, srcMember) =>
+                srcMember != null && !Equals(srcMember, dest)));
 
         CreateMap<UserChallenge, UserChallengeProgressDto>()
             .ForMember(dest => dest.UserName,

@@ -15,7 +15,7 @@ public class ItemDto
 
     public decimal? Cost { get; set; }
 
-    public IFormFile? File { get; set; } 
+    public IFormFile? File { get; set; }
     public ItemStatus Status { get; set; }
 
 
