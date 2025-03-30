@@ -31,8 +31,10 @@ public class UserChallengeRepository(ZenGardenContext context)
             .Include(uc => uc.User)
             .OrderByDescending(uc => uc.Progress)
             .ThenByDescending(uc => uc.CompletedTasks)
+            .ThenBy(uc => uc.UpdatedAt)
             .ToListAsync();
     }
+
 
     public async Task UpdateProgressAsync(int userId, int challengeId)
     {

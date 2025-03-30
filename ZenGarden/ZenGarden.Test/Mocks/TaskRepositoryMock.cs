@@ -11,32 +11,10 @@ public static class TaskRepositoryMock
     {
         var mock = new Mock<ITaskRepository>();
 
-        // Mock AddAsync (kế thừa từ GenericRepository)
-        mock.Setup(repo => repo.CreateAsync(It.IsAny<Tasks>()))
-            .Returns(Task.CompletedTask); // Giả lập việc thêm thành công.
-
-        // Mock RemoveAsync (kế thừa từ GenericRepository)
-        mock.Setup(repo => repo.RemoveAsync(It.IsAny<Tasks>()))
-            .Returns(Task.CompletedTask); // Giả lập việc xoá thành công.
-
-        // Mock UpdateAsync (kế thừa từ GenericRepository)
-        mock.Setup(repo => repo.Update(It.IsAny<Tasks>()));
-
-        // Mock GetByIdAsync (kế thừa từ GenericRepository)
-        mock.Setup(repo => repo.GetByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync((int id) =>
-                new Tasks
-                {
-                    TaskId = id,
-                    Status = TasksStatus.Completed,
-                    TotalDuration = 60
-                });
-
         // Mock GetTaskWithDetailsAsync
         mock.Setup(repo => repo.GetTaskWithDetailsAsync(It.IsAny<int>()))
             .ReturnsAsync((int taskId) =>
                 taskId == 1 ? new Tasks { TaskId = taskId, TaskTypeId = 2, FocusMethodId = 3 } : null);
-
 
         // Mock GetAllWithDetailsAsync
         mock.Setup(repo => repo.GetAllWithDetailsAsync())
@@ -64,11 +42,10 @@ public static class TaskRepositoryMock
                     UserTree = new UserTree
                     {
                         UserId = userId,
-                        Name = "Tree 1", // Giá trị cần thiết cho thuộc tính Name
-                        TreeXpConfig = new TreeXpConfig(), // Giá trị cần thiết cho TreeXpConfig
-                        User = new Users { UserId = userId, UserName = "User 1" }, // Giá trị cần thiết cho User
-                        TreeOwner = new Users
-                            { UserId = userId, UserName = "Owner 1" } // Giá trị cần thiết cho TreeOwner
+                        Name = "Tree 1",
+                        TreeXpConfig = new TreeXpConfig(),
+                        User = new Users { UserId = userId, UserName = "User 1" },
+                        TreeOwner = new Users { UserId = userId, UserName = "Owner 1" }
                     },
                     Status = TasksStatus.Completed
                 },
@@ -79,11 +56,10 @@ public static class TaskRepositoryMock
                     UserTree = new UserTree
                     {
                         UserId = userId,
-                        Name = "Tree 2", // Giá trị cần thiết
-                        TreeXpConfig = new TreeXpConfig(), // Giá trị cần thiết cho TreeXpConfig
-                        User = new Users { UserId = userId, UserName = "User 2" }, // Giá trị cần thiết cho User
-                        TreeOwner = new Users
-                            { UserId = userId, UserName = "Owner 2" } // Giá trị cần thiết cho TreeOwner
+                        Name = "Tree 2",
+                        TreeXpConfig = new TreeXpConfig(),
+                        User = new Users { UserId = userId, UserName = "User 2" },
+                        TreeOwner = new Users { UserId = userId, UserName = "Owner 2" }
                     },
                     Status = TasksStatus.NotStarted
                 }
