@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Swashbuckle.AspNetCore.Annotations;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.DTOs;
@@ -14,7 +15,7 @@ public class ItemDto
     public string? Rarity { get; set; }
 
     public decimal? Cost { get; set; }
-
+  
     public IFormFile? File { get; set; }
     public ItemStatus Status { get; set; }
 

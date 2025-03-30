@@ -105,7 +105,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.OperationFilter<FileUploadOperation>();
+    //c.OperationFilter<FileUploadOperation>();
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
 
 
