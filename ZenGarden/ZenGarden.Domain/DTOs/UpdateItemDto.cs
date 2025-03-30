@@ -1,4 +1,5 @@
-﻿using ZenGarden.Domain.Enums;
+﻿using Microsoft.AspNetCore.Http;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.DTOs;
 
@@ -13,6 +14,7 @@ public class UpdateItemDto
 
     public decimal? Cost { get; set; }
 
+    public IFormFile? File { get; set; }
 
     public ItemStatus Status { get; set; }
 }

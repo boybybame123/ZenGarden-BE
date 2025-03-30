@@ -4,7 +4,7 @@ namespace ZenGarden.Domain.DTOs;
 
 public class UpdateItemDetailDto
 {
-    public IFormFile? File { get; set; }
+    
 
     public int ItemDetailId { get; set; }
 
@@ -14,7 +14,7 @@ public class UpdateItemDetailDto
     public string? Description { get; set; } // Mô tả item
 
 
-    public string? MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
+    public IFormFile? File { get; set; }
 
     public string? Effect { get; set; }
 

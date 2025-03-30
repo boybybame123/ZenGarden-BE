@@ -10,8 +10,14 @@ public class FileUploadOperation : IOperationFilter
     {
         operation.Parameters ??= new List<OpenApiParameter>();
 
+        var formParams = context.MethodInfo.GetParameters()
+            .Where(p => p.ParameterType.IsClass && p.ParameterType != typeof(string))
+            .SelectMany(p => p.ParameterType.GetProperties())
+            .Where(p => p.PropertyType != typeof(IFormFile) && p.PropertyType != typeof(IFormFileCollection))
+            .ToList();
+
         var fileParams = context.MethodInfo.GetParameters()
-            .Where(p => HasFileUpload(p.ParameterType)) // Kiểm tra nếu tham số có chứa IFormFile
+            .Where(p => HasFileUpload(p.ParameterType))
             .ToList();
 
         if (!fileParams.Any())
@@ -26,7 +32,7 @@ public class FileUploadOperation : IOperationFilter
                     Schema = new OpenApiSchema
                     {
                         Type = "object",
-                        Properties = GetFileSchema(fileParams)
+                        Properties = GetCombinedSchema(formParams, fileParams)
                     }
                 }
             }
@@ -41,18 +47,49 @@ public class FileUploadOperation : IOperationFilter
                    p.PropertyType == typeof(IFormFile) || p.PropertyType == typeof(IFormFileCollection));
     }
 
-    private Dictionary<string, OpenApiSchema> GetFileSchema(List<ParameterInfo> parameters)
+    private Dictionary<string, OpenApiSchema> GetCombinedSchema(
+        List<PropertyInfo> formParams, List<ParameterInfo> fileParams)
     {
         var schema = new Dictionary<string, OpenApiSchema>();
 
-        foreach (var param in parameters)
-            if (param.ParameterType == typeof(IFormFile) || param.ParameterType == typeof(IFormFileCollection))
-                schema[param.Name ?? "file"] = new OpenApiSchema { Type = "string", Format = "binary" };
-            else
-                foreach (var prop in param.ParameterType.GetProperties().Where(p =>
-                             p.PropertyType == typeof(IFormFile) || p.PropertyType == typeof(IFormFileCollection)))
-                    schema[prop.Name] = new OpenApiSchema { Type = "string", Format = "binary" };
+        foreach (var prop in formParams)
+        {
+            schema[prop.Name] = new OpenApiSchema
+            {
+                Type = GetOpenApiType(prop.PropertyType),
+                Format = GetOpenApiFormat(prop.PropertyType)
+            };
+        }
+
+        foreach (var param in fileParams)
+        {
+            foreach (var prop in param.ParameterType.GetProperties()
+                         .Where(p => p.PropertyType == typeof(IFormFile) || p.PropertyType == typeof(IFormFileCollection)))
+            {
+                schema[prop.Name] = new OpenApiSchema { Type = "string", Format = "binary" };
+            }
+        }
 
         return schema;
+    }
+
+    private string GetOpenApiType(Type type)
+    {
+        return type switch
+        {
+            _ when type == typeof(int) || type == typeof(int?) => "integer",
+            _ when type == typeof(decimal) || type == typeof(float) || type == typeof(double) => "number",
+            _ when type == typeof(bool) || type == typeof(bool?) => "boolean",
+            _ => "string"
+        };
+    }
+
+    private string GetOpenApiFormat(Type type)
+    {
+        return type switch
+        {
+            _ when type == typeof(decimal) || type == typeof(float) || type == typeof(double) => "double",
+            _ => null
+        };
     }
 }
