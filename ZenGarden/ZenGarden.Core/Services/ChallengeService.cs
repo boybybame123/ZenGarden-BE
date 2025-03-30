@@ -84,8 +84,6 @@ public class ChallengeService(
                         ?? throw new KeyNotFoundException("Challenge not found!");
 
         await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
-        if (challenge.Status == ChallengeStatus.Canceled)
-            throw new InvalidOperationException("This challenge has been canceled and cannot be joined.");
 
         await using var transaction = await unitOfWork.BeginTransactionAsync();
         try
@@ -123,10 +121,9 @@ public class ChallengeService(
             }
 
             await taskRepository.AddRangeAsync(newTasks);
-            await transaction.CommitAsync();
-            await unitOfWork.CommitAsync();
 
-            return true;
+            await transaction.CommitAsync(); // Commit transaction trước
+            return await unitOfWork.CommitAsync() > 0;
         }
         catch
         {
@@ -134,6 +131,7 @@ public class ChallengeService(
             throw;
         }
     }
+
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
     {
@@ -266,8 +264,8 @@ public class ChallengeService(
 
     private async Task ValidateJoinChallenge(Challenge challenge, int userId, JoinChallengeDto joinChallengeDto)
     {
-        if (challenge == null)
-            throw new KeyNotFoundException("Challenge not found!");
+        if (challenge.Status == ChallengeStatus.Canceled)
+            throw new InvalidOperationException("This challenge has been canceled and cannot be joined.");
 
         if (await userChallengeRepository.GetUserChallengeAsync(userId, challenge.ChallengeId) != null)
             throw new InvalidOperationException("You have already joined this challenge!");
@@ -276,8 +274,11 @@ public class ChallengeService(
         if (userTree == null || userTree.UserId != userId)
             throw new ArgumentException("Invalid tree selection!");
 
-        if (joinChallengeDto.TaskTypeId.HasValue &&
-            await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value) == null)
-            throw new KeyNotFoundException("TaskType not found.");
+        if (joinChallengeDto.TaskTypeId.HasValue)
+        {
+            var taskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
+            if (taskType == null)
+                throw new KeyNotFoundException("TaskType not found.");
+        }
     }
 }
