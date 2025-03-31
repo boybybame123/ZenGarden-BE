@@ -75,7 +75,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
 
 
     [HttpPost("create-item")]
-    public async Task<IActionResult> UploadAndCreateItem([FromForm] ItemDto request)
+    public async Task<IActionResult> UploadAndCreateItem([FromForm] CreateItemDto request)
     {
         // Validate the uploaded file
         if (request.File == null)

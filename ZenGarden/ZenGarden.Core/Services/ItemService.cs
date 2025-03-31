@@ -26,7 +26,7 @@ public class ItemService(
             throw;
         }
 
-        await notificationService.PushNotificationAsync(1, "Item", "Get all items");
+       
         return mapper.Map<List<ItemDto>>(items);
     }
 
@@ -37,7 +37,7 @@ public class ItemService(
                ?? throw new KeyNotFoundException($"Item with ID {itemId} not found.");
     }
 
-    public async Task CreateItemAsync(ItemDto item)
+    public async Task CreateItemAsync(CreateItemDto item)
     {
         var i = mapper.Map<Item>(item);
 
@@ -50,7 +50,8 @@ public class ItemService(
     public async Task UpdateItemAsync(UpdateItemDto item)
     {
         var updateItem = await GetItemByIdAsync(item.ItemId);
-
+        if(updateItem == null)
+            throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
 
         if (updateItem != null)
         {
