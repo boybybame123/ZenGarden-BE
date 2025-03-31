@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.API.Controllers;
@@ -8,13 +9,18 @@ namespace ZenGarden.API.Controllers;
 public class UseItemController(IUseItemService useItemService) : ControllerBase
 {
     [HttpPost("use")]
-    public async Task<IActionResult> UseItem(int userId, int itemId, int usertreeId)
+    public async Task<IActionResult> UseItem( int itemId, int? usertreeId)
     {
-        var result = await useItemService.UseItemAsync(userId, itemId, usertreeId);
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdString, out int parsedUserId))
+        {
+            return BadRequest(new { message = "Invalid user ID" });
+        }
 
-        if (result.Contains("thành công"))
-            return Ok(new { message = result });
+        var result = await useItemService.UseItemAsync(parsedUserId, itemId, usertreeId);
 
-        return BadRequest(new { message = result });
+            return Ok(result);
+
+      
     }
 }
