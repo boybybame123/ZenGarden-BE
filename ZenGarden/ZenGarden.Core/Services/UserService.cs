@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using ZenGarden.Shared.Helpers;
+using static System.Net.WebRequestMethods;
 
 namespace ZenGarden.Core.Services;
 
@@ -17,6 +19,7 @@ public class UserService(
     IUserConfigRepository userConfigRepository,
     IUserTreeService userTreeService,
     IUserTreeRepository userTreeRepository,
+    IBagItemRepository bagItemRepository,
     IUnitOfWork unitOfWork,
     IMapper mapper) : IUserService
 {
@@ -153,12 +156,12 @@ public class UserService(
             var userConfig = new UserConfig
             {
                 UserId = newUser.UserId,
-                BackgroundConfig = "",
-                SoundConfig = "",
-                ImageUrl = "",
+                BackgroundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/OIP.jpg?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441883&Signature=LNL9h7zMH2%2BeZpQdBdDhnoCVi1k%3D",
+                SoundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/sound-design-elements-sfx-ps-022-302865.mp3?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441777&Signature=mMR0vRZRqJQvQmeJ4qYTh6xMkp0%3D",
+                ImageUrl = "https://hcm.ss.bfcplatform.vn/zengarden/male.png?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441822&Signature=DJNiWS8ebIWoyCqDEqfccJocY5I%3D",
                 CreatedAt = DateTime.UtcNow
             };
-
+            
             await walletRepository.CreateAsync(wallet);
             await bagRepository.CreateAsync(bag);
             await userExperienceRepository.CreateAsync(userExperience);
@@ -173,6 +176,31 @@ public class UserService(
             throw;
         }
     }
+
+    public async Task MakeItemdefault(int userid)
+    {
+        if (userid == 0)
+            throw new ArgumentException("User Id cannot be empty.");
+
+        var bag = await bagRepository.GetByUserIdAsync(userid)
+                  ?? throw new KeyNotFoundException($"Bag for user with ID {userid} not found.");
+
+        var itembag = new BagItem
+        {
+            BagId = bag.BagId,
+            ItemId = 1,
+            Quantity = 1,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await bagItemRepository.CreateAsync(itembag);
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to create item in bag.");
+    }
+
+
+
+
 
 
     public async Task<string> GenerateAndSaveOtpAsync(string email)
