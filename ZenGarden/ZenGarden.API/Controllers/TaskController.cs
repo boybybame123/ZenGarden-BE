@@ -83,7 +83,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "Task started successfully." });
     }
 
-    [HttpPost("complete-task/{taskId:int}/{userTreeId:int}")]
+    [HttpPost("complete-task/{taskId:int}/{userTreeId:int?}")]
     public async Task<IActionResult> CompleteTask(int taskId, int? userTreeId)
     {
         try

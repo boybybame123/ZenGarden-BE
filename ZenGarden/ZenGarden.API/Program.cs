@@ -104,7 +104,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "3.0" });
 
 
     c.MapType<FileObject>(() => new OpenApiSchema
@@ -146,12 +146,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins(
-                    "http://localhost:5173",
-                    "https://localhost:7262",
-                    "https://localhost:5153",
-                    "https://zengarden-fe.vercel.app"
-                )
+            policy.WithOrigins("http://localhost:5173", "https://localhost:7262", "http://localhost:5153")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -230,8 +225,10 @@ builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseDeveloperExceptionPage();
 app.UseSwagger();
 app.UseSwaggerUI();
+
 app.UseCors("AllowAll");
 app.MapHub<NotificationHub>("/hubs/notification");
 app.UseRouting();

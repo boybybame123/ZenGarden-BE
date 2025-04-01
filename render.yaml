@@ -5,8 +5,6 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      - key: ASPNETCORE_URLS
-        value: http://+:8080
       - key: Jwt__Key
         sync: false
       - key: Jwt__Issuer
