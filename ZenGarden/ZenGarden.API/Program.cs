@@ -146,7 +146,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "https://localhost:7262, https://localhost:5153")
+            policy.WithOrigins(
+                    "http://localhost:5173",
+                    "https://localhost:7262",
+                    "https://localhost:5153",
+                    "https://zengarden-fe.vercel.app"
+                )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
