@@ -14,4 +14,5 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<List<Tasks>> GetTasksByChallengeIdAsync(int challengeId);
     Task<List<Tasks>> GetTasksInProgressBeforeAsync(DateTime thresholdTime);
     Task<Tasks?> GetActiveTaskByUserTreeIdAsync(int userTreeId);
+    Task<List<Tasks>> GetDailyTasksAsync();
 }
