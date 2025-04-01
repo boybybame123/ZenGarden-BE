@@ -8,7 +8,7 @@ public interface IItemService
     Task ActiveItem(int itemId);
     Task<List<ItemDto>> GetAllItemsAsync();
     Task<Item?> GetItemByIdAsync(int ItemId);
-    Task CreateItemAsync(ItemDto item);
+    Task CreateItemAsync(CreateItemDto item);
     Task UpdateItemAsync(UpdateItemDto item);
     Task DeleteItemAsync(int ItemId);
 }
