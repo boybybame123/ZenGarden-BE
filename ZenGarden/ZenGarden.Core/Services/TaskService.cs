@@ -211,10 +211,23 @@ public class TaskService(
             throw new InvalidOperationException("Failed to start the task.");
     }
 
-    public async Task CompleteTaskAsync(int taskId)
+    public async Task CompleteTaskAsync(int taskId, int? userTreeId)
     {
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
+        if (task.TaskTypeId == dailyTaskTypeId && task.CompletedAt.HasValue &&
+            task.CompletedAt.Value.Date == DateTime.UtcNow.Date)
+            throw new InvalidOperationException("You have already completed this daily task today.");
+
+        if (task.UserTreeId == null)
+        {
+            var userTree = await userTreeRepository.GetByIdAsync(userTreeId)
+                           ?? throw new InvalidOperationException("User has no available trees.");
+            task.UserTreeId = userTree.UserTreeId;
+            task.UserTree = userTree;
+        }
 
         ValidateTaskForCompletion(task);
 
@@ -242,8 +255,10 @@ public class TaskService(
                     await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
                 }
 
-                task.Status = TasksStatus.Completed;
                 task.CompletedAt = DateTime.UtcNow;
+
+                if (task.TaskTypeId != dailyTaskTypeId)
+                    task.Status = TasksStatus.Completed;
 
                 taskRepository.Update(task);
                 userTreeRepository.Update(task.UserTree);
@@ -343,6 +358,19 @@ public class TaskService(
             await unitOfWork.CommitAsync();
     }
 
+    public async Task ResetDailyTasksAsync()
+    {
+        var dailyTasks = await taskRepository.GetDailyTasksAsync();
+        foreach (var task in dailyTasks)
+        {
+            task.CompletedAt = null;
+            task.Status = TasksStatus.NotStarted;
+        }
+
+        await taskRepository.UpdateRangeAsync(dailyTasks);
+        await unitOfWork.CommitAsync();
+    }
+
     public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
     {
         if (taskResultFile != null)
@@ -410,5 +438,10 @@ public class TaskService(
         if (task.TotalDuration.HasValue &&
             DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
             throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
+    }
+
+    private async Task<int> GetDailyTaskTypeIdAsync()
+    {
+        return await taskTypeRepository.GetTaskTypeIdByNameAsync("daily");
     }
 }

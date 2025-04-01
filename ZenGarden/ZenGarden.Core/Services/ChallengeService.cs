@@ -105,6 +105,12 @@ public class ChallengeService(
             {
                 if (ct.Tasks == null) continue;
 
+                if (joinChallengeDto.TaskTypeId.HasValue)
+                {
+                    var taskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
+                    if (taskType == null) throw new ArgumentException("Invalid TaskTypeId!");
+                }
+
                 var createTaskDto = new CreateTaskDto
                 {
                     TaskTypeId = joinChallengeDto.TaskTypeId ?? 0,
@@ -120,10 +126,10 @@ public class ChallengeService(
                 newTasks.Add(mapper.Map<Tasks>(createdTask));
             }
 
-            await taskRepository.AddRangeAsync(newTasks);
+            if (newTasks.Count != 0) await taskRepository.AddRangeAsync(newTasks);
 
-            await transaction.CommitAsync(); // Commit transaction trước
-            return await unitOfWork.CommitAsync() > 0;
+            await transaction.CommitAsync();
+            return true;
         }
         catch
         {
