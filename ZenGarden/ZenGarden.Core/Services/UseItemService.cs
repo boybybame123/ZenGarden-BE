@@ -14,9 +14,9 @@ public class UseItemService(
     IUnitOfWork unitOfWork
 ) : IUseItemService
 {
-    public async Task<string> UseItemAsync(int userId, int itemId, int? usertreeId)
+    public async Task<string> UseItemAsync(int userId, int itembagId, int? usertreeId)
     {
-        var item = await bagItemRepository.GetByIdAsync(itemId);
+        var item = await bagItemRepository.GetByIdAsync(itembagId);
         if (item == null || item.Quantity <= 0)
             return "Item không tồn tại hoặc đã hết số lượng";
 
