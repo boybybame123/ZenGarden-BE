@@ -4,10 +4,6 @@ namespace ZenGarden.Domain.DTOs;
 
 public class UpdateItemDetailDto
 {
-    
-
- 
-
     public int ItemId { get; set; } // Liên kết với bảng Item
 
 
