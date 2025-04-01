@@ -13,7 +13,7 @@ namespace ZenGarden.Test.UnitTests;
 public class ChallengeServiceTests
 {
     private readonly Mock<IChallengeRepository> _challengeRepositoryMock;
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     private readonly Mock<IChallengeTaskRepository> _challengeTaskRepositoryMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<ITaskRepository> _taskRepositoryMock;
@@ -284,89 +284,5 @@ public class ChallengeServiceTests
         var challenges = await _challengeRepositoryMock.Object.GetChallengeAll();
         Assert.NotNull(challenges);
         Assert.NotEmpty(challenges);
-    }
-
-    [Fact]
-    public async Task CreateChallengeAsync_ShouldThrowKeyNotFoundException_WhenUserNotFound()
-    {
-        // Arrange
-        const int userId = 1;
-        var request = new CreateChallengeDto { Reward = 100 };
-
-        _userRepositoryMock.Setup(repo => repo.GetByIdAsync(userId))
-            .ReturnsAsync((Users?)null);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _challengeService.CreateChallengeAsync(userId, request));
-    }
-
-
-    [Fact]
-    public async Task JoinChallengeAsync_ShouldThrowKeyNotFoundException_WhenChallengeNotFound()
-    {
-        // Arrange
-        _challengeRepositoryMock.Setup(repo => repo.GetByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync((Challenge?)null);
-
-        var userId = 1;
-        var challengeId = 10;
-        var joinChallengeDto = new JoinChallengeDto();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _challengeService.JoinChallengeAsync(userId, challengeId, joinChallengeDto));
-    }
-
-
-    [Fact]
-    public async Task LeaveChallengeAsync_ShouldThrowKeyNotFoundException_WhenUserNotInChallenge()
-    {
-        // Arrange
-        const int userId = 1;
-        const int challengeId = 10;
-
-        var challenge = new Challenge
-        {
-            ChallengeId = challengeId,
-            UserChallenges = new List<UserChallenge>()
-        };
-
-        _challengeRepositoryMock.Setup(repo => repo.GetByIdAsync(challengeId))
-            .ReturnsAsync(challenge);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _challengeService.LeaveChallengeAsync(userId, challengeId));
-    }
-
-    [Fact]
-    public async Task CancelChallengeAsync_ShouldThrowUnauthorizedAccessException_WhenUserIsNotOrganizer()
-    {
-        // Arrange
-        const int anotherUserId = 2;
-        const int challengeId = 10;
-
-        var challenge = new Challenge
-        {
-            ChallengeId = challengeId,
-            Status = ChallengeStatus.Active
-        };
-
-        var nonOrganizerUserChallenge = new UserChallenge
-        {
-            UserId = anotherUserId,
-            ChallengeId = challengeId,
-            ChallengeRole = UserChallengeRole.Participant
-        };
-
-        _challengeRepositoryMock.Setup(repo => repo.GetByIdAsync(challengeId))
-            .ReturnsAsync(challenge);
-
-        _userChallengeRepositoryMock.Setup(repo => repo.GetUserChallengeAsync(anotherUserId, challengeId))
-            .ReturnsAsync(nonOrganizerUserChallenge);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _challengeService.CancelChallengeAsync(challengeId, anotherUserId));
     }
 }

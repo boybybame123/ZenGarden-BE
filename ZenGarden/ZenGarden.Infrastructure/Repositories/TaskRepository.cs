@@ -98,11 +98,4 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .OrderByDescending(t => t.UpdatedAt)
             .FirstOrDefaultAsync();
     }
-
-    public async Task<List<Tasks>> GetDailyTasksAsync()
-    {
-        return await _context.Tasks
-            .Where(t => t.TaskType.TaskTypeName.Equals("daily", StringComparison.CurrentCultureIgnoreCase))
-            .ToListAsync();
-    }
 }

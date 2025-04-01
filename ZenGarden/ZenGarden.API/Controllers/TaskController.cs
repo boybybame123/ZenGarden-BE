@@ -83,12 +83,12 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "Task started successfully." });
     }
 
-    [HttpPost("complete-task/{taskId:int}/{userTreeId:int?}")]
-    public async Task<IActionResult> CompleteTask(int taskId, int? userTreeId)
+    [HttpPost("complete-task/{taskId:int}")]
+    public async Task<IActionResult> CompleteTask(int taskId)
     {
         try
         {
-            await _taskService.CompleteTaskAsync(taskId, userTreeId);
+            await _taskService.CompleteTaskAsync(taskId);
             return Ok(new { message = "Task completed successfully." });
         }
         catch (InvalidOperationException ex)
