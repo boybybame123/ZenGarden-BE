@@ -104,7 +104,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "3.0" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
 
 
     c.MapType<FileObject>(() => new OpenApiSchema
@@ -146,7 +146,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "https://localhost:7262", "http://localhost:5153")
+            policy.WithOrigins("http://localhost:5173", "https://localhost:7262", "http://localhost:5153", "https://zengarden-fe.vercel.app")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -226,10 +226,6 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseDeveloperExceptionPage();
-//app.UseSwagger(c =>
-//{
-//    c.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi2_0;
-//});
 app.UseSwagger();
 app.UseSwaggerUI();
 
