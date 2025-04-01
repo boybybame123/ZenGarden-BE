@@ -78,72 +78,65 @@ public class ChallengeService(
         return createdTask;
     }
 
-   public async Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
-{
-    var challenge = await challengeRepository.GetByIdAsync(challengeId)
-                    ?? throw new KeyNotFoundException("Challenge not found!");
-
-    await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
-
-    await using var transaction = await unitOfWork.BeginTransactionAsync();
-    try
+    public async Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
     {
-        await userChallengeRepository.CreateAsync(new UserChallenge
+        var challenge = await challengeRepository.GetByIdAsync(challengeId)
+                        ?? throw new KeyNotFoundException("Challenge not found!");
+
+        await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync();
+        try
         {
-            ChallengeId = challengeId,
-            UserId = userId,
-            ChallengeRole = UserChallengeRole.Participant,
-            Status = UserChallengeStatus.InProgress,
-            JoinedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        });
-
-        var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
-        var newTasks = new List<Tasks>();
-
-        foreach (var ct in challengeTasks)
-        {
-            if (ct.Tasks == null) continue;
-
-            if (joinChallengeDto.TaskTypeId.HasValue)
+            await userChallengeRepository.CreateAsync(new UserChallenge
             {
-                var taskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
-                if (taskType == null)
+                ChallengeId = challengeId,
+                UserId = userId,
+                ChallengeRole = UserChallengeRole.Participant,
+                Status = UserChallengeStatus.InProgress,
+                JoinedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
+            var newTasks = new List<Tasks>();
+
+            foreach (var ct in challengeTasks)
+            {
+                if (ct.Tasks == null) continue;
+
+                if (joinChallengeDto.TaskTypeId.HasValue)
                 {
-                    throw new ArgumentException("Invalid TaskTypeId!");
+                    var taskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
+                    if (taskType == null) throw new ArgumentException("Invalid TaskTypeId!");
                 }
+
+                var createTaskDto = new CreateTaskDto
+                {
+                    TaskTypeId = joinChallengeDto.TaskTypeId ?? 0,
+                    UserTreeId = joinChallengeDto.UserTreeId,
+                    TaskName = ct.Tasks.TaskName,
+                    TaskDescription = ct.Tasks.TaskDescription,
+                    TotalDuration = ct.Tasks.TotalDuration,
+                    StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
+                    EndDate = ct.Tasks.EndDate ?? challenge.EndDate
+                };
+
+                var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(createTaskDto);
+                newTasks.Add(mapper.Map<Tasks>(createdTask));
             }
 
-            var createTaskDto = new CreateTaskDto
-            {
-                TaskTypeId = joinChallengeDto.TaskTypeId ?? 0,
-                UserTreeId = joinChallengeDto.UserTreeId,
-                TaskName = ct.Tasks.TaskName,
-                TaskDescription = ct.Tasks.TaskDescription,
-                TotalDuration = ct.Tasks.TotalDuration,
-                StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
-                EndDate = ct.Tasks.EndDate ?? challenge.EndDate
-            };
+            if (newTasks.Count != 0) await taskRepository.AddRangeAsync(newTasks);
 
-            var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(createTaskDto);
-            newTasks.Add(mapper.Map<Tasks>(createdTask));
+            await transaction.CommitAsync();
+            return true;
         }
-
-        if (newTasks.Count != 0)
+        catch
         {
-            await taskRepository.AddRangeAsync(newTasks);
+            await transaction.RollbackAsync();
+            throw;
         }
-
-        await transaction.CommitAsync();
-        return true; 
     }
-    catch
-    {
-        await transaction.RollbackAsync();
-        throw;
-    }
-}
-
 
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()

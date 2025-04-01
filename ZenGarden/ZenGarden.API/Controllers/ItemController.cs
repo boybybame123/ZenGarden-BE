@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Stripe.Forwarding;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -63,12 +62,8 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
 
 
     [HttpPut("update-item-detail")]
-    public async Task<IActionResult> UpdateItemDetail([FromForm]UpdateItemDetailDto itemDetail)
+    public async Task<IActionResult> UpdateItemDetail([FromForm] UpdateItemDetailDto itemDetail)
     {
-        
-
-
-
         await _itemDetailService.UpdateItemDetailAsync(itemDetail);
         return Ok(new { message = "item detail updated successfully" });
     }

@@ -285,13 +285,13 @@ public class ChallengeServiceTests
         Assert.NotNull(challenges);
         Assert.NotEmpty(challenges);
     }
-    
+
     [Fact]
     public async Task CreateChallengeAsync_ShouldThrowKeyNotFoundException_WhenUserNotFound()
     {
         // Arrange
-        const int userId = 1; 
-        var request = new CreateChallengeDto { Reward = 100 }; 
+        const int userId = 1;
+        var request = new CreateChallengeDto { Reward = 100 };
 
         _userRepositoryMock.Setup(repo => repo.GetByIdAsync(userId))
             .ReturnsAsync((Users?)null);
@@ -310,7 +310,7 @@ public class ChallengeServiceTests
 
         var userId = 1;
         var challengeId = 10;
-        var joinChallengeDto = new JoinChallengeDto(); 
+        var joinChallengeDto = new JoinChallengeDto();
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
@@ -328,7 +328,7 @@ public class ChallengeServiceTests
         var challenge = new Challenge
         {
             ChallengeId = challengeId,
-            UserChallenges = new List<UserChallenge>() 
+            UserChallenges = new List<UserChallenge>()
         };
 
         _challengeRepositoryMock.Setup(repo => repo.GetByIdAsync(challengeId))
@@ -356,19 +356,17 @@ public class ChallengeServiceTests
         {
             UserId = anotherUserId,
             ChallengeId = challengeId,
-            ChallengeRole = UserChallengeRole.Participant 
+            ChallengeRole = UserChallengeRole.Participant
         };
 
         _challengeRepositoryMock.Setup(repo => repo.GetByIdAsync(challengeId))
             .ReturnsAsync(challenge);
 
         _userChallengeRepositoryMock.Setup(repo => repo.GetUserChallengeAsync(anotherUserId, challengeId))
-            .ReturnsAsync(nonOrganizerUserChallenge); 
+            .ReturnsAsync(nonOrganizerUserChallenge);
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _challengeService.CancelChallengeAsync(challengeId, anotherUserId));
     }
-
-
 }

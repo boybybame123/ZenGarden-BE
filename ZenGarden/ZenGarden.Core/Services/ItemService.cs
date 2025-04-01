@@ -10,8 +10,7 @@ namespace ZenGarden.Core.Services;
 public class ItemService(
     IItemRepository itemRepository,
     IUnitOfWork unitOfWork,
-    IMapper mapper,
-    INotificationService notificationService) : IItemService
+    IMapper mapper) : IItemService
 {
     public async Task<List<ItemDto>> GetAllItemsAsync()
     {
@@ -26,7 +25,7 @@ public class ItemService(
             throw;
         }
 
-       
+
         return mapper.Map<List<ItemDto>>(items);
     }
 
@@ -50,21 +49,18 @@ public class ItemService(
     public async Task UpdateItemAsync(UpdateItemDto item)
     {
         var updateItem = await GetItemByIdAsync(item.ItemId);
-        if(updateItem == null)
+        if (updateItem == null)
             throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
 
-        if (updateItem != null)
-        {
-            updateItem.Name = item.Name ?? updateItem.Name;
-            updateItem.Type = item.Type != null ? item.Type : updateItem.Type;
-            updateItem.Rarity = item.Rarity ?? updateItem.Rarity;
-            updateItem.Cost = item.Cost ?? updateItem.Cost;
-            updateItem.Status = item.Status;
-            updateItem.UpdatedAt = DateTime.Now;
-        }
+        updateItem.Name = item.Name ?? updateItem.Name;
+        updateItem.Type = item.Type;
+        updateItem.Rarity = item.Rarity ?? updateItem.Rarity;
+        updateItem.Cost = item.Cost ?? updateItem.Cost;
+        updateItem.Status = item.Status;
+        updateItem.UpdatedAt = DateTime.Now;
 
 
-        if (updateItem != null) itemRepository.Update(updateItem);
+        itemRepository.Update(updateItem);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update item.");
     }
