@@ -97,7 +97,7 @@ public class ChallengeService(
                 JoinedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
-
+            await unitOfWork.CommitAsync();
             var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
             var newTasks = new List<Tasks>();
 
@@ -126,7 +126,9 @@ public class ChallengeService(
                 newTasks.Add(mapper.Map<Tasks>(createdTask));
             }
 
-            if (newTasks.Count != 0) await taskRepository.AddRangeAsync(newTasks);
+            if (newTasks.Count != 0) 
+            await taskRepository.AddRangeAsync(newTasks);
+            await unitOfWork.CommitAsync();
 
             await transaction.CommitAsync();
             return true;
