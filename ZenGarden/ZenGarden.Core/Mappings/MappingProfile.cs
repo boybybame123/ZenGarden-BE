@@ -51,6 +51,24 @@ public class MappingProfile : Profile
         CreateMap<UpdateTaskDto, Task>()
             .ForAllMembers(opts => opts.Condition((_, dest, srcMember) =>
                 srcMember != null && !Equals(srcMember, dest)));
+        CreateMap<TaskDto, Tasks>()
+            .ForMember(dest => dest.TaskName, opt => opt.MapFrom(src => src.TaskName))
+            .ForMember(dest => dest.TaskDescription, opt => opt.MapFrom(src => src.TaskDescription))
+            .ForMember(dest => dest.TotalDuration, opt => opt.MapFrom(src => src.TotalDuration))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate));
+
+        CreateMap<CreateTaskDto, Tasks>()
+            .ForMember(dest => dest.TaskName, opt => opt.MapFrom(src => src.TaskName))
+            .ForMember(dest => dest.TaskDescription, opt => opt.MapFrom(src => src.TaskDescription))
+            .ForMember(dest => dest.TotalDuration, opt => opt.MapFrom(src => src.TotalDuration))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate))
+            .ForMember(dest => dest.WorkDuration, opt => opt.MapFrom(src => src.WorkDuration))
+            .ForMember(dest => dest.BreakTime, opt => opt.MapFrom(src => src.BreakTime))
+            .ForMember(dest => dest.TaskTypeId, opt => opt.MapFrom(src => src.TaskTypeId))
+            .ForMember(dest => dest.UserTreeId, opt => opt.MapFrom(src => src.UserTreeId))
+            .ForMember(dest => dest.FocusMethodId, opt => opt.MapFrom(src => src.FocusMethodId));
 
         CreateMap<UserChallenge, UserChallengeProgressDto>()
             .ForMember(dest => dest.UserName,
