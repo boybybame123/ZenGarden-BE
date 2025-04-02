@@ -9,22 +9,15 @@ namespace ZenGarden.Domain.Entities;
 
 public partial class UserExperience
 {
-    [Key, ForeignKey("User")]
+    public  int UserExperienceId { get; set; }
     public int UserId { get; set; }
-    [Required]
-    public long TotalXp { get; set; } = 0;
-
-    public int CurrentLevel { get; set; } = 1;
-
+    public double TotalXp { get; set; } = 0;
     public int XpToNextLevel { get; set; } = 100; 
-
     public int LevelId { get; set; } 
-
-    public DateTime? UpdatedAt { get; set; }
-
-    [ForeignKey("UserId")]
+    public int StreakDays { get; set; } = 0;
+    public bool IsMaxLevel { get; set; } = false;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Users User { get; set; }
-
-    [ForeignKey("LevelId")]
-    public virtual UserLevelConfig UserLevelConfig { get; set; }
+    public virtual UserXpConfig UserXpConfig { get; set; }
 }

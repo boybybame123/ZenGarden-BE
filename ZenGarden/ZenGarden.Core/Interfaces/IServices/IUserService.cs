@@ -6,12 +6,9 @@ namespace ZenGarden.Core.Interfaces.IServices;
 public interface IUserService
 {
     Task<List<UserDto>> GetAllUsersAsync();
-    Task<List<Users>> GetAllUserFilterAsync(UserFilterDto filter);
     Task<Users?> GetUserByIdAsync(int userId);
     Task<Users?> GetUserByEmailAsync(string email);
-    Task ChangeUserisActiveAsync(int userId);
-    Task CreateUserAsync(Users user);
-    Task UpdateUserAsync(UserDto user);
+    Task UpdateUserAsync(UpdateUserDTO user);
     Task DeleteUserAsync(int userId);
     Task<Users?> ValidateUserAsync(string? email, string? phone, string password);
     Task<Users?> GetUserByRefreshTokenAsync(string refreshToken);
@@ -21,4 +18,5 @@ public interface IUserService
     Task<bool> ResetPasswordAsync(string email, string otp, string newPassword);
     Task<string> GenerateAndSaveOtpAsync(string email);
     Task<bool> ChangePasswordAsync(int userId, string oldPassword, string newPassword);
+    Task OnUserLoginAsync(int userId);
 }

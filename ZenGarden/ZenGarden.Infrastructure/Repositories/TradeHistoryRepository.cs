@@ -1,5 +1,8 @@
-﻿namespace ZenGarden.Infrastructure.Repositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Domain.Entities;
+using ZenGarden.Infrastructure.Persistence;
 
-internal class TradeHistoryRepository
-{
-}
+namespace ZenGarden.Infrastructure.Repositories;
+
+public class TradeHistoryRepository(ZenGardenContext context)
+    : GenericRepository<TradeHistory>(context), ITradeHistoryRepository;

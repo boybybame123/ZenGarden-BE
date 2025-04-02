@@ -2,7 +2,6 @@ using System.Security.Claims;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ZenGarden.API.Response;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -33,6 +32,7 @@ public class AuthController(
         var refreshToken = tokenService.GenerateRefreshToken();
 
         await userService.UpdateUserRefreshTokenAsync(user.UserId, refreshToken, DateTime.UtcNow.AddDays(7));
+        await userService.OnUserLoginAsync(user.UserId);
 
         return Ok(new { Token = accessToken, RefreshToken = refreshToken });
     }

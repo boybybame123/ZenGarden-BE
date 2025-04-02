@@ -1,95 +1,82 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ZenGarden.Core.Interfaces.IRepositories;
-using ZenGarden.Domain.Config;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class FocusMethodRepository : GenericRepository<FocusMethod>, IFocusMethodRepository
+public class FocusMethodRepository(ZenGardenContext context)
+    : GenericRepository<FocusMethod>(context), IFocusMethodRepository
 {
-    private readonly ZenGardenContext _context;
-    private readonly HttpClient _httpClient;
+    private readonly ZenGardenContext _context = context;
 
-    public FocusMethodRepository(ZenGardenContext context, HttpClient httpClient,
-        IOptions<OpenAiSettings> openAiSettings)
-        : base(context)
+    public async Task<List<string>> GetMethodNamesAsync()
     {
-        _context = context;
-        _httpClient = httpClient;
-        var apiKey = openAiSettings.Value.ApiKey ??
-                     throw new ArgumentNullException(nameof(openAiSettings), "OpenAI API Key is missing.");
-
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        return await _context.FocusMethod
+            .Where(fm => fm.IsActive)
+            .Select(fm => fm.Name)
+            .ToListAsync();
     }
 
-    public async Task<FocusMethod?> GetRecommendedMethodAsync(string taskName, string? taskDescription)
+    public async Task<FocusMethodDto?> GetDtoByIdAsync(int id)
     {
-        if (string.IsNullOrWhiteSpace(taskName))
-            throw new ArgumentException("Task name is required.", nameof(taskName));
+        var focusMethod = await _context.FocusMethod
+            .Where(f => f.FocusMethodId == id)
+            .Select(f => new FocusMethodDto
+            {
+                FocusMethodId = f.FocusMethodId,
+                FocusMethodName = f.Name,
+                MinDuration = f.MinDuration,
+                MaxDuration = f.MaxDuration,
+                MinBreak = f.MinBreak,
+                MaxBreak = f.MaxBreak,
+                DefaultDuration = f.DefaultDuration,
+                DefaultBreak = f.DefaultBreak,
+                XpMultiplier = f.XpMultiplier
+            })
+            .FirstOrDefaultAsync();
 
-        var availableMethods = await _context.FocusMethod.ToListAsync();
-        if (availableMethods.Count == 0) return null;
-
-        var prompt = $"Select the most suitable focus method for the task: {taskName}. " +
-                     $"Description: {taskDescription}. " +
-                     $"Available focus methods: {string.Join(", ", availableMethods.Select(m => m.Name))}. " +
-                     $"Please choose one from the list.";
-
-        var requestBody = new
-        {
-            model = "gpt-4o",
-            messages = new[] { new { role = "user", content = prompt } },
-            max_tokens = 50
-        };
-
-        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        HttpResponseMessage response;
-        try
-        {
-            response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"[ERROR] OpenAI API request failed: {ex.Message}");
-            return null;
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine(
-                $"[ERROR] OpenAI API returned {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
-            return null;
-        }
-
-        var responseBody = await response.Content.ReadAsStringAsync();
-        using var jsonDoc = JsonDocument.Parse(responseBody);
-        if (!jsonDoc.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
-            return null;
-
-        var firstChoice = choices[0];
-        if (!firstChoice.TryGetProperty("message", out var message) ||
-            !message.TryGetProperty("content", out var contentElement))
-            return null;
-
-        var suggestedMethodName = contentElement.GetString()?.Trim();
-        if (string.IsNullOrEmpty(suggestedMethodName))
-            return null;
-
-        var suggestedMethod = availableMethods.FirstOrDefault(fm =>
-            fm.Name.Equals(suggestedMethodName, StringComparison.CurrentCultureIgnoreCase));
-
-        return suggestedMethod;
+        return focusMethod;
     }
 
-
-    public async Task<FocusMethod?> GetByIdAsync(int focusMethodId)
+    public async Task<FocusMethod?> SearchBySimilarityAsync(string methodName)
     {
-        return await _context.FocusMethod.FirstOrDefaultAsync(fm => fm.FocusMethodId == focusMethodId);
+        var methods = await _context.FocusMethod.ToListAsync();
+
+        return methods
+            .OrderBy(fm => LevenshteinDistance(fm.Name, methodName))
+            .FirstOrDefault();
+    }
+
+    public async Task<FocusMethod?> GetByNameAsync(string name)
+    {
+        return await _context.FocusMethod
+            .Where(fm => fm.Name == name)
+            .FirstOrDefaultAsync();
+    }
+
+    private int LevenshteinDistance(string s1, string s2)
+    {
+        if (s1 == s2) return 0;
+        if (s1.Length == 0) return s2.Length;
+        if (s2.Length == 0) return s1.Length;
+
+        var matrix = new int[s1.Length + 1, s2.Length + 1];
+
+        for (var i = 0; i <= s1.Length; i++) matrix[i, 0] = i;
+        for (var j = 0; j <= s2.Length; j++) matrix[0, j] = j;
+
+        for (var i = 1; i <= s1.Length; i++)
+        for (var j = 1; j <= s2.Length; j++)
+        {
+            var cost = s2[j - 1] == s1[i - 1] ? 0 : 1;
+            matrix[i, j] = Math.Min(
+                Math.Min(matrix[i - 1, j] + 1, matrix[i, j - 1] + 1),
+                matrix[i - 1, j - 1] + cost
+            );
+        }
+
+        return matrix[s1.Length, s2.Length];
     }
 }

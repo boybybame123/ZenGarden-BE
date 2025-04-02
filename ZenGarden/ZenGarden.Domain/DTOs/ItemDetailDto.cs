@@ -4,27 +4,21 @@ public class ItemDetailDto
 {
     public int ItemDetailId { get; set; }
 
-    public int? ItemId { get; set; }
+    public int ItemId { get; set; } // Liên kết với bảng Item
 
-    public string? Description { get; set; }
 
-    public string? ImageUrl { get; set; }
+    public string? Description { get; set; } // Mô tả item
 
-    public string? Stats { get; set; }
 
-    public string? Requirements { get; set; }
+    public string? MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
 
-    public string? SpecialEffects { get; set; }
+    public string? Effect { get; set; } // Chứa JSON hiệu ứng
 
-    public string? DurationType { get; set; }
+    public int? Duration { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
 
-    public int? Duration { get; set; }
+    public int Sold { get; set; } // Số lần bán 
 
-    public int? Cooldown { get; set; }
+    public bool IsUnique { get; set; } = false; // TRUE nếu chỉ mua 1 lần
 
-    public int? MaxStack { get; set; }
-
-    public string? Tags { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
+    public int? MonthlyPurchaseLimit { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
 }

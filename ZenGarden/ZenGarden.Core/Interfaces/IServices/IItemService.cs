@@ -5,9 +5,10 @@ namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IItemService
 {
+    Task ActiveItem(int itemId);
     Task<List<ItemDto>> GetAllItemsAsync();
     Task<Item?> GetItemByIdAsync(int ItemId);
-    Task CreateItemAsync(Item item);
-    Task UpdateItemAsync(ItemDto item);
+    Task CreateItemAsync(CreateItemDto item);
+    Task UpdateItemAsync(UpdateItemDto item);
     Task DeleteItemAsync(int ItemId);
 }

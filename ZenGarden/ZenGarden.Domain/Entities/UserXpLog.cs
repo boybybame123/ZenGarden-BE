@@ -1,20 +1,14 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
 public class UserXpLog
 {
-    [Key] public int LogId { get; set; }
-
-    [Required] public int UserId { get; set; }
-
-    [Required] public ActivityType ActivityType { get; set; }
-
-    [Required] public int XpAmount { get; set; }
-
+    public int LogId { get; init; }
+    public int UserId { get; init; }
+    public XpSourceType XpSource { get; init; }
+    public double XpAmount { get; init; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [ForeignKey("UserId")] public virtual Users? User { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public Users? User { get; init; }
 }

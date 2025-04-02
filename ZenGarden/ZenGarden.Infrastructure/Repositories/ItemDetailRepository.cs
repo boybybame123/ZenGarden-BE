@@ -11,11 +11,9 @@ public class ItemDetailRepository(ZenGardenContext context)
     private readonly ZenGardenContext _context = context;
 
 
-    public List<ItemDetail> GetItemDetailsByItemId(int itemId)
+    public async Task<ItemDetail?> GetItemDetailsByItemId(int itemId)
     {
-        return _context.ItemDetail
-            .Where(od => od.ItemId == itemId)
-            .Include(o => o.Item)
-            .ToList();
+        return await _context.ItemDetail
+            .FirstOrDefaultAsync(od => od.ItemId == itemId);
     }
 }

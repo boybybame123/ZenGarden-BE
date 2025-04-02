@@ -1,9 +1,11 @@
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Interfaces.IRepositories;
 
 public interface IFocusMethodRepository : IGenericRepository<FocusMethod>
 {
-    Task<FocusMethod?> GetRecommendedMethodAsync(string taskName, string? taskDescription);
-    Task<FocusMethod?> GetByIdAsync(int focusMethodId);
+    Task<List<string>> GetMethodNamesAsync();
+    Task<FocusMethod?> SearchBySimilarityAsync(string methodName);
+    Task<FocusMethodDto?> GetDtoByIdAsync(int id);
 }

@@ -17,12 +17,6 @@ public class UserController(IUserService userService) : ControllerBase
         return Ok(users);
     }
 
-    [HttpGet("filter")]
-    public async Task<IActionResult> GetUsers([FromQuery] UserFilterDto filter)
-    {
-        var users = await _userService.GetAllUserFilterAsync(filter);
-        return Ok(users);
-    }
 
     [HttpGet("{userId:int}")]
     public async Task<IActionResult> GetUserById(int userId)
@@ -40,17 +34,10 @@ public class UserController(IUserService userService) : ControllerBase
         return Ok(new { message = "User deleted successfully" });
     }
 
-    [HttpGet("change-active/{userId:int}")]
-    [Produces("application/json")]
-    public async Task<IActionResult> ChangeUserIsActive(int userId)
-    {
-        await _userService.ChangeUserisActiveAsync(userId);
-        return Ok(new { message = "User active status changed successfully" });
-    }
 
     [HttpPut("update-user")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateUser(UserDto user)
+    public async Task<IActionResult> UpdateUser(UpdateUserDTO user)
     {
         await _userService.UpdateUserAsync(user);
         return Ok(new { message = "User updated successfully" });

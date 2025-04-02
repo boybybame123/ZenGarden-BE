@@ -4,33 +4,25 @@ using System;
 using System.Collections.Generic;
 using ZenGarden.Domain.Enums;
 
+#nullable enable
 namespace ZenGarden.Domain.Entities;
 
 public partial class TradeHistory
 {
     public int TradeId { get; set; }
-
-    public int? UserAid { get; set; }
-
-    public int? UserBid { get; set; }
-
-    public int? UserTreeAid { get; set; }
-
-    public int? UserTreeBid { get; set; }
-
+    public int? TreeAid { get; set; }
+    public int? DesiredTreeAID { get; set; }
+    public int? TreeOwnerAid { get; set; }
+    public int? TreeOwnerBid { get; set; }
     public decimal? TradeFee { get; set; }
-    
     public DateTime? RequestedAt { get; set; }
-
     public DateTime? CompletedAt { get; set; }
-
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public TradeStatus Status { get; set; }
-
-    public virtual Users UserA { get; set; }
-
-    public virtual Users UserB { get; set; }
-
-    public virtual UserTree UserTreeA { get; set; }
-
-    public virtual UserTree UserTreeB { get; set; }
+    public virtual UserTree? TreeA { get; set; }
+    public virtual Tree? DesiredTree { get; set; }
+    public virtual Users? TreeOwnerA { get; set; }
+    public virtual Users? TreeOwnerB { get; set; }
+  
 }

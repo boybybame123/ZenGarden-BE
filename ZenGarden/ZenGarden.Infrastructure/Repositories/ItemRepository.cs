@@ -13,7 +13,13 @@ public class ItemRepository(ZenGardenContext context) : GenericRepository<Item>(
     {
         return await _context.Item
             .Include(u => u.ItemDetail)
-            .Where(u => u.ItemDetail != null) // Chỉ lấy item có ItemDetail
             .ToListAsync();
+    }
+
+    public async Task<Item?> GetItemByIdAsync(int id)
+    {
+        return await _context.Item
+            .Include(u => u.ItemDetail)
+            .FirstOrDefaultAsync(u => u.ItemId == id);
     }
 }

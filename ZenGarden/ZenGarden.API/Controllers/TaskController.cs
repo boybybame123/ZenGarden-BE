@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -17,56 +19,113 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(tasks);
     }
 
-    [HttpGet("{taskId:int}")]
+    [HttpGet("by-id/{taskId:int}")]
     public async Task<IActionResult> GetTaskById(int taskId)
     {
+        if (taskId <= 0) return BadRequest(new { Message = "Invalid task ID" });
+
         var task = await _taskService.GetTaskByIdAsync(taskId);
-        if (task == null) return NotFound();
+
+        if (task == null) return NotFound(new { Message = $"Task with ID {taskId} not found" });
+
+        return Ok(task);
+    }
+
+
+    [HttpGet("by-user-tree/{userTreeId:int}")]
+    public async Task<IActionResult> GetTasksByUserTreeId(int userTreeId)
+    {
+        var task = await _taskService.GetTaskByUserTreeIdAsync(userTreeId);
+        return Ok(task);
+    }
+
+    [HttpGet("by-user-id/{userId:int}")]
+    public async Task<IActionResult> GetTasksByUserId(int userId)
+    {
+        var task = await _taskService.GetTaskByUserIdAsync(userId);
         return Ok(task);
     }
 
     [HttpDelete("{taskId:int}")]
-    [Produces("application/json")]
     public async Task<IActionResult> DeleteTask(int taskId)
     {
         await _taskService.DeleteTaskAsync(taskId);
         return Ok(new { message = "task deleted successfully" });
     }
 
-    [HttpPut("Update-Task")]
-    [Produces("application/json")]
-    public async Task<IActionResult> UpdateTask(TaskDto task)
+    [HttpPut("Update-Task/{taskId:int}")]
+    public async Task<IActionResult> UpdateTask(
+        int taskId, [FromBody] UpdateTaskDto task)
     {
+        if (taskId != task.TaskId)
+            return BadRequest(new { message = "Task ID mismatch" });
+
         await _taskService.UpdateTaskAsync(task);
-        return Ok(new { message = "task updated successfully" });
+        return Ok(new { message = "Task updated successfully" });
     }
+
 
     [HttpPost("create-task")]
-    public async Task<IActionResult> CreateTask([FromBody] FinalizeTaskDto dto)
+    public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
     {
-        var task = await _taskService.CreateTaskAsync(dto);
-        return CreatedAtAction(nameof(GetTaskById), new { id = task.TaskId }, task);
+        var createdTask = await _taskService.CreateTaskWithSuggestedMethodAsync(dto);
+        return Ok(createdTask);
     }
 
-    [HttpPost("suggest-focus-methods")]
-    public async Task<IActionResult> GetSuggestedFocusMethods([FromBody] CreateTaskDto dto)
-    {
-        var result = await _taskService.GetSuggestedFocusMethodsAsync(dto.TaskName, dto.TaskDescription);
-
-        return Ok(result);
-    }
-
+    [Authorize]
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
     {
-        await _taskService.StartTaskAsync(taskId);
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        await _taskService.StartTaskAsync(taskId, userId);
         return Ok(new { message = "Task started successfully." });
     }
 
-    [HttpPost("complete-task/{taskId:int}")]
-    public async Task<IActionResult> CompleteTask(int taskId)
+    [HttpPost("complete-task/{taskId:int}/{userTreeId:int?}")]
+    public async Task<IActionResult> CompleteTask(int taskId, int? userTreeId)
     {
-        await _taskService.CompleteTaskAsync(taskId);
-        return Ok(new { message = "Task completed successfully." });
+        try
+        {
+            await _taskService.CompleteTaskAsync(taskId, userTreeId);
+            return Ok(new { message = "Task completed successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("update-overdue")]
+    public async Task<IActionResult> UpdateOverdueTasks()
+    {
+        await _taskService.UpdateOverdueTasksAsync();
+        return Ok(new { message = "Overdue tasks updated successfully." });
+    }
+
+    [HttpGet("calculate-xp/{taskId:int}")]
+    public async Task<IActionResult> CalculateTaskXp(int taskId)
+    {
+        try
+        {
+            var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
+            return Ok(new { taskId, xpEarned });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("pause/{taskId:int}")]
+    public async Task<IActionResult> PauseTask(int taskId)
+    {
+        await _taskService.PauseTaskAsync(taskId);
+        return Ok(new { message = "Task paused successfully." });
     }
 }

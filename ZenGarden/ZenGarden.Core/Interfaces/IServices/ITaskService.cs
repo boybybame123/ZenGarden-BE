@@ -1,16 +1,21 @@
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface ITaskService
 {
     Task<List<TaskDto>> GetAllTaskAsync();
-    Task<Tasks?> GetTaskByIdAsync(int taskId);
-    Task<Tasks> CreateTaskAsync(FinalizeTaskDto dto);
-    Task UpdateTaskAsync(TaskDto task);
+    Task<TaskDto?> GetTaskByIdAsync(int taskId);
+    Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto);
+    Task UpdateTaskAsync(UpdateTaskDto updateTaskDto);
     Task DeleteTaskAsync(int taskId);
-    Task<FocusMethod?> GetSuggestedFocusMethodsAsync(string taskName, string? taskDescription);
-    Task StartTaskAsync(int taskId);
-    Task CompleteTaskAsync(int taskId);
+    Task StartTaskAsync(int taskId, int userId);
+    Task UpdateOverdueTasksAsync();
+    Task<double> CalculateTaskXpAsync(int taskId);
+    Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId);
+    Task<List<TaskDto>> GetTaskByUserIdAsync(int userId);
+    Task PauseTaskAsync(int taskId);
+    Task AutoPauseTasksAsync();
+    Task ResetDailyTasksAsync();
+    Task CompleteTaskAsync(int taskId, int? userTreeId);
 }
