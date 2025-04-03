@@ -1,8 +1,10 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using ZenGarden.Domain.Config;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 
 namespace ZenGarden.Shared.Helpers;
@@ -43,5 +45,20 @@ public static class JwtHelper
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+    
+    public static TokenResponse GenerateTokens(Users user, JwtSettings jwtSettings)
+    {
+        var accessToken = GenerateToken(user, jwtSettings);
+        var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+        user.RefreshTokenHash = PasswordHasher.HashPassword(refreshToken);
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpiryDays);
+
+        return new TokenResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
+        };
     }
 }

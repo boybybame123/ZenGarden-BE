@@ -46,7 +46,6 @@ public class ChallengeServiceTests
             _taskRepositoryMock.Object,
             _challengeTaskRepositoryMock.Object,
             _userTreeRepositoryMock.Object,
-            _taskTypeRepositoryMock.Object,
             _walletRepositoryMock.Object,
             _userRepositoryMock.Object,
             _taskServiceMock.Object,
