@@ -14,6 +14,7 @@ public class ChallengeRepository(ZenGardenContext context)
     {
         return await _context.Challenge
             .AsNoTracking()
+            .Include(c => c.ChallengeType)  
             .Include(c => c.UserChallenges)
             .Include(c => c.ChallengeTasks)
             .ThenInclude(ct => ct.Tasks)
@@ -21,6 +22,7 @@ public class ChallengeRepository(ZenGardenContext context)
             {
                 ChallengeId = c.ChallengeId,
                 ChallengeName = c.ChallengeName,
+                ChallengeTypeId = c.ChallengeType!.ChallengeTypeId,
                 ChallengeType = c.ChallengeType,
                 UserChallenges = c.UserChallenges.Select(uc => new UserChallenge
                 {
@@ -49,6 +51,7 @@ public class ChallengeRepository(ZenGardenContext context)
     {
         return await _context.Challenge
             .AsNoTracking()
+            .Include(c => c.ChallengeType)
             .Include(c => c.UserChallenges)
             .Include(c => c.ChallengeTasks)
             .ThenInclude(ct => ct.Tasks)
@@ -57,6 +60,7 @@ public class ChallengeRepository(ZenGardenContext context)
             {
                 ChallengeId = c.ChallengeId,
                 ChallengeName = c.ChallengeName,
+                ChallengeTypeId = c.ChallengeType!.ChallengeTypeId,
                 ChallengeType = c.ChallengeType,
                 UserChallenges = c.UserChallenges.Select(uc => new UserChallenge
                 {

@@ -239,7 +239,7 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
                 .HasConstraintName("challengetask_ibfk_1");
             entity.HasOne(d => d.Tasks)
                 .WithMany(p => p.ChallengeTasks)
-                .HasForeignKey(d => d.ChallengeId)
+                .HasForeignKey(d => d.TaskId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
 

@@ -14,7 +14,7 @@ public class ChallengeTaskRepository(ZenGardenContext context)
     {
         return await _context.ChallengeTask
             .Where(ct => ct.ChallengeId == challengeId)
-            .Include(ct => ct.Tasks)
+            .Include(ct => ct.Tasks) 
             .ToListAsync();
     }
 

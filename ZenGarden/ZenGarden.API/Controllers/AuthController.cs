@@ -21,20 +21,16 @@ public class AuthController(
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
-        var validationResult = await loginValidator.ValidateAsync(loginDto);
-        if (!validationResult.IsValid)
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-
         var user = await userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
-        if (user == null) return Unauthorized(new { error = "Invalid credentials." });
+        if (user == null) 
+            return Unauthorized(new { error = "Invalid credentials." });
 
-        var accessToken = tokenService.GenerateJwtToken(user);
-        var refreshToken = tokenService.GenerateRefreshToken();
+        var tokens = tokenService.GenerateJwtToken(user);
 
-        await userService.UpdateUserRefreshTokenAsync(user.UserId, refreshToken, DateTime.UtcNow.AddDays(7));
+        await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
         await userService.OnUserLoginAsync(user.UserId);
 
-        return Ok(new { Token = accessToken, RefreshToken = refreshToken });
+        return Ok(new { tokens.AccessToken, tokens.RefreshToken });
     }
 
     [HttpPost("refresh-token")]
@@ -49,12 +45,11 @@ public class AuthController(
 
         await userService.RemoveRefreshTokenAsync(user.UserId);
 
-        var newAccessToken = tokenService.GenerateJwtToken(user);
-        var newRefreshToken = tokenService.GenerateRefreshToken();
+        var tokens = tokenService.GenerateJwtToken(user);
 
-        await userService.UpdateUserRefreshTokenAsync(user.UserId, newRefreshToken, DateTime.UtcNow.AddDays(7));
+        await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
 
-        return Ok(new { Token = newAccessToken, RefreshToken = newRefreshToken });
+        return Ok(new { tokens.AccessToken, tokens.RefreshToken });
     }
 
     [HttpPost("register")]
@@ -66,12 +61,11 @@ public class AuthController(
         var user = await userService.RegisterUserAsync(registerDto);
         if (user == null) return BadRequest(new ErrorResponse("Registration failed."));
 
-        var accessToken = tokenService.GenerateJwtToken(user);
-        var refreshToken = tokenService.GenerateRefreshToken();
+        var tokens = tokenService.GenerateJwtToken(user);
 
-        await userService.UpdateUserRefreshTokenAsync(user.UserId, refreshToken, DateTime.UtcNow.AddDays(7));
+        await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
 
-        return Ok(new { Token = accessToken, RefreshToken = refreshToken });
+        return Ok(new { tokens.AccessToken, tokens.RefreshToken });
     }
 
     [Authorize]
