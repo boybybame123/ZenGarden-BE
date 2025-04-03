@@ -12,7 +12,10 @@ public class ChallengeTaskRepository(ZenGardenContext context)
 
     public async Task<List<ChallengeTask>> GetTasksByChallengeIdAsync(int challengeId)
     {
-        return await _context.ChallengeTask.Where(ct => ct.ChallengeId == challengeId).ToListAsync();
+        return await _context.ChallengeTask
+            .Where(ct => ct.ChallengeId == challengeId)
+            .Include(ct => ct.Tasks) 
+            .ToListAsync();
     }
 
     public async Task<ChallengeTask?> GetByTaskIdAsync(int taskId)

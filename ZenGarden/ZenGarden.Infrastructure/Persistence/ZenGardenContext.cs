@@ -239,7 +239,7 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
                 .HasConstraintName("challengetask_ibfk_1");
             entity.HasOne(d => d.Tasks)
                 .WithMany(p => p.ChallengeTasks)
-                .HasForeignKey(d => d.ChallengeId)
+                .HasForeignKey(d => d.TaskId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
@@ -470,7 +470,7 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
             entity.HasOne(d => d.TaskType)
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.TaskTypeId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(d => d.UserTree)
                 .WithMany(p => p.Tasks)
@@ -507,7 +507,8 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
             entity.HasMany(e => e.Tasks)
                 .WithOne(t => t.TaskType)
                 .HasForeignKey(t => t.TaskTypeId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasMany(e => e.XpConfigs)
                 .WithOne(x => x.TaskType)
                 .HasForeignKey(x => x.TaskTypeId)

@@ -62,22 +62,31 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .ToListAsync();
     }
 
-    public async Task<List<Tasks>> GetTasksByUserChallengeAsync(int userId, int challengeId)
+    public async Task<List<Tasks>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
     {
         return await (from t in _context.Tasks
-                join ct in _context.ChallengeTask on t.TaskId equals ct.TaskId
+                join original in _context.Tasks on t.CloneFromTaskId equals original.TaskId
+                join ct in _context.ChallengeTask on original.TaskId equals ct.TaskId
                 join uc in _context.UserChallenges on ct.ChallengeId equals uc.ChallengeId
-                where uc.UserId == userId && uc.ChallengeId == challengeId
+                where uc.UserId == userId 
+                      && uc.ChallengeId == challengeId
                 select t)
             .ToListAsync();
     }
-
-    public async Task<List<Tasks>> GetTasksByChallengeIdAsync(int challengeId)
+    
+    public async Task<List<Tasks>> GetAllTasksByChallengeIdAsync(int challengeId)
     {
         return await (from t in _context.Tasks
                 join ct in _context.ChallengeTask on t.TaskId equals ct.TaskId
                 where ct.ChallengeId == challengeId
                 select t)
+            .Union(
+                from cloned in _context.Tasks
+                join original in _context.Tasks on cloned.CloneFromTaskId equals original.TaskId
+                join ct in _context.ChallengeTask on original.TaskId equals ct.TaskId
+                where ct.ChallengeId == challengeId
+                select cloned
+            )
             .ToListAsync();
     }
 
