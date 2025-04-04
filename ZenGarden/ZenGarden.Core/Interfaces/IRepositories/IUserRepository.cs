@@ -12,4 +12,5 @@ public interface IUserRepository : IGenericRepository<Users>
     Task<Users?> GetByPhoneAsync(string? phone);
     Task<FilterResult<Users>> GetAllAsync(UserFilterDto filter);
     Task<Users?> GetByIdAsync(int userId);
+    Task<bool> ExistsByUserNameAsync(string userName);
 }

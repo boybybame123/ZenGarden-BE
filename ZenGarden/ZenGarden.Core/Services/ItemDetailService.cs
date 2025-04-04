@@ -62,5 +62,4 @@ public class ItemDetailService(
 
         throw new KeyNotFoundException("ItemDetail not found.");
     }
-
 }
