@@ -90,7 +90,8 @@ public partial class Program
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<IWalletService, WalletService>();
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
-        
+        builder.Services.AddScoped<PaymentService>();
+
         // SignalR và realtime
         builder.Services.AddSignalR();
         builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
@@ -151,9 +152,14 @@ public partial class Program
         builder.Services.AddScoped<IUserChallengeRepository, UserChallengeRepository>();
         builder.Services.AddScoped<IChallengeTaskRepository, ChallengeTaskRepository>();
         builder.Services.AddScoped<IUserConfigRepository, UserConfigRepository>();
+        builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
+        builder.Services.AddScoped<IPackageRepository, PackageRepository>();
+        // other repository registrations
+
+
     }
-    
-    private static void ConfigureDbContext(WebApplicationBuilder builder)
+
+private static void ConfigureDbContext(WebApplicationBuilder builder)
     {
         var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                            ?? builder.Configuration.GetConnectionString("ZenGardenDB")
