@@ -201,6 +201,8 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasIndex("ChallengeId");
 
+                    b.HasIndex("TaskId");
+
                     b.ToTable("ChallengeTask");
                 });
 
@@ -612,6 +614,9 @@ namespace ZenGarden.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(5);
+
+                    b.Property<int?>("CloneFromTaskId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp");
@@ -1463,7 +1468,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasOne("ZenGarden.Domain.Entities.Tasks", "Tasks")
                         .WithMany("ChallengeTasks")
-                        .HasForeignKey("ChallengeId")
+                        .HasForeignKey("TaskId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
