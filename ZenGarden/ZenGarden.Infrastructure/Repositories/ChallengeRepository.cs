@@ -14,7 +14,7 @@ public class ChallengeRepository(ZenGardenContext context)
     {
         return await _context.Challenge
             .AsNoTracking()
-            .Include(c => c.ChallengeType)  
+            .Include(c => c.ChallengeType)
             .Include(c => c.UserChallenges)
             .Include(c => c.ChallengeTasks)
             .ThenInclude(ct => ct.Tasks)

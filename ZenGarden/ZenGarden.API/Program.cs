@@ -57,15 +57,15 @@ public partial class Program
             {
                 options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             });
-            
+
         builder.Services.Configure<FormOptions>(options =>
         {
             options.MultipartBodyLengthLimit = 104857600; // 100MB
         });
-        
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddAutoMapper(typeof(MappingProfile));
-        
+
         // Cấu hình các dịch vụ chính
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IEmailService, EmailService>();
@@ -91,41 +91,41 @@ public partial class Program
         builder.Services.AddScoped<IWalletService, WalletService>();
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
         builder.Services.AddScoped<PaymentService>();
-
+        
         // SignalR và realtime
         builder.Services.AddSignalR();
         builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         builder.Services.AddSingleton<RealtimeBackgroundService>();
         builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
-        
+
         // FluentValidation
         builder.Services.AddControllers()
             .AddFluentValidation(fv => { fv.RegisterValidatorsFromAssemblyContaining<LoginValidator>(); });
-            
+
         // Bảo vệ dữ liệu
         builder.Services.AddDataProtection()
             .PersistKeysToDbContext<ZenGardenContext>();
-            
+
         // Cấu hình OpenAI và DeepInfra
         ConfigureAi(builder);
-        
+
         // Cấu hình health checks
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<ZenGardenContext>();
     }
-    
+
     private static void ConfigureAi(WebApplicationBuilder builder)
     {
         builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
         builder.Services.AddHttpClient<FocusMethodRepository>();
-        
-        var deepInfraApiKey = Environment.GetEnvironmentVariable("DEEPINFRA_API_KEY") 
-                            ?? builder.Configuration["DeepInfra:ApiKey"] 
-                            ?? throw new InvalidOperationException("DeepInfra API Key is missing.");
-                            
+
+        var deepInfraApiKey = Environment.GetEnvironmentVariable("DEEPINFRA_API_KEY")
+                              ?? builder.Configuration["DeepInfra:ApiKey"]
+                              ?? throw new InvalidOperationException("DeepInfra API Key is missing.");
+
         builder.Services.Configure<OpenAiSettings>(options => { options.ApiKey = deepInfraApiKey; });
     }
-    
+
     private static void ConfigureRepositories(WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<ITradeHistoryRepository, TradeHistoryRepository>();
@@ -155,32 +155,30 @@ public partial class Program
         builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
         builder.Services.AddScoped<IPackageRepository, PackageRepository>();
         // other repository registrations
-
-
     }
-
-private static void ConfigureDbContext(WebApplicationBuilder builder)
+    
+    private static void ConfigureDbContext(WebApplicationBuilder builder)
     {
         var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-                           ?? builder.Configuration.GetConnectionString("ZenGardenDB")
-                           ?? throw new InvalidOperationException("Database connection string is missing.");
-                           
+                               ?? builder.Configuration.GetConnectionString("ZenGardenDB")
+                               ?? throw new InvalidOperationException("Database connection string is missing.");
+
         builder.Services.AddDbContext<ZenGardenContext>(options =>
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
                 x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
         );
     }
-    
+
     private static void ConfigureAuthentication(WebApplicationBuilder builder)
     {
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-        
+
         var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
-                        ?? throw new InvalidOperationException("JWT settings are missing in configuration.");
-                        
+                          ?? throw new InvalidOperationException("JWT settings are missing in configuration.");
+
         if (string.IsNullOrEmpty(jwtSettings.Key))
             throw new InvalidOperationException("JWT Key is missing in configuration.");
-            
+
         builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -201,12 +199,16 @@ private static void ConfigureDbContext(WebApplicationBuilder builder)
                 };
             });
     }
-    
+
     private static void ConfigureCors(WebApplicationBuilder builder)
     {
-        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
-                         ?? ["http://localhost:5173", "https://localhost:7262", "http://localhost:5153", "https://zengarden-fe.vercel.app"];
-                         
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+                             ??
+                             [
+                                 "http://localhost:5173", "https://localhost:7262", "http://localhost:5153",
+                                 "https://zengarden-fe.vercel.app"
+                             ];
+
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll",
@@ -219,7 +221,7 @@ private static void ConfigureDbContext(WebApplicationBuilder builder)
                 });
         });
     }
-    
+
     private static void ConfigureSwagger(WebApplicationBuilder builder)
     {
         builder.Services.AddSwaggerGen(c =>
@@ -246,7 +248,7 @@ private static void ConfigureDbContext(WebApplicationBuilder builder)
                 In = ParameterLocation.Header,
                 Description = "Enter your Bearer token in the format: Bearer {your token}"
             });
-            
+
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
@@ -259,18 +261,15 @@ private static void ConfigureDbContext(WebApplicationBuilder builder)
             });
         });
     }
-    
+
     private static void ConfigureRateLimiting(WebApplicationBuilder builder)
     {
         builder.Services.AddMemoryCache();
-        
+
         // Cấu hình rate limiting từ file nếu có, nếu không sử dụng cấu hình mặc định
         if (builder.Configuration.GetSection("IpRateLimiting").Exists())
-        {
             builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
-        }
         else
-        {
             builder.Services.Configure<IpRateLimitOptions>(options =>
             {
                 options.GeneralRules =
@@ -283,27 +282,26 @@ private static void ConfigureDbContext(WebApplicationBuilder builder)
                     }
                 ];
             });
-        }
 
         builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
         builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
         builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
         builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
     }
-    
+
     private static void ConfigureBackgroundJobs(WebApplicationBuilder builder)
     {
         builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
-        
+
         // Cấu hình logging
         builder.Logging.AddConsole();
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
-        
+
         // Cấu hình AWS
         builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
     }
-    
+
     private static void ConfigurePipeline(WebApplication app)
     {
         // Middleware exception & logging
@@ -311,31 +309,31 @@ private static void ConfigureDbContext(WebApplicationBuilder builder)
         app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseMiddleware<LoggingMiddleware>();
         app.UseMiddleware<PerformanceMiddleware>();
-        
+
         // Swagger
         app.UseSwagger();
         app.UseSwaggerUI();
-        
+
         // CORS & Routing
         app.UseCors("AllowAll");
         app.UseRouting();
-        
+
         // Rate limiting
         app.UseIpRateLimiting();
-        
+
         // Auth middleware
         app.UseMiddleware<JwtMiddleware>();
         app.UseMiddleware<UserContextMiddleware>();
         app.UseMiddleware<ValidationMiddleware>();
-        
+
         // Authentication & Authorization
         app.UseAuthentication();
         app.UseAuthorization();
-        
+
         // Endpoints
         app.MapControllers();
         app.MapHub<NotificationHub>("/hubs/notification");
-        
+
         // Health checks
         app.MapHealthChecks("/health", new HealthCheckOptions
         {

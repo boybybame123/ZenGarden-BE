@@ -211,20 +211,23 @@ public class TaskService(
             throw new InvalidOperationException("Failed to start the task.");
     }
 
-    public async Task CompleteTaskAsync(int taskId, int? userTreeId)
+    public async Task CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
     {
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
-        if (task.TaskTypeId == dailyTaskTypeId && task.CompletedAt.HasValue &&
-            task.CompletedAt.Value.Date == DateTime.UtcNow.Date)
+        if (await IsDailyTaskAlreadyCompleted(task))
             throw new InvalidOperationException("You have already completed this daily task today.");
 
         if (task.UserTreeId == null)
         {
-            var userTree = await userTreeRepository.GetByIdAsync(userTreeId)
-                           ?? throw new InvalidOperationException("User has no available trees.");
+            if (!completeTaskDto.UserTreeId.HasValue)
+                throw new ArgumentNullException(nameof(completeTaskDto),
+                    "UserTreeId is required when task doesn't have an assigned tree.");
+
+            var userTree = await userTreeRepository.GetByIdAsync(completeTaskDto.UserTreeId.Value)
+                           ?? throw new KeyNotFoundException($"UserTree with ID {completeTaskDto.UserTreeId.Value} not found.");
+
             task.UserTreeId = userTree.UserTreeId;
             task.UserTree = userTree;
         }
@@ -233,15 +236,15 @@ public class TaskService(
 
         if (task.FocusMethodId != null)
         {
-            var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
-                           ?? throw new KeyNotFoundException("XP configuration not found for this task.");
-
-            var xpEarned = xpConfig.BaseXp * xpConfig.XpMultiplier;
-
             await using var transaction = await unitOfWork.BeginTransactionAsync();
             try
             {
-                if (xpEarned > 0)
+                var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
+                               ?? throw new KeyNotFoundException("XP configuration not found for this task.");
+
+                var xpEarned = xpConfig.BaseXp * xpConfig.XpMultiplier;
+
+                if (xpEarned > 0 && task.UserTree != null)
                 {
                     task.UserTree.TotalXp += xpEarned;
 
@@ -252,35 +255,39 @@ public class TaskService(
                         XpAmount = xpEarned,
                         CreatedAt = DateTime.UtcNow
                     });
+
                     await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
                 }
 
                 task.CompletedAt = DateTime.UtcNow;
 
-                if (task.TaskTypeId != dailyTaskTypeId)
-                    task.Status = TasksStatus.Completed;
+                if (!await IsDailyTask(task.TaskTypeId)) task.Status = TasksStatus.Completed;
 
                 taskRepository.Update(task);
-                userTreeRepository.Update(task.UserTree);
 
+                if (task.UserTree != null) userTreeRepository.Update(task.UserTree);
 
                 await unitOfWork.CommitAsync();
                 await transaction.CommitAsync();
+
+                await UpdateChallengeProgress(task);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                throw new InvalidOperationException($"Failed to complete task: {ex.Message}", ex);
             }
         }
-
-        var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.TaskId);
-        if (challengeTask != null)
+        else
         {
-            if (task.UserTree?.UserId == null)
-                throw new InvalidOperationException("Task is not associated with a valid UserTree.");
+            task.CompletedAt = DateTime.UtcNow;
 
-            await userChallengeService.UpdateUserChallengeProgressAsync(task.UserTree.UserId.Value, challengeTask.ChallengeId);
+            if (!await IsDailyTask(task.TaskTypeId)) task.Status = TasksStatus.Completed;
+
+            taskRepository.Update(task);
+            await unitOfWork.CommitAsync();
+
+            await UpdateChallengeProgress(task);
         }
     }
 
@@ -371,6 +378,22 @@ public class TaskService(
         await unitOfWork.CommitAsync();
     }
 
+    private async Task UpdateChallengeProgress(Tasks task)
+    {
+        var cloneFromTaskId = task.CloneFromTaskId;
+        if (cloneFromTaskId == null || task.UserTree?.UserId == null)
+            return;
+
+        var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(cloneFromTaskId.Value);
+        if (challengeTask != null)
+        {
+            await userChallengeService.UpdateUserChallengeProgressAsync(
+                task.UserTree.UserId.Value,
+                challengeTask.ChallengeId
+            );
+        }
+    }
+
     public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
     {
         if (taskResultFile != null)
@@ -440,8 +463,30 @@ public class TaskService(
             throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
     }
 
-    private async Task<int> GetDailyTaskTypeIdAsync()
+    private async Task<int?> GetDailyTaskTypeIdAsync()
     {
-        return await taskTypeRepository.GetTaskTypeIdByNameAsync("daily");
+        try
+        {
+            return await taskTypeRepository.GetTaskTypeIdByNameAsync("daily");
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<bool> IsDailyTaskAlreadyCompleted(Tasks task)
+    {
+        var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
+    
+        if (!dailyTaskTypeId.HasValue || task.TaskTypeId != dailyTaskTypeId.Value)
+            return false;
+        return task.CompletedAt.HasValue && task.CompletedAt.Value.Date == DateTime.UtcNow.Date;
+    }
+
+    private async Task<bool> IsDailyTask(int taskTypeId)
+    {
+        var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
+        return dailyTaskTypeId.HasValue && taskTypeId == dailyTaskTypeId.Value;
     }
 }

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
@@ -38,7 +37,6 @@ public class UserChallengeRepository(ZenGardenContext context)
     public async Task<UserChallenge?> GetUserProgressAsync(int userId, int challengeId)
     {
         return await _context.UserChallenges
-            .AsNoTracking()
             .Include(uc => uc.User)
             .Include(uc => uc.Challenge)
             .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == challengeId);

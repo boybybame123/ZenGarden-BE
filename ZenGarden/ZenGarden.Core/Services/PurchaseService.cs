@@ -3,7 +3,6 @@ using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
-
 namespace ZenGarden.Core.Services;
 
 public class PurchaseService : IPurchaseService
@@ -76,10 +75,10 @@ public class PurchaseService : IPurchaseService
     private async Task<(Wallet wallet, Item item)> ValidatePurchaseConditions(int userId, int itemId)
     {
         var wallet = await _walletRepo.GetByUserIdAsync(userId)
-            ?? throw new PurchaseException("Wallet not found.");
+                     ?? throw new PurchaseException("Wallet not found.");
 
         var item = await _itemRepo.GetByIdAsync(itemId)
-            ?? throw new PurchaseException("Item not found.");
+                   ?? throw new PurchaseException("Item not found.");
 
         if (item.Status != ItemStatus.Active)
             throw new PurchaseException("Item is not available for purchase.");
@@ -117,7 +116,7 @@ public class PurchaseService : IPurchaseService
     private async Task UpdateInventory(int userId, int itemId, Item item)
     {
         var bag = await _bagRepo.GetByUserIdAsync(userId)
-            ?? throw new PurchaseException("Bag not found.");
+                  ?? throw new PurchaseException("Bag not found.");
 
         var bagItem = await _bagItemRepo.GetByBagAndItemAsync(bag.BagId, itemId);
         if (bagItem != null)
@@ -165,5 +164,7 @@ public class PurchaseService : IPurchaseService
 
 public class PurchaseException : Exception
 {
-    public PurchaseException(string message) : base(message) { }
+    public PurchaseException(string message) : base(message)
+    {
+    }
 }

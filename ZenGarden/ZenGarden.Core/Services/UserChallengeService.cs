@@ -3,7 +3,10 @@ using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.Core.Services;
 
-public class UserChallengeService(IUserChallengeRepository userChallengeRepository, IUnitOfWork unitOfWork, ITaskRepository taskRepository) : IUserChallengeService
+public class UserChallengeService(
+    IUserChallengeRepository userChallengeRepository,
+    IUnitOfWork unitOfWork,
+    ITaskRepository taskRepository) : IUserChallengeService
 {
     public async Task UpdateUserChallengeProgressAsync(int userId, int challengeId)
     {

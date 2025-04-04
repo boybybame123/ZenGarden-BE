@@ -21,7 +21,7 @@ public class AuthController(
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
         var user = await userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
-        if (user == null) 
+        if (user == null)
             return Unauthorized(new { error = "Invalid credentials." });
 
         var tokens = tokenService.GenerateJwtToken(user);

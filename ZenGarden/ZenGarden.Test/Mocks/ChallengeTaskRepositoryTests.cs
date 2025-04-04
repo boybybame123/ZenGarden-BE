@@ -16,8 +16,16 @@ public class ChallengeTaskRepositoryTests
         // Arrange: Tạo danh sách dữ liệu giả lập
         var challengeTasks = new List<ChallengeTask>
         {
-            new ChallengeTask { ChallengeTaskId = 1, ChallengeId = 4, TaskId = 8, Tasks = new Tasks { TaskId = 8, TaskName = "Solve Array Problems" } },
-            new ChallengeTask { ChallengeTaskId = 2, ChallengeId = 4, TaskId = 9, Tasks = new Tasks { TaskId = 9, TaskName = "Solve at least 3" } }
+            new()
+            {
+                ChallengeTaskId = 1, ChallengeId = 4, TaskId = 8,
+                Tasks = new Tasks { TaskId = 8, TaskName = "Solve Array Problems" }
+            },
+            new()
+            {
+                ChallengeTaskId = 2, ChallengeId = 4, TaskId = 9,
+                Tasks = new Tasks { TaskId = 9, TaskName = "Solve at least 3" }
+            }
         }.AsQueryable();
 
         // Mock DbSet với hỗ trợ async
@@ -74,7 +82,7 @@ internal class TestAsyncQueryProvider<TEntity>(IQueryProvider inner) : IAsyncQue
     {
         return inner.Execute<TResult>(expression);
     }
-    
+
     public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
     {
         return inner.Execute<TResult>(expression);
@@ -86,11 +94,13 @@ internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>
 {
     public TestAsyncEnumerable(IEnumerable<T> enumerable)
         : base(enumerable)
-    { }
+    {
+    }
 
     public TestAsyncEnumerable(Expression expression)
         : base(expression)
-    { }
+    {
+    }
 
     public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {

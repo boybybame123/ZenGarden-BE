@@ -9,8 +9,7 @@ namespace ZenGarden.API.Controllers;
 public class UseItemController(IUseItemService useItemService) : ControllerBase
 {
     [HttpPost("use")]
-
-    public async Task<IActionResult> UseItem( int itembagId, int? usertreeId)
+    public async Task<IActionResult> UseItem(int itembagId, int? usertreeId)
 
     {
         var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

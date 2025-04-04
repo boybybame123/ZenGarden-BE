@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using ZenGarden.Domain.Enums;
+﻿using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.DTOs;
 
