@@ -35,7 +35,7 @@ public class WalletService : IWalletService
         return (decimal)wallet.Balance;
     }
 
-    public async Task<WalletDto> GetWalletAsync(int userId)
+    public async Task<Wallet> GetWalletAsync(int userId)
     {
         var wallet = await _walletRepository.GetByUserIdAsync(userId);
         if (wallet == null)
@@ -43,7 +43,7 @@ public class WalletService : IWalletService
             throw new Exception($"Wallet for user {userId} not found");
         }
 
-        return _mapper.Map<WalletDto>(wallet);
+        return _mapper.Map<Wallet>(wallet);
     }
 
 
