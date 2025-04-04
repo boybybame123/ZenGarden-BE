@@ -13,7 +13,6 @@ public class AuthController(
     IUserService userService,
     ITokenService tokenService,
     IEmailService emailService,
-    IValidator<LoginDto> loginValidator,
     IValidator<RegisterDto> registerValidator,
     IValidator<ChangePasswordDto> changePasswordValidator)
     : ControllerBase
