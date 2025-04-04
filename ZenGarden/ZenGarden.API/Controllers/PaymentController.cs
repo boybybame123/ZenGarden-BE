@@ -14,7 +14,7 @@ public class PaymentController(PaymentService paymentService) : ControllerBase
     {
         try
         {
-            var clientSecret = await paymentService.CreatePaymentIntent(request);
+            var clientSecret = await paymentService.CreatePayment(request);
             return Ok(new { clientSecret });
         }
         catch (Exception ex)
