@@ -30,7 +30,7 @@ public class AuthController(
         await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
         await userService.OnUserLoginAsync(user.UserId);
 
-        return Ok(new { tokens.AccessToken, tokens.RefreshToken });
+        return Ok(new { tokens.Token, tokens.RefreshToken });
     }
 
     [HttpPost("refresh-token")]
@@ -49,7 +49,7 @@ public class AuthController(
 
         await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
 
-        return Ok(new { tokens.AccessToken, tokens.RefreshToken });
+        return Ok(new { tokens.Token, tokens.RefreshToken });
     }
 
     [HttpPost("register")]
@@ -65,7 +65,7 @@ public class AuthController(
 
         await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
 
-        return Ok(new { tokens.AccessToken, tokens.RefreshToken });
+        return Ok(new { tokens.Token, tokens.RefreshToken });
     }
 
     [Authorize]

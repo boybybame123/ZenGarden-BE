@@ -56,7 +56,7 @@ public class TaskServiceTests
             Mock.Of<IUserTreeService>(),
             _focusMethodServiceMock.Object,
             _xpConfigServiceMock.Object,
-            Mock.Of<IUserChallengeRepository>(),
+            Mock.Of<IUserChallengeService>(),
             Mock.Of<IChallengeTaskRepository>(),
             _s3ServiceMock.Object,
             _mapperMock.Object,
