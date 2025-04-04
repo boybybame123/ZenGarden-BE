@@ -12,7 +12,7 @@ public class TaskTypeRepository(ZenGardenContext context) : GenericRepository<Ta
     public async Task<int> GetTaskTypeIdByNameAsync(string taskTypeName)
     {
         var taskType = await _context.TaskType
-            .Where(t => t.TaskTypeName.Equals(taskTypeName, StringComparison.CurrentCultureIgnoreCase))
+            .Where(t => t.TaskTypeName.ToLower() == taskTypeName.ToLower())
             .FirstOrDefaultAsync();
 
         if (taskType == null) throw new KeyNotFoundException($"TaskType with name '{taskTypeName}' not found.");
