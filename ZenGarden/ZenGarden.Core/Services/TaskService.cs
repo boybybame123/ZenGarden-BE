@@ -20,7 +20,7 @@ public class TaskService(
     IUserTreeService userTreeService,
     IFocusMethodService focusMethodService,
     IXpConfigService xpConfigService,
-    IUserChallengeRepository userChallengeRepository,
+    IUserChallengeService userChallengeService,
     IChallengeTaskRepository challengeTaskRepository,
     IS3Service s3Service,
     IMapper mapper,
@@ -280,7 +280,7 @@ public class TaskService(
             if (task.UserTree?.UserId == null)
                 throw new InvalidOperationException("Task is not associated with a valid UserTree.");
 
-            await userChallengeRepository.UpdateProgressAsync(task.UserTree.UserId.Value, challengeTask.ChallengeId);
+            await userChallengeService.UpdateUserChallengeProgressAsync(task.UserTree.UserId.Value, challengeTask.ChallengeId);
         }
     }
 

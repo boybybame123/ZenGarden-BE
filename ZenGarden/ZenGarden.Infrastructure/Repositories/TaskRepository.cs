@@ -68,8 +68,9 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
                 join original in _context.Tasks on t.CloneFromTaskId equals original.TaskId
                 join ct in _context.ChallengeTask on original.TaskId equals ct.TaskId
                 join uc in _context.UserChallenges on ct.ChallengeId equals uc.ChallengeId
-                where uc.UserId == userId 
+                where uc.UserId == userId
                       && uc.ChallengeId == challengeId
+                      && t.CloneFromTaskId != null // Ensure it's a cloned task
                 select t)
             .ToListAsync();
     }
@@ -113,5 +114,29 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
         return await _context.Tasks
             .Where(t => t.TaskType.TaskTypeName.Equals("daily", StringComparison.CurrentCultureIgnoreCase))
             .ToListAsync();
+    }
+    
+    public async Task<int> GetCompletedTasksAsync(int userId, int challengeId)
+    {
+        return await _context.Tasks
+            .Where(t => t.CloneFromTaskId != null
+                        && t.UserTree.UserId == userId
+                        && (t.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId) || 
+                            _context.Tasks.Any(tg => tg.TaskId == t.CloneFromTaskId && tg.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId)))
+                        && t.Status == TasksStatus.Completed)
+            .CountAsync();
+    }
+    
+    public async Task<int> GetTotalCloneTasksAsync(int userId, int challengeId)
+    {
+        return await _context.Tasks
+            .Where(t => t.UserTree.UserId == userId
+                        && t.CloneFromTaskId != null
+                        && (
+                            t.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId) || 
+                            _context.Tasks.Any(tg => tg.TaskId == t.CloneFromTaskId && tg.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId))
+                        )
+            )
+            .CountAsync();
     }
 }

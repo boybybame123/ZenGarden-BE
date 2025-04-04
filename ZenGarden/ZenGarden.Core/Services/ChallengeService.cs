@@ -47,7 +47,6 @@ public class ChallengeService(
         {
             ChallengeId = challenge.ChallengeId,
             UserId = userId,
-            Progress = 0,
             ChallengeRole = UserChallengeRole.Organizer,
             Status = UserChallengeStatus.Active,
             CreatedAt = DateTime.UtcNow
