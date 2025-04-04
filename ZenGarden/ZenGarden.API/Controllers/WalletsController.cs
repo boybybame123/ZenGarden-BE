@@ -1,88 +1,74 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 
-namespace ZenGarden.API.Controllers;
-
-[Route("api/[controller]")]
-[ApiController]
-public class WalletsController : ControllerBase
+namespace ZenGarden.API.Controllers
 {
-    private readonly ZenGardenContext _context;
-
-    public WalletsController(ZenGardenContext context)
+    [ApiController]
+    [Route("api/wallets")]
+    public class WalletsController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IWalletService _walletService;
 
-    // GET: api/Wallets
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Wallet>>> GetWallet()
-    {
-        return await _context.Wallet.ToListAsync();
-    }
-
-    // GET: api/Wallets/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Wallet>> GetWallet(int id)
-    {
-        var wallet = await _context.Wallet.FindAsync(id);
-
-        if (wallet == null) return NotFound();
-
-        return wallet;
-    }
-
-    // PUT: api/Wallets/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutWallet(int id, Wallet wallet)
-    {
-        if (id != wallet.WalletId) return BadRequest();
-
-        _context.Entry(wallet).State = EntityState.Modified;
-
-        try
+        public WalletsController(IWalletService walletService)
         {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!WalletExists(id)) return NotFound();
-
-            throw;
+            _walletService = walletService;
         }
 
-        return NoContent();
-    }
+        [HttpGet("{userId}/balance")]
+        public async Task<ActionResult<decimal>> GetBalance(int userId)
+        {
+            try
+            {
+                var balance = await _walletService.GetBalanceAsync(userId);
+                return Ok(balance);
+            }
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
 
-    // POST: api/Wallets
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<Wallet>> PostWallet(Wallet wallet)
-    {
-        _context.Wallet.Add(wallet);
-        await _context.SaveChangesAsync();
+        [HttpGet("{userId}")]
+        public async Task<ActionResult<WalletDto>> GetWallet(int userId)
+        {
+            try
+            {
+                var wallet = await _walletService.GetWalletAsync(userId);
+                return Ok(wallet);
+            }
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
 
-        return CreatedAtAction("GetWallet", new { id = wallet.WalletId }, wallet);
-    }
+        [HttpPost("{userId}/lock")]
+        public async Task<IActionResult> LockWallet(int userId)
+        {
+            try
+            {
+                await _walletService.LockWalletAsync(userId);
+                return Ok();
+            }
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
 
-    // DELETE: api/Wallets/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteWallet(int id)
-    {
-        var wallet = await _context.Wallet.FindAsync(id);
-        if (wallet == null) return NotFound();
-
-        _context.Wallet.Remove(wallet);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private bool WalletExists(int id)
-    {
-        return _context.Wallet.Any(e => e.WalletId == id);
+        [HttpPost("{userId}/unlock")]
+        public async Task<IActionResult> UnlockWallet(int userId)
+        {
+            try
+            {
+                await _walletService.UnlockWalletAsync(userId);
+                return Ok();
+            }
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
     }
 }

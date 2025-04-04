@@ -88,6 +88,7 @@ public partial class Program
         builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
         builder.Services.AddScoped<IXpConfigService, XpConfigService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
+        builder.Services.AddScoped<IWalletService, WalletService>();
         
         // SignalR và realtime
         builder.Services.AddSignalR();
