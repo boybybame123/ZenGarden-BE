@@ -119,27 +119,24 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<int> GetCompletedTasksAsync(int userId, int challengeId)
     {
         return await _context.Tasks
-            .Where(t => t.CloneFromTaskId != null
-                        && t.UserTree.UserId == userId
-                        && (t.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId) ||
-                            _context.Tasks.Any(tg =>
-                                tg.TaskId == t.CloneFromTaskId &&
-                                tg.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId)))
-                        && t.Status == TasksStatus.Completed)
+            .Where(t =>
+                t.CloneFromTaskId != null &&
+                t.UserTree.UserId == userId &&
+                t.Status == TasksStatus.Completed &&
+                _context.ChallengeTask.Any(ct =>
+                    ct.TaskId == t.CloneFromTaskId && ct.ChallengeId == challengeId)
+            )
             .CountAsync();
     }
 
     public async Task<int> GetTotalCloneTasksAsync(int userId, int challengeId)
     {
         return await _context.Tasks
-            .Where(t => t.UserTree.UserId == userId
-                        && t.CloneFromTaskId != null
-                        && (
-                            t.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId) ||
-                            _context.Tasks.Any(tg =>
-                                tg.TaskId == t.CloneFromTaskId &&
-                                tg.ChallengeTasks.Any(ct => ct.ChallengeId == challengeId))
-                        )
+            .Where(t =>
+                t.CloneFromTaskId != null &&
+                t.UserTree.UserId == userId &&
+                _context.ChallengeTask.Any(ct =>
+                    ct.TaskId == t.CloneFromTaskId && ct.ChallengeId == challengeId)
             )
             .CountAsync();
     }

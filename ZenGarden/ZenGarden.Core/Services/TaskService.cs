@@ -380,12 +380,18 @@ public class TaskService(
 
     private async Task UpdateChallengeProgress(Tasks task)
     {
-        var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.TaskId);
-        if (challengeTask != null && task.UserTree?.UserId != null)
+        var cloneFromTaskId = task.CloneFromTaskId;
+        if (cloneFromTaskId == null || task.UserTree?.UserId == null)
+            return;
+
+        var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(cloneFromTaskId.Value);
+        if (challengeTask != null)
+        {
             await userChallengeService.UpdateUserChallengeProgressAsync(
                 task.UserTree.UserId.Value,
                 challengeTask.ChallengeId
             );
+        }
     }
 
     public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
@@ -459,18 +465,23 @@ public class TaskService(
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
     {
-        return await taskTypeRepository.GetTaskTypeIdByNameAsync("daily");
+        try
+        {
+            return await taskTypeRepository.GetTaskTypeIdByNameAsync("daily");
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
     }
 
     private async Task<bool> IsDailyTaskAlreadyCompleted(Tasks task)
     {
         var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
-
-        if (!dailyTaskTypeId.HasValue) return false;
-
-        return task.TaskTypeId == dailyTaskTypeId.Value &&
-               task.CompletedAt.HasValue &&
-               task.CompletedAt.Value.Date == DateTime.UtcNow.Date;
+    
+        if (!dailyTaskTypeId.HasValue || task.TaskTypeId != dailyTaskTypeId.Value)
+            return false;
+        return task.CompletedAt.HasValue && task.CompletedAt.Value.Date == DateTime.UtcNow.Date;
     }
 
     private async Task<bool> IsDailyTask(int taskTypeId)
