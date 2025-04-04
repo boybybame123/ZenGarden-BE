@@ -57,7 +57,7 @@ public static class JwtHelper
 
         return new TokenResponse
         {
-            AccessToken = accessToken,
+            Token = accessToken,
             RefreshToken = refreshToken
         };
     }
