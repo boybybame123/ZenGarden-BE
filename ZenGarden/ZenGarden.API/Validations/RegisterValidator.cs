@@ -6,9 +6,8 @@ namespace ZenGarden.API.Validations;
 
 public class RegisterValidator : AbstractValidator<RegisterDto>
 {
-    public RegisterValidator(IUserRepository userRepository)
+    public RegisterValidator()
     {
-        var userRepository1 = userRepository;
         RuleFor(x => x)
             .Must(x => !string.IsNullOrEmpty(x.Email) || !string.IsNullOrEmpty(x.Phone))
             .WithMessage("Either Email or Phone must be provided.");
@@ -16,12 +15,6 @@ public class RegisterValidator : AbstractValidator<RegisterDto>
         RuleFor(x => x.Email)
             .EmailAddress().WithMessage("Invalid email format.")
             .When(x => !string.IsNullOrEmpty(x.Email));
-
-        RuleFor(x => x.UserName)
-            .NotEmpty().WithMessage("Username is required.")
-            .MustAsync(async (username, _) =>
-                !await userRepository1.ExistsByUserNameAsync(username))
-            .WithMessage("Username is already taken.");
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.")
