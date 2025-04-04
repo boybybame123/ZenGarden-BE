@@ -18,32 +18,6 @@ public class ChallengeRepository(ZenGardenContext context)
             .Include(c => c.UserChallenges)
             .Include(c => c.ChallengeTasks)
             .ThenInclude(ct => ct.Tasks)
-            .Select(c => new Challenge
-            {
-                ChallengeId = c.ChallengeId,
-                ChallengeName = c.ChallengeName,
-                ChallengeTypeId = c.ChallengeType!.ChallengeTypeId,
-                ChallengeType = c.ChallengeType,
-                UserChallenges = c.UserChallenges.Select(uc => new UserChallenge
-                {
-                    UserId = uc.UserId,
-                    ChallengeId = uc.ChallengeId
-                }).ToList(),
-                ChallengeTasks = c.ChallengeTasks
-                    .Where(ct => ct.Tasks != null)
-                    .Select(ct => new ChallengeTask
-                    {
-                        TaskId = ct.TaskId,
-                        Tasks = ct.Tasks != null
-                            ? new Tasks
-                            {
-                                TaskId = ct.Tasks.TaskId,
-                                TaskName = ct.Tasks.TaskName,
-                                Status = ct.Tasks.Status
-                            }
-                            : null
-                    }).ToList()
-            })
             .ToListAsync();
     }
 
@@ -56,32 +30,6 @@ public class ChallengeRepository(ZenGardenContext context)
             .Include(c => c.ChallengeTasks)
             .ThenInclude(ct => ct.Tasks)
             .Where(c => c.ChallengeId == id)
-            .Select(c => new Challenge
-            {
-                ChallengeId = c.ChallengeId,
-                ChallengeName = c.ChallengeName,
-                ChallengeTypeId = c.ChallengeType!.ChallengeTypeId,
-                ChallengeType = c.ChallengeType,
-                UserChallenges = c.UserChallenges.Select(uc => new UserChallenge
-                {
-                    UserId = uc.UserId,
-                    ChallengeId = uc.ChallengeId
-                }).ToList(),
-                ChallengeTasks = c.ChallengeTasks
-                    .Where(ct => ct.Tasks != null)
-                    .Select(ct => new ChallengeTask
-                    {
-                        TaskId = ct.TaskId,
-                        Tasks = ct.Tasks != null
-                            ? new Tasks
-                            {
-                                TaskId = ct.Tasks.TaskId,
-                                TaskName = ct.Tasks.TaskName,
-                                Status = ct.Tasks.Status
-                            }
-                            : null
-                    }).ToList()
-            })
             .FirstOrDefaultAsync();
     }
 }
