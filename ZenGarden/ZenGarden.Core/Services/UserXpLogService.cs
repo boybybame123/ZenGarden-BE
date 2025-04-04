@@ -63,9 +63,7 @@ public class UserXpLogService(
 
             // Khi đạt đủ 3 ngày liên tiếp thì streakDays bắt đầu tính là 1
             if (consecutiveDays >= 3)
-            {
                 streakDays = Math.Min(consecutiveDays - 2, maxStreakDays); // Ngày thứ 3 => streak = 1
-            }
         }
 
         var streakMultiplier = 1 + (streakDays - 1) * streakBonusRate;
@@ -73,7 +71,7 @@ public class UserXpLogService(
 
         userExp.TotalXp += xpEarned;
         userExp.StreakDays = consecutiveDays; // Lưu lại số ngày liên tiếp
-        userExp.UpdatedAt = DateTime.UtcNow; 
+        userExp.UpdatedAt = DateTime.UtcNow;
         userExperienceRepository.Update(userExp);
 
         var log = new UserXpLog
@@ -84,7 +82,7 @@ public class UserXpLogService(
             CreatedAt = DateTime.UtcNow
         };
         await userXpLogRepository.CreateAsync(log);
-        
+
         await unitOfWork.CommitAsync();
 
         return xpEarned;

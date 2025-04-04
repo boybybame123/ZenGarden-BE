@@ -54,9 +54,9 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
 
     [HttpPut("update-item")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateItem([FromForm]UpdateItemDto item)
+    public async Task<IActionResult> UpdateItem([FromForm] UpdateItemDto item)
     {
-       var i =await _itemService.UpdateItemAsync(item);
+        var i = await _itemService.UpdateItemAsync(item);
         return Ok(i);
     }
 
@@ -64,7 +64,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     [HttpPut("update-item-detail")]
     public async Task<IActionResult> UpdateItemDetail([FromForm] UpdateItemDetailDto itemDetail)
     {
-       var itemdetail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
+        var itemdetail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
         return Ok(itemdetail);
     }
 

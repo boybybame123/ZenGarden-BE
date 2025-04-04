@@ -46,7 +46,7 @@ public class ItemService(
             throw new InvalidOperationException("Failed to create item.");
     }
 
-    public async Task <Item> UpdateItemAsync(UpdateItemDto item)
+    public async Task<Item> UpdateItemAsync(UpdateItemDto item)
     {
         var updateItem = await GetItemByIdAsync(item.ItemId);
         if (updateItem == null)

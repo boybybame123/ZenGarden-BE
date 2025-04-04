@@ -116,14 +116,11 @@ public class ChallengeService(
                     BreakTime = ct.Tasks.BreakTime,
                     FocusMethodId = ct.Tasks.FocusMethodId
                 };
-                
+
                 taskList.Add(newTask);
             }
 
-            if (taskList.Count != 0)
-            {
-                await taskRepository.AddRangeAsync(taskList);
-            }
+            if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
 
             await unitOfWork.CommitAsync();
             await transaction.CommitAsync();
@@ -169,7 +166,7 @@ public class ChallengeService(
         if (userChallenge.ChallengeRole == UserChallengeRole.Organizer)
             throw new InvalidOperationException("Organizer cannot leave the challenge.");
         var userTasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
-        await using var transaction = await unitOfWork.BeginTransactionAsync(); 
+        await using var transaction = await unitOfWork.BeginTransactionAsync();
 
         switch (userTasks.Count)
         {
@@ -189,11 +186,11 @@ public class ChallengeService(
         }
 
         userChallenge.Status = UserChallengeStatus.Canceled;
-            userChallenge.UpdatedAt = DateTime.UtcNow;
-            userChallengeRepository.Update(userChallenge);
-            await unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
-            return true;
+        userChallenge.UpdatedAt = DateTime.UtcNow;
+        userChallengeRepository.Update(userChallenge);
+        await unitOfWork.CommitAsync();
+        await transaction.CommitAsync();
+        return true;
     }
 
     public async Task<bool> CancelChallengeAsync(int challengeId, int userId)

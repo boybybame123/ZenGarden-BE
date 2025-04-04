@@ -46,7 +46,7 @@ public static class JwtHelper
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-    
+
     public static TokenResponse GenerateTokens(Users user, JwtSettings jwtSettings)
     {
         var accessToken = GenerateToken(user, jwtSettings);
