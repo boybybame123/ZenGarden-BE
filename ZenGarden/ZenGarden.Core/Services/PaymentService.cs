@@ -1,4 +1,5 @@
 ﻿using Stripe;
+using Stripe.Checkout;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
@@ -29,36 +30,72 @@ public class PaymentService
                 "sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
     }
 
-    public async Task<string> CreatePaymentIntent(CreatePaymentRequest request)
+    public async Task<CheckoutResponse> CreatePayment(CreatePaymentRequest request)
     {
+        // 1. Validate package
         var package = await _packageRepository.GetByIdAsync(request.PackageId);
         if (package == null || !package.IsActive)
-            throw new Exception("Gói nạp không hợp lệ.");
+            throw new Exception("Invalid package");
 
-        var options = new PaymentIntentCreateOptions
+        // 2. Create Stripe Checkout Session
+        var options = new SessionCreateOptions
         {
-            Amount = (long)(package.Price * 100),
-            Currency = "vnd",
-            PaymentMethodTypes = new List<string> { "card" }
+            PaymentMethodTypes = new List<string> { "card" },
+            LineItems = new List<SessionLineItemOptions>
+        {
+            new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    UnitAmount = (long)(package.Price * 100), // Amount in cents
+                    Currency = "vnd",
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = package.Name,
+                        Description = $"Nạp {package.Amount} Zen vào ví"
+                    }
+                },
+                Quantity = 1
+            }
+        },
+            Mode = "payment",
+            SuccessUrl = "https://yourdomain.com/success?session_id={CHECKOUT_SESSION_ID}",
+            CancelUrl = "https://yourdomain.com/cancel",
+            Metadata = new Dictionary<string, string>
+        {
+            { "user_id", request.UserId.ToString() },
+            { "package_id", package.PackageId.ToString() }
+        }
         };
 
-        var service = new PaymentIntentService(_stripeClient);
-        var paymentIntent = await service.CreateAsync(options);
+        var service = new SessionService(_stripeClient);
+        var session = await service.CreateAsync(options);
 
+        // 3. Save transaction
         var transaction = new Transactions
         {
             UserId = request.UserId,
             WalletId = request.WalletId,
-            PackageId = request.PackageId,
+            PackageId = package.PackageId,
             Amount = package.Amount,
             Type = TransactionType.Deposit,
             Status = TransactionStatus.Pending,
             PaymentMethod = "Stripe",
-            TransactionRef = paymentIntent.Id
+            TransactionRef = session.PaymentIntentId // or session.Id for checkout session
         };
 
         await _transactionRepository.CreateAsync(transaction);
-        return paymentIntent.ClientSecret;
+        await _unitOfWork.CommitAsync();
+
+        // 4. Return checkout link
+        return new CheckoutResponse
+        {
+            CheckoutUrl = session.Url, // Direct Stripe Checkout link
+            SessionId = session.Id,
+            PaymentIntentId = session.PaymentIntentId,
+            Amount = package.Price,
+            PackageName = package.Name
+        };
     }
 
     public async Task HandlePaymentSucceeded(string paymentIntentId)
