@@ -46,7 +46,7 @@ public class ItemService(
             throw new InvalidOperationException("Failed to create item.");
     }
 
-    public async Task UpdateItemAsync(UpdateItemDto item)
+    public async Task <Item> UpdateItemAsync(UpdateItemDto item)
     {
         var updateItem = await GetItemByIdAsync(item.ItemId);
         if (updateItem == null)
@@ -63,6 +63,7 @@ public class ItemService(
         itemRepository.Update(updateItem);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update item.");
+        return updateItem;
     }
 
 

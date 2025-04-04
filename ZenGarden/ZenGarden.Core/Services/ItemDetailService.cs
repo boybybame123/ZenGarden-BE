@@ -30,7 +30,7 @@ public class ItemDetailService(
     }
 
 
-    public async Task UpdateItemDetailAsync(UpdateItemDetailDto itemDetail)
+    public async Task<ItemDetail> UpdateItemDetailAsync(UpdateItemDetailDto itemDetail)
     {
         var updateItemDetail = await itemDetailRepository.GetItemDetailsByItemId(itemDetail.ItemId);
 
@@ -57,6 +57,10 @@ public class ItemDetailService(
             itemDetailRepository.Update(updateItemDetail);
             if (await unitOfWork.CommitAsync() == 0)
                 throw new InvalidOperationException("Failed to update item.");
+            return updateItemDetail;
         }
+
+        throw new KeyNotFoundException("ItemDetail not found.");
     }
+
 }
