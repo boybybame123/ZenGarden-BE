@@ -14,12 +14,16 @@ public class AuthController(
     ITokenService tokenService,
     IEmailService emailService,
     IValidator<RegisterDto> registerValidator,
+    IValidator<LoginDto> loginValidator,
     IValidator<ChangePasswordDto> changePasswordValidator)
     : ControllerBase
 {
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
+        var validationResult = await loginValidator.ValidateAsync(loginDto);
+        if (!validationResult.IsValid) return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+        
         var user = await userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
         if (user == null)
             return Unauthorized(new { error = "Invalid credentials." });
@@ -58,7 +62,7 @@ public class AuthController(
         if (!validationResult.IsValid) return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
         var user = await userService.RegisterUserAsync(registerDto);
-        if (user == null) return BadRequest(new ErrorResponse("Registration failed."));
+        if (user == null) throw new InvalidOperationException("Registration failed.");
 
         var tokens = tokenService.GenerateJwtToken(user);
 
