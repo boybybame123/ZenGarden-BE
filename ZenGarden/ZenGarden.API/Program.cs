@@ -91,6 +91,7 @@ public partial class Program
         builder.Services.AddScoped<IWalletService, WalletService>();
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
         builder.Services.AddScoped<PaymentService>();
+        builder.Services.AddScoped<ZenGardenContext>();
         
         // SignalR và realtime
         builder.Services.AddSignalR();
