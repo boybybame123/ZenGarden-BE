@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Diagnostics;
 using System.Net;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ public class ExceptionHandlingMiddleware(
 {
     public async Task Invoke(HttpContext context)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
             await next(context);
@@ -21,6 +23,15 @@ public class ExceptionHandlingMiddleware(
         catch (Exception ex)
         {
             await HandleExceptionAsync(context, ex);
+        }
+        finally
+        {
+            sw.Stop();
+            if (sw.ElapsedMilliseconds > 1000)
+            {
+                logger.LogWarning("Long running request: {Method} {Path} took {Duration}ms",
+                    context.Request.Method, context.Request.Path, sw.ElapsedMilliseconds);
+            }
         }
     }
 
@@ -58,6 +69,40 @@ public class ExceptionHandlingMiddleware(
                     Details = validationErrors
                 };
                 break;
+                
+            case HttpRequestException httpRequestEx:
+                statusCode = (int)HttpStatusCode.BadGateway;
+                logger.LogError(httpRequestEx, "HTTP request error at {Path}", context.Request.Path);
+                errorResponse = new ErrorResponse("Bad Gateway", httpRequestEx.Message);
+                break;
+            
+            case TaskCanceledException taskEx:
+                statusCode = 408; 
+                logger.LogWarning(taskEx,"Request timed out - Path: {Path}", context.Request.Path);
+                errorResponse = new ErrorResponse("Request timeout", taskEx.Message);
+                break;
+            
+            case  System.Text.Json.JsonException jsonEx:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new ErrorResponse("Invalid JSON format", jsonEx.Message);
+                break;
+            
+            case OperationCanceledException:
+                statusCode = 499; 
+                logger.LogWarning("Request canceled or timed out - Path: {Path}", context.Request.Path);
+                errorResponse = new ErrorResponse("Operation canceled", "The request was canceled or timed out");
+                break;
+            
+            case OutOfMemoryException:
+                statusCode = (int)HttpStatusCode.ServiceUnavailable;
+                logger.LogCritical(exception, "Server resource exhaustion at {Path}", context.Request.Path);
+                errorResponse = new ErrorResponse("Service temporarily unavailable", "The server is currently unable to handle the request due to temporary overloading");
+                break;
+            
+            case BusinessRuleException businessEx:  
+                statusCode = (int)HttpStatusCode.UnprocessableEntity;
+                errorResponse = new ErrorResponse("Business rule violation", businessEx.Message);
+                break;
 
             case ArgumentNullException or InvalidOperationException:
                 statusCode = (int)HttpStatusCode.BadRequest;
@@ -81,10 +126,10 @@ public class ExceptionHandlingMiddleware(
                 errorResponse = new ErrorResponse("Unauthorized", exception.Message);
                 break;
 
-            case DbException or DbUpdateException:
+            case DbException or DbUpdateException or MySqlConnector.MySqlException:
                 statusCode = (int)HttpStatusCode.Conflict;
                 logger.LogError(exception, "Database error occurred at {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Database error", exception.Message);
+                errorResponse = new ErrorResponse("Database connection error", "The system could not connect to the database. Please try again later.");
                 break;
 
             default:
@@ -124,3 +169,4 @@ public class ExceptionHandlingMiddleware(
         return (statusCode, errorResponse);
     }
 }
+public abstract class BusinessRuleException(string message) : Exception(message);
