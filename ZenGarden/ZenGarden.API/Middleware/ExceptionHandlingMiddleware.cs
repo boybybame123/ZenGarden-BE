@@ -39,7 +39,7 @@ public class ExceptionHandlingMiddleware(
     {
         var response = context.Response;
         response.ContentType = "application/json";
-
+        logger.LogError(exception, "Exception occurred: {Message}", exception.Message);
         var (statusCode, errorResponse) = GetStatusCodeAndErrorResponse(context, exception);
         response.StatusCode = statusCode;
 
@@ -69,67 +69,67 @@ public class ExceptionHandlingMiddleware(
                     Details = validationErrors
                 };
                 break;
-                
+            
             case HttpRequestException httpRequestEx:
                 statusCode = (int)HttpStatusCode.BadGateway;
                 logger.LogError(httpRequestEx, "HTTP request error at {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Bad Gateway", httpRequestEx.Message);
+                errorResponse = new ErrorResponse(statusCode,"Bad Gateway", httpRequestEx.Message);
                 break;
             
             case TaskCanceledException taskEx:
                 statusCode = 408; 
                 logger.LogWarning(taskEx,"Request timed out - Path: {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Request timeout", taskEx.Message);
+                errorResponse = new ErrorResponse(statusCode,"Request timeout", taskEx.Message);
                 break;
             
             case  System.Text.Json.JsonException jsonEx:
                 statusCode = (int)HttpStatusCode.BadRequest;
-                errorResponse = new ErrorResponse("Invalid JSON format", jsonEx.Message);
+                errorResponse = new ErrorResponse(statusCode,"Invalid JSON format", jsonEx.Message);
                 break;
             
             case OperationCanceledException:
                 statusCode = 499; 
                 logger.LogWarning("Request canceled or timed out - Path: {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Operation canceled", "The request was canceled or timed out");
+                errorResponse = new ErrorResponse(statusCode,"Operation canceled", "The request was canceled or timed out");
                 break;
             
             case OutOfMemoryException:
                 statusCode = (int)HttpStatusCode.ServiceUnavailable;
                 logger.LogCritical(exception, "Server resource exhaustion at {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Service temporarily unavailable", "The server is currently unable to handle the request due to temporary overloading");
+                errorResponse = new ErrorResponse(statusCode,"Service temporarily unavailable", "The server is currently unable to handle the request due to temporary overloading");
                 break;
             
             case BusinessRuleException businessEx:  
                 statusCode = (int)HttpStatusCode.UnprocessableEntity;
-                errorResponse = new ErrorResponse("Business rule violation", businessEx.Message);
+                errorResponse = new ErrorResponse(statusCode,"Business rule violation", businessEx.Message);
                 break;
 
             case ArgumentNullException or InvalidOperationException:
                 statusCode = (int)HttpStatusCode.BadRequest;
-                errorResponse = new ErrorResponse("Invalid request", exception.Message);
+                errorResponse = new ErrorResponse(statusCode,"Invalid request", exception.Message);
                 break;
 
             case System.ComponentModel.DataAnnotations.ValidationException:
                 statusCode = (int)HttpStatusCode.UnprocessableEntity;
-                errorResponse = new ErrorResponse("Unprocessable entity", exception.Message);
+                errorResponse = new ErrorResponse(statusCode,"Unprocessable entity", exception.Message);
                 break;
 
             case KeyNotFoundException:
                 statusCode = (int)HttpStatusCode.NotFound;
                 logger.LogWarning("Not Found: {Message} - Path: {Path}", exception.Message, context.Request.Path);
-                errorResponse = new ErrorResponse("Resource not found", exception.Message);
+                errorResponse = new ErrorResponse(statusCode,"Resource not found", exception.Message);
                 break;
 
             case UnauthorizedAccessException:
                 statusCode = (int)HttpStatusCode.Unauthorized;
                 logger.LogWarning("Unauthorized access attempt - Path: {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Unauthorized", exception.Message);
+                errorResponse = new ErrorResponse(statusCode,"Unauthorized", exception.Message);
                 break;
 
             case DbException or DbUpdateException or MySqlConnector.MySqlException:
                 statusCode = (int)HttpStatusCode.Conflict;
                 logger.LogError(exception, "Database error occurred at {Path}", context.Request.Path);
-                errorResponse = new ErrorResponse("Database connection error", "The system could not connect to the database. Please try again later.");
+                errorResponse = new ErrorResponse(statusCode,"Database connection error", "The system could not connect to the database. Please try again later.");
                 break;
 
             default:

@@ -304,14 +304,11 @@ public partial class Program
 
     private static void ConfigurePipeline(WebApplication app)
     {
-        // Authentication & Authorization
-        app.UseAuthentication();
-        app.UseAuthorization();
-        
-        app.UseMiddleware<UserContextMiddleware>();
-        
         // Middleware exception & logging
-        app.UseDeveloperExceptionPage();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
         app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseMiddleware<LoggingMiddleware>();
         app.UseMiddleware<PerformanceMiddleware>();
