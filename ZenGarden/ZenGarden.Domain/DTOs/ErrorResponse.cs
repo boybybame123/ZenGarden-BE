@@ -6,9 +6,9 @@ public class ErrorResponse
     {
     }
 
-    public ErrorResponse(string message, object? details = null)
+    public ErrorResponse(int statusCode, string message, object? details = null)
     {
-        StatusCode = 500;
+        StatusCode = statusCode;
         Message = message;
         Details = details;
     }

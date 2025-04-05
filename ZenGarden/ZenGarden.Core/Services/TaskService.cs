@@ -219,18 +219,7 @@ public class TaskService(
         if (await IsDailyTaskAlreadyCompleted(task))
             throw new InvalidOperationException("You have already completed this daily task today.");
 
-        if (task.UserTreeId == null)
-        {
-            if (!completeTaskDto.UserTreeId.HasValue)
-                throw new ArgumentNullException(nameof(completeTaskDto),
-                    "UserTreeId is required when task doesn't have an assigned tree.");
-
-            var userTree = await userTreeRepository.GetByIdAsync(completeTaskDto.UserTreeId.Value)
-                           ?? throw new KeyNotFoundException($"UserTree with ID {completeTaskDto.UserTreeId.Value} not found.");
-
-            task.UserTreeId = userTree.UserTreeId;
-            task.UserTree = userTree;
-        }
+        await UpdateUserTreeIfNeeded(task, completeTaskDto);
 
         ValidateTaskForCompletion(task);
 
@@ -290,8 +279,33 @@ public class TaskService(
             await UpdateChallengeProgress(task);
         }
     }
+    
+    private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
+    {
+        if (task.UserTreeId == null)
+        {
+            if (!completeTaskDto.UserTreeId.HasValue)
+                throw new ArgumentNullException(nameof(completeTaskDto), "UserTreeId is required when task doesn't have an assigned tree.");
 
+            var userTree = await userTreeRepository.GetByIdAsync(completeTaskDto.UserTreeId.Value)
+                           ?? throw new KeyNotFoundException($"UserTree with ID {completeTaskDto.UserTreeId.Value} not found.");
 
+            task.UserTreeId = userTree.UserTreeId;
+            task.UserTree = userTree;
+        }
+        else
+        {
+            if (completeTaskDto.UserTreeId.HasValue && task.UserTreeId != completeTaskDto.UserTreeId.Value)
+            {
+                var userTree = await userTreeRepository.GetByIdAsync(completeTaskDto.UserTreeId.Value)
+                               ?? throw new KeyNotFoundException($"UserTree with ID {completeTaskDto.UserTreeId.Value} not found.");
+
+                task.UserTreeId = userTree.UserTreeId;
+                task.UserTree = userTree;
+            }
+        }
+    }
+    
     public async Task UpdateOverdueTasksAsync()
     {
         var overdueTasks = await taskRepository.GetOverdueTasksAsync();
