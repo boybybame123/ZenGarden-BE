@@ -91,6 +91,7 @@ public partial class Program
         builder.Services.AddScoped<IWalletService, WalletService>();
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
         builder.Services.AddScoped<PaymentService>();
+        builder.Services.AddScoped<ZenGardenContext>();
         
         // SignalR và realtime
         builder.Services.AddSignalR();
@@ -305,34 +306,38 @@ public partial class Program
     private static void ConfigurePipeline(WebApplication app)
     {
         // Middleware exception & logging
-        app.UseDeveloperExceptionPage();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
         app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseMiddleware<LoggingMiddleware>();
         app.UseMiddleware<PerformanceMiddleware>();
 
-        // Swagger
-        app.UseSwagger();
-        app.UseSwaggerUI();
-
         // CORS & Routing
         app.UseCors("AllowAll");
         app.UseRouting();
+        
+        // Authentication & Authorization
+        app.UseAuthentication();
+        app.UseAuthorization();
+        
+        app.UseMiddleware<UserContextMiddleware>();
 
         // Rate limiting
         app.UseIpRateLimiting();
 
         // Auth middleware
         app.UseMiddleware<JwtMiddleware>();
-        app.UseMiddleware<UserContextMiddleware>();
         app.UseMiddleware<ValidationMiddleware>();
-
-        // Authentication & Authorization
-        app.UseAuthentication();
-        app.UseAuthorization();
-
+        
         // Endpoints
         app.MapControllers();
         app.MapHub<NotificationHub>("/hubs/notification");
+        
+        // Swagger
+        app.UseSwagger();
+        app.UseSwaggerUI();
 
         // Health checks
         app.MapHealthChecks("/health", new HealthCheckOptions
