@@ -30,35 +30,16 @@ public class PaymentController(PaymentService paymentService) : ControllerBase
         return Ok("success");
       
     }
-
-
-
-    [HttpGet("payment-intent/{paymentIntentId}")]
-    public async Task<IActionResult> GetPaymentIntent(string paymentIntentId)
+    [HttpGet("cancel")]
+    public async Task<IActionResult> Cancel(string paymentIntentId)
     {
-        try
-        {
-            var paymentIntent = await paymentService.GetStripePaymentInfoAsync(paymentIntentId);
-            return Ok(paymentIntent);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        await paymentService.HandlePaymentCanceled(paymentIntentId);
+        return Ok("cancel");
     }
-    [HttpGet("Cancel-payment-intent /{paymentIntentId}")]
-    public async Task<IActionResult> CancelPaymentIntent(string paymentIntentId)
-    {
-        try
-        {
-           var i = await paymentService.CancelPaymentIntentAsync(paymentIntentId);
-            return Ok(i);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
+
+
+
+
 
 
 }

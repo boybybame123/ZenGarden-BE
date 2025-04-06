@@ -76,7 +76,7 @@ public class PaymentService
         },
             Mode = "payment",
             SuccessUrl = $"https://localhost:7262/api/Payment/success?paymentIntentId={paymentIntent.Id}",
-            CancelUrl = "https://zengarden-be.onrender.com/cancel",
+            CancelUrl = $"https://zengarden-be.onrender.com/api/cancel?paymentIntentId={paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
         {
             { "user_id", request.UserId.ToString() },
@@ -137,80 +137,18 @@ public class PaymentService
             await _unitOfWork.CommitAsync();
         }
     }
-
-
-    public async Task<StripePaymentInfo> GetStripePaymentInfoAsync(string paymentIntentId)
+    public async Task HandlePaymentCanceled(string paymentIntentId)
     {
-        try
+        var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
+        if (transaction != null && transaction.Status == TransactionStatus.Pending)
         {
-            // 1. Khởi tạo dịch vụ PaymentIntent của Stripe
-            var paymentIntentService = new PaymentIntentService(_stripeClient);
-
-            // 2. Gọi API Stripe để lấy thông tin PaymentIntent
-            var paymentIntent = await paymentIntentService.GetAsync(paymentIntentId);
-
-            // 3. Trả về thông tin chi tiết
-            return new StripePaymentInfo
-            {
-                PaymentIntentId = paymentIntent.Id,
-                Amount = paymentIntent.Amount / 100m, // Chuyển từ cents sang đơn vị tiền tệ
-                Currency = paymentIntent.Currency,
-                Status = paymentIntent.Status, // "succeeded", "processing", "requires_payment_method", etc.
-                Created = paymentIntent.Created,
-                PaymentMethodId = paymentIntent.PaymentMethodId,
-                Metadata = paymentIntent.Metadata // Chứa user_id, package_id (nếu có)
-            };
+            transaction.Status = TransactionStatus.Failed;
+            _transactionRepository.Update(transaction);
+            await _unitOfWork.CommitAsync();
         }
-        catch (StripeException ex)
-        {
-            // Xử lý lỗi từ Stripe (ví dụ: payment intent không tồn tại)
-            throw new Exception($"Stripe error: {ex.Message}");
-        }
+        
     }
-    public async Task<bool> CancelPaymentIntentAsync(string paymentIntentId)
-    {
-        try
-        {
-            // 1. Kiểm tra trạng thái hiện tại của PaymentIntent
-            var paymentIntentService = new PaymentIntentService(_stripeClient);
-            var paymentIntent = await paymentIntentService.GetAsync(paymentIntentId);
 
-            // 2. Chỉ hủy nếu ở trạng thái có thể hủy
-            if (paymentIntent.Status == "requires_payment_method" ||
-                paymentIntent.Status == "requires_confirmation")
-            {
-                // 3. Hủy PaymentIntent trên Stripe
-                var canceledIntent = await paymentIntentService.CancelAsync(paymentIntentId);
 
-                // 4. Cập nhật database
-                var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
-                if (transaction != null)
-                {
-                    // Nên dùng TransactionStatus.Cancelled thay vì Failed
-                    transaction.Status = TransactionStatus.Failed;
-                    transaction.TransactionTime = DateTime.UtcNow;
-
-                    _transactionRepository.Update(transaction);
-                    await _unitOfWork.CommitAsync();
-                }
-
-                return true;
-            }
-
-            // 5. Xử lý các trường hợp không thể hủy
-            if (paymentIntent.Status == "succeeded")
-            {
-                throw new InvalidOperationException("Không thể hủy giao dịch đã thành công. Hãy sử dụng chức năng hoàn tiền.");
-            }
-
-            return false;
-        }
-        catch (StripeException ex)
-        {
-            // Ghi log lỗi từ Stripe
-            
-            throw new Exception($"Stripe error: {ex.Message}");
-        }
-    }
 
 }
