@@ -37,23 +37,24 @@ public class PaymentService
         if (package == null || !package.IsActive)
             throw new Exception("Invalid package");
 
-        // 2. Tạo PaymentIntent trước
+        // 2. Create PaymentIntent first
         var paymentIntentService = new PaymentIntentService(_stripeClient);
         var paymentIntentOptions = new PaymentIntentCreateOptions
         {
-            Amount = (long)(package.Price * 100),
-            Currency = "vnd",
+            Amount = (long)(package.Price),
+            Currency = "usd",
             Metadata = new Dictionary<string, string>
         {
             { "user_id", request.UserId.ToString() },
             { "package_id", package.PackageId.ToString() }
         },
-            PaymentMethodTypes = new List<string> { "card" }
+            PaymentMethodTypes = new List<string> { "card" },
+            Description = $"Zen purchase - {package.Name}" // English-only description
         };
 
         var paymentIntent = await paymentIntentService.CreateAsync(paymentIntentOptions);
 
-        // 3. Tạo Checkout Session với PaymentIntent đã tạo
+        // 3. Create Checkout Session with English-only text
         var options = new SessionCreateOptions
         {
             PaymentMethodTypes = new List<string> { "card" },
@@ -63,12 +64,13 @@ public class PaymentService
             {
                 PriceData = new SessionLineItemPriceDataOptions
                 {
-                    UnitAmount = (long)(package.Price * 100),
-                    Currency = "vnd",
+                    UnitAmount = (long)(package.Price),
+                    Currency = "usd",
                     ProductData = new SessionLineItemPriceDataProductDataOptions
                     {
                         Name = package.Name,
-                        Description = $"Nạp {package.Amount} Zen vào ví"
+                        Description = $"Credit {(int)Math.Floor(package.Amount)} Zen to wallet", // English
+                        // Optional logo
                     }
                 },
                 Quantity = 1
@@ -81,7 +83,15 @@ public class PaymentService
         {
             { "user_id", request.UserId.ToString() },
             { "package_id", package.PackageId.ToString() }
-        }
+        },
+            CustomText = new SessionCustomTextOptions
+            {
+                Submit = new SessionCustomTextSubmitOptions
+                {
+                    Message = "Complete Payment" // English button text
+                }
+            },
+
         };
 
         var service = new SessionService(_stripeClient);
@@ -97,7 +107,7 @@ public class PaymentService
             Type = TransactionType.Deposit,
             Status = TransactionStatus.Pending,
             PaymentMethod = "Stripe",
-            TransactionRef = paymentIntent.Id // Luôn sử dụng paymentIntent.Id
+            TransactionRef = paymentIntent.Id
         };
 
         await _transactionRepository.CreateAsync(transaction);
@@ -108,13 +118,11 @@ public class PaymentService
         {
             CheckoutUrl = session.Url,
             SessionId = session.Id,
-            PaymentIntentId = paymentIntent.Id, // Đảm bảo luôn có giá trị
+            PaymentIntentId = paymentIntent.Id,
             Amount = package.Price,
             PackageName = package.Name
-
         };
     }
-
     public async Task HandlePaymentSucceeded(string paymentIntentId)
     {
         var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
