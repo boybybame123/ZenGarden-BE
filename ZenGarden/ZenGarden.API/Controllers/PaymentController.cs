@@ -23,17 +23,23 @@ public class PaymentController(PaymentService paymentService) : ControllerBase
         }
     }
 
-    [HttpPost("webhook")]
-    public async Task<IActionResult> StripeWebhook()
+    [HttpGet("success")]
+    public async Task<IActionResult> Success(string paymentIntentId)
     {
-        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-        var stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"],
-            "whsec_6IjPYRvzTVNalopb8mHYCaXah5e4BSRI");
-
-        if (stripeEvent.Type != "payment_intent.succeeded") return Ok();
-        if (stripeEvent.Data.Object is PaymentIntent paymentIntent)
-            await paymentService.HandlePaymentSucceeded(paymentIntent.Id);
-
-        return Ok();
+        await paymentService.HandlePaymentSucceeded(paymentIntentId);
+        return Ok("success");
+      
     }
+    [HttpGet("cancel")]
+    public async Task<IActionResult> Cancel(string paymentIntentId)
+    {
+        await paymentService.HandlePaymentCanceled(paymentIntentId);
+        return Ok("cancel");
+    }
+
+
+
+
+
+
 }

@@ -37,7 +37,23 @@ public class PaymentService
         if (package == null || !package.IsActive)
             throw new Exception("Invalid package");
 
-        // 2. Create Stripe Checkout Session
+        // 2. Tạo PaymentIntent trước
+        var paymentIntentService = new PaymentIntentService(_stripeClient);
+        var paymentIntentOptions = new PaymentIntentCreateOptions
+        {
+            Amount = (long)(package.Price * 100),
+            Currency = "vnd",
+            Metadata = new Dictionary<string, string>
+        {
+            { "user_id", request.UserId.ToString() },
+            { "package_id", package.PackageId.ToString() }
+        },
+            PaymentMethodTypes = new List<string> { "card" }
+        };
+
+        var paymentIntent = await paymentIntentService.CreateAsync(paymentIntentOptions);
+
+        // 3. Tạo Checkout Session với PaymentIntent đã tạo
         var options = new SessionCreateOptions
         {
             PaymentMethodTypes = new List<string> { "card" },
@@ -47,7 +63,7 @@ public class PaymentService
             {
                 PriceData = new SessionLineItemPriceDataOptions
                 {
-                    UnitAmount = (long)(package.Price * 100), // Amount in cents
+                    UnitAmount = (long)(package.Price * 100),
                     Currency = "vnd",
                     ProductData = new SessionLineItemPriceDataProductDataOptions
                     {
@@ -59,8 +75,8 @@ public class PaymentService
             }
         },
             Mode = "payment",
-            SuccessUrl = "https://yourdomain.com/success?session_id={CHECKOUT_SESSION_ID}",
-            CancelUrl = "https://yourdomain.com/cancel",
+            SuccessUrl = $"https://localhost:7262/api/Payment/success?paymentIntentId={paymentIntent.Id}",
+            CancelUrl = $"https://zengarden-be.onrender.com/api/cancel?paymentIntentId={paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
         {
             { "user_id", request.UserId.ToString() },
@@ -71,7 +87,7 @@ public class PaymentService
         var service = new SessionService(_stripeClient);
         var session = await service.CreateAsync(options);
 
-        // 3. Save transaction
+        // 4. Save transaction
         var transaction = new Transactions
         {
             UserId = request.UserId,
@@ -81,20 +97,21 @@ public class PaymentService
             Type = TransactionType.Deposit,
             Status = TransactionStatus.Pending,
             PaymentMethod = "Stripe",
-            TransactionRef = session.PaymentIntentId // or session.Id for checkout session
+            TransactionRef = paymentIntent.Id // Luôn sử dụng paymentIntent.Id
         };
 
         await _transactionRepository.CreateAsync(transaction);
         await _unitOfWork.CommitAsync();
 
-        // 4. Return checkout link
+        // 5. Return response
         return new CheckoutResponse
         {
-            CheckoutUrl = session.Url, // Direct Stripe Checkout link
+            CheckoutUrl = session.Url,
             SessionId = session.Id,
-            PaymentIntentId = session.PaymentIntentId,
+            PaymentIntentId = paymentIntent.Id, // Đảm bảo luôn có giá trị
             Amount = package.Price,
             PackageName = package.Name
+
         };
     }
 
@@ -111,6 +128,7 @@ public class PaymentService
             {
                 wallet.Balance += transaction.Amount ?? 0;
                 wallet.UpdatedAt = DateTime.UtcNow;
+                wallet.LastTransactionAt = DateTime.UtcNow;
                 _walletRepository.Update(wallet);
                 await _unitOfWork.CommitAsync();
             }
@@ -119,4 +137,18 @@ public class PaymentService
             await _unitOfWork.CommitAsync();
         }
     }
+    public async Task HandlePaymentCanceled(string paymentIntentId)
+    {
+        var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
+        if (transaction != null && transaction.Status == TransactionStatus.Pending)
+        {
+            transaction.Status = TransactionStatus.Failed;
+            _transactionRepository.Update(transaction);
+            await _unitOfWork.CommitAsync();
+        }
+        
+    }
+
+
+
 }
