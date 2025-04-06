@@ -24,5 +24,15 @@ namespace ZenGarden.Domain.DTOs
         public decimal Amount { get; set; }
         public string PackageName { get; set; }
     }
+    public class StripePaymentInfo
+    {
+        public string PaymentIntentId { get; set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; }
+        public string Status { get; set; } // Trạng thái từ Stripe
+        public DateTime Created { get; set; }
+        public string PaymentMethodId { get; set; }
+        public Dictionary<string, string> Metadata { get; set; }
+    }
 
 }

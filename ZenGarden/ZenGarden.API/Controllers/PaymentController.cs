@@ -23,17 +23,42 @@ public class PaymentController(PaymentService paymentService) : ControllerBase
         }
     }
 
-    [HttpPost("webhook")]
-    public async Task<IActionResult> StripeWebhook()
+    [HttpGet("success")]
+    public async Task<IActionResult> Success(string paymentIntentId)
     {
-        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-        var stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"],
-            "whsec_6IjPYRvzTVNalopb8mHYCaXah5e4BSRI");
-
-        if (stripeEvent.Type != "payment_intent.succeeded") return Ok();
-        if (stripeEvent.Data.Object is PaymentIntent paymentIntent)
-            await paymentService.HandlePaymentSucceeded(paymentIntent.Id);
-
-        return Ok();
+        await paymentService.HandlePaymentSucceeded(paymentIntentId);
+        return Ok("success");
+      
     }
+
+
+
+    [HttpGet("payment-intent/{paymentIntentId}")]
+    public async Task<IActionResult> GetPaymentIntent(string paymentIntentId)
+    {
+        try
+        {
+            var paymentIntent = await paymentService.GetStripePaymentInfoAsync(paymentIntentId);
+            return Ok(paymentIntent);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+    [HttpGet("Cancel-payment-intent /{paymentIntentId}")]
+    public async Task<IActionResult> CancelPaymentIntent(string paymentIntentId)
+    {
+        try
+        {
+           var i = await paymentService.CancelPaymentIntentAsync(paymentIntentId);
+            return Ok(i);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+
 }
