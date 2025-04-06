@@ -58,6 +58,13 @@ public class PaymentService
         var options = new SessionCreateOptions
         {
             PaymentMethodTypes = new List<string> { "card" },
+            PaymentMethodOptions = new SessionPaymentMethodOptionsOptions
+            {
+                Link = new SessionPaymentMethodOptionsLinkOptions
+                {
+                    Enabled = false
+                }
+            },
             LineItems = new List<SessionLineItemOptions>
         {
             new SessionLineItemOptions
