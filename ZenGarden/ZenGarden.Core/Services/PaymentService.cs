@@ -77,6 +77,7 @@ public class PaymentService
             }
         },
             Mode = "payment",
+            Locale ="en",
             SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success?paymentIntentId={paymentIntent.Id}",
             CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel?paymentIntentId={paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
