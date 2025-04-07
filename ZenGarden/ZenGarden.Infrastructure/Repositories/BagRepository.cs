@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -43,6 +43,46 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
         if (bagItem == null)
             throw new KeyNotFoundException("BagItem not found.");
 
-        return bagItem.BagItemId;
+        return bagItem.BagItemId ;
+    }
+    public async Task UnequipZeroQuantityItems(int userId)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var affectedRows = await _context.BagItem
+                .Where(bi => bi.Bag.UserId == userId &&
+                            bi.isEquipped &&
+                            bi.Quantity == 0)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(bi => bi.isEquipped, false));
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("No items found to unequip.");
+            }
+
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            throw new Exception($"Failed to unequip items for user {userId}.", ex);
+        }
+    }
+    public async Task<bool> UnequipAllZeroQuantityItems()
+    {
+        var hasItems = await _context.BagItem
+            .AnyAsync(bi => bi.isEquipped && bi.Quantity == 0);
+
+        if (!hasItems) return false;
+
+        await _context.BagItem
+            .Where(bi => bi.isEquipped && bi.Quantity == 0)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(bi => bi.isEquipped, false)
+            );
+
+        return true;
     }
 }
