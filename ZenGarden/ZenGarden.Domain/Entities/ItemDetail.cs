@@ -23,7 +23,7 @@ public partial class ItemDetail
 
     public string MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
 
-    public string Effect { get; set; } // Chứa JSON hiệu ứng
+    public string Effect { get; set; } 
 
     public int? Duration { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
 

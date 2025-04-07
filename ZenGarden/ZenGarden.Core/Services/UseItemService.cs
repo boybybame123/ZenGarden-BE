@@ -8,6 +8,7 @@ namespace ZenGarden.Core.Services;
 public class UseItemService(
     IUserConfigRepository userConfigRepository,
     IBagItemRepository bagItemRepository,
+    IBagRepository bagRepository,
     IUserXpLogRepository userXpLogRepository,
     IUserTreeRepository userTreeRepository,
     ITreeXpLogRepository treeXpLogRepository,
@@ -16,6 +17,7 @@ public class UseItemService(
 {
     public async Task<string> UseItemAsync(int userId, int itembagId, int? usertreeId)
     {
+        
         var item = await bagItemRepository.GetByIdAsync(itembagId);
         if (item == null || item.Quantity <= 0)
             return "Item không tồn tại hoặc đã hết số lượng";
@@ -26,38 +28,47 @@ public class UseItemService(
             return "UserConfig không tồn tại";
 
         double percent = 0;
-        if (item.Item.Type is ItemType.Xp_boostUser or ItemType.xp_boostTree)
+        if (item.Item.Type is ItemType.xp_boostTree)
             percent = double.TryParse(itemDetail.Effect, out var effect) ? effect : 0;
 
         if (percent <= 0)
             return "Hiệu ứng item không hợp lệ";
-
+        var falg = 0;
         // ✅ Apply item vào UserConfig
         switch (item.Item.Type)
         {
             case ItemType.Background:
                 userConfig.BackgroundConfig = itemDetail.MediaUrl;
-
+                falg = await bagRepository.GetItemByHavingUse(userId, ItemType.Background);
                 break;
             case ItemType.Music:
                 userConfig.SoundConfig = itemDetail.MediaUrl;
+                falg = await bagRepository.GetItemByHavingUse(userId, ItemType.Music);
                 break;
             case ItemType.Avatar:
                 userConfig.ImageUrl = itemDetail.MediaUrl;
+                falg = await bagRepository.GetItemByHavingUse(userId, ItemType.Avatar);
                 break;
             case ItemType.xp_boostTree:
-                var treeXpResult = await AddXpByPercentAsync(userId, usertreeId ?? 0, percent, 1);
-                if (!treeXpResult.success) return treeXpResult.message;
-                item.Quantity -= 1;
+                falg = await bagRepository.GetItemByHavingUse(userId,ItemType.xp_boostTree);
+
                 break;
-            case ItemType.Xp_boostUser:
-                var userXpResult = await AddXpByPercentAsync(userId, usertreeId ?? 0, percent, 2);
-                if (!userXpResult.success) return userXpResult.message;
-                item.Quantity -= 1;
-                break;
+            
             default:
-                return "Loại item không hợp lệ";
+                return "item not rule";
         }
+        if (falg > 0)
+        {
+            var itemOld = await bagItemRepository.GetByIdAsync(falg);
+            if (itemOld != null)
+            {
+                itemOld.isEquipped = false;
+                bagItemRepository.Update(itemOld);
+            }
+        }
+
+
+
 
         item.isEquipped = true;
         userConfig.UpdatedAt = DateTime.UtcNow;
@@ -69,64 +80,5 @@ public class UseItemService(
         return "Sử dụng item thành công";
     }
 
-    private async Task<(bool success, string message)> AddXpByPercentAsync(int userId, int userTreeId, double percent,
-        int flag)
-    {
-        switch (flag)
-        {
-            // ✅ Tree XP
-            case 1:
-            {
-                var userTree = await userTreeRepository.GetByIdAsync(userTreeId);
-                if (userTree == null) return (false, "Không tìm thấy cây hoặc bạn không sở hữu cây");
 
-
-                var latestTreeLog = await treeXpLogRepository.GetLatestTreeXpLogByUserTreeIdAsync(userTreeId);
-                if (latestTreeLog == null) return (false, "Không tìm thấy log XP của cây");
-
-                var xpToAdd = latestTreeLog.XpAmount * percent / 100;
-                if (xpToAdd <= 0) return (false, "XP không hợp lệ");
-
-                userTree.TotalXp += xpToAdd;
-                userTree.UpdatedAt = DateTime.UtcNow;
-
-                var treeXpLog = new TreeXpLog
-                {
-                    XpAmount = xpToAdd,
-                    ActivityType = ActivityType.ItemXp,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                await treeXpLogRepository.CreateAsync(treeXpLog);
-                userTreeRepository.Update(userTree);
-                await unitOfWork.CommitAsync();
-
-                return (true, $"Đã cộng {xpToAdd} XP vào cây thành công");
-            }
-            // ✅ User XP
-            case 2:
-            {
-                var latestUserXpLog = await userXpLogRepository.GetLastXpLogAsync(userId);
-                if (latestUserXpLog == null) return (false, "Không tìm thấy log XP của người dùng");
-
-                var xpToAdd = latestUserXpLog.XpAmount * percent / 100;
-                if (xpToAdd <= 0) return (false, "XP không hợp lệ");
-
-                var userXpLog = new UserXpLog
-                {
-                    UserId = userId,
-                    XpAmount = xpToAdd,
-                    XpSource = XpSourceType.ItemBoost,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                await userXpLogRepository.CreateAsync(userXpLog);
-                return (true, $"Đã cộng {xpToAdd} XP vào User thành công");
-            }
-            default:
-                return (false, "Flag không hợp lệ");
-        }
-    }
 }
