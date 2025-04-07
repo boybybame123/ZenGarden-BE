@@ -22,8 +22,8 @@ public class TreeXpConfigsController(ITreeXpLogService treeXpLogService) : Contr
         return Ok(treeXpLog);
     }
 
-    [HttpGet("GetTreeXpLogbyTaskId /{taskId:int}")]
-    public async Task<IActionResult> GetTreeXpLogbyTaskId(int taskId)
+    [HttpGet("GetTreeXpLogByTaskId /{taskId:int}")]
+    public async Task<IActionResult> GetTreeXpLogByTaskId(int taskId)
     {
         var treeXpLogs = await treeXpLogService.GetTreeXpLogByTaskIdAsync(taskId);
         return Ok(treeXpLogs);

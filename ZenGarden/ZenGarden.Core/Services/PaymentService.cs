@@ -7,48 +7,34 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class PaymentService
+public class PaymentService(
+    ITransactionsRepository transactionRepository,
+    IWalletRepository walletRepository,
+    IPackageRepository packageRepository,
+    IUnitOfWork unitOfWork)
 {
-    private readonly IPackageRepository _packageRepository;
-    private readonly StripeClient _stripeClient;
-    private readonly ITransactionsRepository _transactionRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IWalletRepository _walletRepository;
-
-    public PaymentService(
-        ITransactionsRepository transactionRepository,
-        IWalletRepository walletRepository,
-        IPackageRepository packageRepository,
-        IUnitOfWork unitOfWork)
-    {
-        _transactionRepository = transactionRepository;
-        _walletRepository = walletRepository;
-        _packageRepository = packageRepository;
-        _unitOfWork = unitOfWork;
-        _stripeClient =
-            new StripeClient(
-                "sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
-    }
+    private readonly StripeClient _stripeClient = new(
+        "sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
 
     public async Task<CheckoutResponse> CreatePayment(CreatePaymentRequest request)
     {
         // 1. Validate package
-        var package = await _packageRepository.GetByIdAsync(request.PackageId);
-        if (package == null || !package.IsActive)
+        var package = await packageRepository.GetByIdAsync(request.PackageId);
+        if (package is not { IsActive: true })
             throw new Exception("Invalid package");
 
         // 2. Create PaymentIntent first
         var paymentIntentService = new PaymentIntentService(_stripeClient);
         var paymentIntentOptions = new PaymentIntentCreateOptions
         {
-            Amount = (long)(package.Price),
+            Amount = (long)package.Price,
             Currency = "usd",
             Metadata = new Dictionary<string, string>
-        {
-            { "user_id", request.UserId.ToString() },
-            { "package_id", package.PackageId.ToString() }
-        },
-            PaymentMethodTypes = new List<string> { "card" },
+            {
+                { "user_id", request.UserId.ToString() },
+                { "package_id", package.PackageId.ToString() }
+            },
+            PaymentMethodTypes = ["card"],
             Description = $"Zen purchase - {package.Name}" // English-only description
         };
 
@@ -57,42 +43,41 @@ public class PaymentService
         // 3. Create Checkout Session with English-only text
         var options = new SessionCreateOptions
         {
-            PaymentMethodTypes = new List<string> { "card" },
-            LineItems = new List<SessionLineItemOptions>
-        {
-            new SessionLineItemOptions
-            {
-                PriceData = new SessionLineItemPriceDataOptions
+            PaymentMethodTypes = ["card"],
+            LineItems =
+            [
+                new SessionLineItemOptions
                 {
-                    UnitAmount = (long)(package.Price),
-                    Currency = "usd",
-                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    PriceData = new SessionLineItemPriceDataOptions
                     {
-                        Name = package.Name,
-                        Description = $"Credit {(int)Math.Floor(package.Amount)} Zen to wallet", // English
-                        // Optional logo
-                    }
-                },
-                Quantity = 1
-            }
-        },
+                        UnitAmount = (long)package.Price,
+                        Currency = "usd",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = package.Name,
+                            Description = $"Credit {(int)Math.Floor(package.Amount)} Zen to wallet" // English
+                            // Optional logo
+                        }
+                    },
+                    Quantity = 1
+                }
+            ],
             Mode = "payment",
-            Locale ="en",
+            Locale = "en",
             SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success?paymentIntentId={paymentIntent.Id}",
             CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel?paymentIntentId={paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
-        {
-            { "user_id", request.UserId.ToString() },
-            { "package_id", package.PackageId.ToString() }
-        },
+            {
+                { "user_id", request.UserId.ToString() },
+                { "package_id", package.PackageId.ToString() }
+            },
             CustomText = new SessionCustomTextOptions
             {
                 Submit = new SessionCustomTextSubmitOptions
                 {
                     Message = "Complete Payment" // English button text
                 }
-            },
-
+            }
         };
 
         var service = new SessionService(_stripeClient);
@@ -111,8 +96,8 @@ public class PaymentService
             TransactionRef = paymentIntent.Id
         };
 
-        await _transactionRepository.CreateAsync(transaction);
-        await _unitOfWork.CommitAsync();
+        await transactionRepository.CreateAsync(transaction);
+        await unitOfWork.CommitAsync();
 
         // 5. Return response
         return new CheckoutResponse
@@ -124,40 +109,38 @@ public class PaymentService
             PackageName = package.Name
         };
     }
+
     public async Task HandlePaymentSucceeded(string paymentIntentId)
     {
-        var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
-        if (transaction != null && transaction.Status == TransactionStatus.Pending)
+        var transaction = await transactionRepository.FindByRefAsync(paymentIntentId);
+        if (transaction is { Status: TransactionStatus.Pending })
         {
             transaction.Status = TransactionStatus.Completed;
             transaction.TransactionTime = DateTime.UtcNow;
 
-            var wallet = await _walletRepository.GetByIdAsync(transaction.WalletId);
+            var wallet = await walletRepository.GetByIdAsync(transaction.WalletId);
             if (wallet != null)
             {
                 wallet.Balance += transaction.Amount ?? 0;
                 wallet.UpdatedAt = DateTime.UtcNow;
                 wallet.LastTransactionAt = DateTime.UtcNow;
-                _walletRepository.Update(wallet);
-                await _unitOfWork.CommitAsync();
+                walletRepository.Update(wallet);
+                await unitOfWork.CommitAsync();
             }
 
-            _transactionRepository.Update(transaction);
-            await _unitOfWork.CommitAsync();
+            transactionRepository.Update(transaction);
+            await unitOfWork.CommitAsync();
         }
     }
+
     public async Task HandlePaymentCanceled(string paymentIntentId)
     {
-        var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
-        if (transaction != null && transaction.Status == TransactionStatus.Pending)
+        var transaction = await transactionRepository.FindByRefAsync(paymentIntentId);
+        if (transaction is { Status: TransactionStatus.Pending })
         {
             transaction.Status = TransactionStatus.Failed;
-            _transactionRepository.Update(transaction);
-            await _unitOfWork.CommitAsync();
+            transactionRepository.Update(transaction);
+            await unitOfWork.CommitAsync();
         }
-        
     }
-
-
-
 }

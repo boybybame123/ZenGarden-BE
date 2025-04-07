@@ -26,7 +26,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
         return Ok(items);
     }
 
-    [HttpGet("{itemId}")]
+    [HttpGet("{itemId:int}")]
     public async Task<IActionResult> GetItemById(int itemId)
     {
         var item = await _itemService.GetItemByIdAsync(itemId);
@@ -34,7 +34,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
         return Ok(item);
     }
 
-    [HttpPut("{itemId}")]
+    [HttpPut("{itemId:int}")]
     [Produces("application/json")]
     public async Task<IActionResult> DeleteItem(int itemId)
     {
@@ -64,10 +64,9 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     [HttpPut("update-item-detail")]
     public async Task<IActionResult> UpdateItemDetail([FromForm] UpdateItemDetailDto itemDetail)
     {
-        var itemdetail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
-        return Ok(itemdetail);
+        var detail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
+        return Ok(detail);
     }
-
 
     [HttpPost("create-item")]
     public async Task<IActionResult> UploadAndCreateItem([FromForm] CreateItemDto request)

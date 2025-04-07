@@ -9,13 +9,13 @@ namespace ZenGarden.API.Controllers;
 public class UseItemController(IUseItemService useItemService) : ControllerBase
 {
     [HttpPost("use")]
-    public async Task<IActionResult> UseItem(int itembagId, int? usertreeId)
+    public async Task<IActionResult> UseItem(int itemBagId, int? userTreeId)
 
     {
         var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!int.TryParse(userIdString, out var parsedUserId)) return BadRequest(new { message = "Invalid user ID" });
 
-        var result = await useItemService.UseItemAsync(parsedUserId, itembagId, usertreeId);
+        var result = await useItemService.UseItemAsync(parsedUserId, itemBagId, userTreeId);
 
         return Ok(result);
     }

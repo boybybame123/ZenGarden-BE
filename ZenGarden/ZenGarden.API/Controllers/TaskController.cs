@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.API.Middleware;
@@ -89,7 +88,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
     {
         await _taskService.CompleteTaskAsync(taskId, completeTaskDto);
         return Ok(new { message = "Task completed successfully." });
-        
     }
 
     [HttpPost("update-overdue")]
@@ -104,7 +102,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
     {
         var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
         return Ok(new { taskId, xpEarned });
-        
     }
 
     [HttpPut("pause/{taskId:int}")]

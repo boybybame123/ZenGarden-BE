@@ -55,6 +55,7 @@ public class UseItemService(
                 if (!userXpResult.success) return userXpResult.message;
                 item.Quantity -= 1;
                 break;
+            case ItemType.Xp_protect:
             default:
                 return "Loại item không hợp lệ";
         }

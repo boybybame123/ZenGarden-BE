@@ -5,40 +5,20 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class PurchaseService : IPurchaseService
+public class PurchaseService(
+    IWalletRepository walletRepo,
+    IItemRepository itemRepo,
+    IBagRepository bagRepo,
+    IBagItemRepository bagItemRepo,
+    INotificationService notificationService,
+    IUnitOfWork unitOfWork,
+    IItemDetailRepository itemDetailRepo,
+    IPurchaseHistoryRepository purchaseHistoryRepo)
+    : IPurchaseService
 {
-    private readonly IBagItemRepository _bagItemRepo;
-    private readonly IBagRepository _bagRepo;
-    private readonly IItemDetailRepository _itemDetailRepo;
-    private readonly IItemRepository _itemRepo;
-    private readonly INotificationService _notificationService;
-    private readonly IPurchaseHistoryRepository _purchaseHistoryRepo;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IWalletRepository _walletRepo;
-
-    public PurchaseService(
-        IWalletRepository walletRepo,
-        IItemRepository itemRepo,
-        IBagRepository bagRepo,
-        IBagItemRepository bagItemRepo,
-        INotificationService notificationService,
-        IUnitOfWork unitOfWork,
-        IItemDetailRepository itemDetailRepo,
-        IPurchaseHistoryRepository purchaseHistoryRepo)
-    {
-        _walletRepo = walletRepo;
-        _itemRepo = itemRepo;
-        _bagRepo = bagRepo;
-        _bagItemRepo = bagItemRepo;
-        _notificationService = notificationService;
-        _unitOfWork = unitOfWork;
-        _itemDetailRepo = itemDetailRepo;
-        _purchaseHistoryRepo = purchaseHistoryRepo;
-    }
-
     public async Task<string> PurchaseItem(int userId, int itemId)
     {
-        await _unitOfWork.BeginTransactionAsync();
+        await unitOfWork.BeginTransactionAsync();
 
         try
         {
@@ -57,27 +37,27 @@ public class PurchaseService : IPurchaseService
             // 5. Send notification
             await SendNotification(userId);
 
-            await _unitOfWork.CommitTransactionAsync();
+            await unitOfWork.CommitTransactionAsync();
             return "Purchase successful.";
         }
         catch (PurchaseException ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            await unitOfWork.RollbackTransactionAsync();
             return ex.Message;
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            await unitOfWork.RollbackTransactionAsync();
             throw new PurchaseException($"Purchase failed: {ex.Message}");
         }
     }
 
     private async Task<(Wallet wallet, Item item)> ValidatePurchaseConditions(int userId, int itemId)
     {
-        var wallet = await _walletRepo.GetByUserIdAsync(userId)
+        var wallet = await walletRepo.GetByUserIdAsync(userId)
                      ?? throw new PurchaseException("Wallet not found.");
 
-        var item = await _itemRepo.GetByIdAsync(itemId)
+        var item = await itemRepo.GetByIdAsync(itemId)
                    ?? throw new PurchaseException("Item not found.");
 
         if (item.Status != ItemStatus.Active)
@@ -86,21 +66,19 @@ public class PurchaseService : IPurchaseService
         if (item.Cost == null || wallet.Balance < item.Cost.Value)
             throw new PurchaseException("Insufficient balance.");
 
-        if (item.ItemDetail?.MonthlyPurchaseLimit is int limit && limit > 0)
+        if (item.ItemDetail?.MonthlyPurchaseLimit is { } limit and > 0)
         {
             var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-            var purchaseCount = await _purchaseHistoryRepo.CountPurchaseThisMonth(userId, itemId, startOfMonth);
+            var purchaseCount = await purchaseHistoryRepo.CountPurchaseThisMonth(userId, itemId, startOfMonth);
 
             if (purchaseCount >= limit)
                 throw new PurchaseException("Purchase limit for this month reached.");
         }
 
-        if (item.ItemDetail?.IsUnique == true)
-        {
-            var bagItem = await _bagItemRepo.GetByBagAndItemAsync(userId, itemId);
-            if (bagItem != null)
-                throw new PurchaseException("Item is unique and can only be purchased once.");
-        }
+        if (item.ItemDetail?.IsUnique != true) return (wallet, item);
+        var bagItem = await bagItemRepo.GetByBagAndItemAsync(userId, itemId);
+        if (bagItem != null)
+            throw new PurchaseException("Item is unique and can only be purchased once.");
 
         return (wallet, item);
     }
@@ -109,25 +87,25 @@ public class PurchaseService : IPurchaseService
     {
         wallet.Balance -= item.Cost!.Value;
         wallet.UpdatedAt = DateTime.UtcNow;
-        _walletRepo.Update(wallet);
-        await _unitOfWork.CommitAsync();
+        walletRepo.Update(wallet);
+        await unitOfWork.CommitAsync();
     }
 
     private async Task UpdateInventory(int userId, int itemId, Item item)
     {
-        var bag = await _bagRepo.GetByUserIdAsync(userId)
+        var bag = await bagRepo.GetByUserIdAsync(userId)
                   ?? throw new PurchaseException("Bag not found.");
 
-        var bagItem = await _bagItemRepo.GetByBagAndItemAsync(bag.BagId, itemId);
+        var bagItem = await bagItemRepo.GetByBagAndItemAsync(bag.BagId, itemId);
         if (bagItem != null)
         {
             bagItem.Quantity += 1;
             bagItem.UpdatedAt = DateTime.UtcNow;
-            _bagItemRepo.Update(bagItem);
+            bagItemRepo.Update(bagItem);
         }
         else
         {
-            await _bagItemRepo.CreateAsync(new BagItem
+            await bagItemRepo.CreateAsync(new BagItem
             {
                 BagId = bag.BagId,
                 ItemId = itemId,
@@ -140,13 +118,13 @@ public class PurchaseService : IPurchaseService
         if (item.ItemDetail != null)
         {
             item.ItemDetail.Sold += 1;
-            _itemDetailRepo.Update(item.ItemDetail);
+            itemDetailRepo.Update(item.ItemDetail);
         }
     }
 
     private async Task RecordPurchaseHistory(int userId, int itemId, Item item)
     {
-        await _purchaseHistoryRepo.CreateAsync(new PurchaseHistory
+        await purchaseHistoryRepo.CreateAsync(new PurchaseHistory
         {
             UserId = userId,
             ItemId = itemId,
@@ -158,13 +136,8 @@ public class PurchaseService : IPurchaseService
 
     private async Task SendNotification(int userId)
     {
-        await _notificationService.PushNotificationAsync(userId, "Item", "Purchase successful.");
+        await notificationService.PushNotificationAsync(userId, "Item", "Purchase successful.");
     }
 }
 
-public class PurchaseException : Exception
-{
-    public PurchaseException(string message) : base(message)
-    {
-    }
-}
+public class PurchaseException(string message) : Exception(message);

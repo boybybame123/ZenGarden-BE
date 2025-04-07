@@ -4,38 +4,33 @@ using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
-public class NotificationService : INotificationService
+namespace ZenGarden.API.Services;
+
+public class NotificationService(
+    ZenGardenContext db,
+    IHubContext<NotificationHub> hubContext,
+    ILogger<NotificationService> logger)
+    : INotificationService
 {
-    private readonly ZenGardenContext _db;
-    private readonly IHubContext<NotificationHub> _hubContext;
-    private readonly ILogger<NotificationService> _logger;
-
-    public NotificationService(ZenGardenContext db, IHubContext<NotificationHub> hubContext,
-        ILogger<NotificationService> logger)
-    {
-        _db = db;
-        _hubContext = hubContext;
-        _logger = logger;
-    }
-
     public async Task PushNotificationAsync(int userId, string title, string content)
     {
-        var noti = new Notification
+        var notification = new Notification
         {
             UserId = userId,
             Content = $"{title}: {content}",
             CreatedAt = DateTime.UtcNow
         };
 
-        _db.Notifications.Add(noti);
-        await _db.SaveChangesAsync();
+        db.Notifications.Add(notification);
+        await db.SaveChangesAsync();
 
-        _logger.LogInformation($"✅ Notification saved and pushed to user {userId}");
+        logger.LogInformation($"✅ Notification saved and pushed to user {userId}");
 
         // Gửi đến đúng user qua NotificationHub
-        await _hubContext.Clients.User(userId.ToString())
-            .SendAsync("ReceiveNotification", noti.Content, noti.CreatedAt);
+        await hubContext.Clients.User(userId.ToString())
+            .SendAsync("ReceiveNotification", notification.Content, notification.CreatedAt);
 
-        _logger.LogInformation($"📢 [SignalR] Sent to user {userId}: {noti.Content}");
+        logger.LogInformation("📢 [SignalR] Sent to user {UserId}: {NotificationContent}", userId,
+            notification.Content);
     }
 }

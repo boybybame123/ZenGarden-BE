@@ -7,13 +7,13 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class TradeHistoriesController(ITradeHistoryService tradeHistoryService) : ControllerBase
 {
-    private readonly ITradeHistoryService _tradehistoryService =
+    private readonly ITradeHistoryService _tradeHistoryService =
         tradeHistoryService ?? throw new ArgumentNullException(nameof(tradeHistoryService));
 
     [HttpGet]
-    public async Task<IActionResult> Gettradehistorys()
+    public async Task<IActionResult> GetTradeHistory()
     {
-        var tradehistorys = await _tradehistoryService.GetTradeHistoryAsync();
-        return Ok(tradehistorys);
+        var tradeHistory = await _tradeHistoryService.GetTradeHistoryAsync();
+        return Ok(tradeHistory);
     }
 }
