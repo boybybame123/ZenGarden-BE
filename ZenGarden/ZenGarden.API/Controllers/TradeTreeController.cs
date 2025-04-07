@@ -16,9 +16,9 @@ public class TradeTreeController(ITradeTreeService tradeTreeService) : Controlle
     }
 
     [HttpPut("accept")]
-    public async Task<IActionResult> AcceptTrade(int tradeid, int userbid, int usertreeid)
+    public async Task<IActionResult> AcceptTrade(int tradeId, int userId, int userTreeId)
     {
-        var trade = await tradeTreeService.AcceptTradeAsync(tradeid, userbid, usertreeid);
+        var trade = await tradeTreeService.AcceptTradeAsync(tradeId, userId, userTreeId);
         return Ok(trade);
     }
 }

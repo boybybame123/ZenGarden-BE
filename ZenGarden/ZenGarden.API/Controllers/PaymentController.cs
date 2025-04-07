@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Stripe;
 using ZenGarden.Core.Services;
 using ZenGarden.Domain.DTOs;
 
@@ -28,18 +27,12 @@ public class PaymentController(PaymentService paymentService) : ControllerBase
     {
         await paymentService.HandlePaymentSucceeded(paymentIntentId);
         return Ok("success");
-      
     }
+
     [HttpGet("cancel")]
     public async Task<IActionResult> Cancel(string paymentIntentId)
     {
         await paymentService.HandlePaymentCanceled(paymentIntentId);
         return Ok("cancel");
     }
-
-
-
-
-
-
 }

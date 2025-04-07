@@ -33,7 +33,7 @@ public class S3Service : IS3Service
 
     public async Task<string> UploadFileAsync(IFormFile file)
     {
-        using var stream = file.OpenReadStream();
+        await using var stream = file.OpenReadStream();
         var key = file.FileName;
         var uploadRequest = new TransferUtilityUploadRequest
         {
@@ -59,10 +59,7 @@ public class S3Service : IS3Service
         var request = new ListObjectsV2Request { BucketName = _bucketName };
         var response = await _s3Client.ListObjectsV2Async(request);
 
-        var files = new List<string>();
-        foreach (var obj in response.S3Objects) files.Add(obj.Key);
-
-        return files;
+        return response.S3Objects.Select(obj => obj.Key).ToList();
     }
 
     // 3. Download File

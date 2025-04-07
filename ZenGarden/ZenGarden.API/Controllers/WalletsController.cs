@@ -15,7 +15,7 @@ public class WalletsController : ControllerBase
         _walletService = walletService;
     }
 
-    [HttpGet("{userId}/balance")]
+    [HttpGet("balance/{userId:int}")]
     public async Task<ActionResult<decimal>> GetBalance(int userId)
     {
         try
@@ -29,7 +29,7 @@ public class WalletsController : ControllerBase
         }
     }
 
-    [HttpGet("{userId}")]
+    [HttpGet("{userId:int}")]
     public async Task<ActionResult<WalletDto>> GetWallet(int userId)
     {
         try
@@ -43,7 +43,7 @@ public class WalletsController : ControllerBase
         }
     }
 
-    [HttpPost("{userId}/lock")]
+    [HttpPost("{userId:int}/lock")]
     public async Task<IActionResult> LockWallet(int userId)
     {
         try
@@ -57,7 +57,7 @@ public class WalletsController : ControllerBase
         }
     }
 
-    [HttpPost("{userId}/unlock")]
+    [HttpPost("{userId:int}/unlock")]
     public async Task<IActionResult> UnlockWallet(int userId)
     {
         try

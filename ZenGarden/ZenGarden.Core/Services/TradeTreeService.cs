@@ -6,25 +6,13 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class TradeTreeService : ITradeTreeService
+public class TradeTreeService(
+    ITradeHistoryService tradeHistoryRepository,
+    ITreeRepository treeRepository,
+    IUserTreeRepository userTreeRepository,
+    IUnitOfWork unitOfWork)
+    : ITradeTreeService
 {
-    private readonly ITradeHistoryService _tradeHistoryRepository;
-    private readonly ITreeRepository _treeRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IUserTreeRepository _userTreeRepository;
-
-    public TradeTreeService(
-        ITradeHistoryService tradeHistoryRepository,
-        ITreeRepository treeRepository,
-        IUserTreeRepository userTreeRepository,
-        IUnitOfWork unitOfWork)
-    {
-        _tradeHistoryRepository = tradeHistoryRepository;
-        _treeRepository = treeRepository;
-        _userTreeRepository = userTreeRepository;
-        _unitOfWork = unitOfWork;
-    }
-
     public async Task<string> CreateTradeRequestAsync(TradeDto tradeDto)
     {
         // Validate requester's tree
@@ -50,14 +38,14 @@ public class TradeTreeService : ITradeTreeService
             Status = TradeStatus.Pending
         };
 
-        await _tradeHistoryRepository.CreateTradeHistoryAsync(trade);
+        await tradeHistoryRepository.CreateTradeHistoryAsync(trade);
         return "Trade request created successfully. Waiting for recipient to accept.";
     }
 
     public async Task<string> AcceptTradeAsync(int tradeId, int recipientId, int recipientTreeId)
     {
         // Validate trade exists and is pending
-        var trade = await _tradeHistoryRepository.GetTradeHistoryByIdAsync(tradeId)
+        var trade = await tradeHistoryRepository.GetTradeHistoryByIdAsync(tradeId)
                     ?? throw new Exception("Trade not found");
 
         if (trade.Status != TradeStatus.Pending)
@@ -79,7 +67,7 @@ public class TradeTreeService : ITradeTreeService
 
     private async Task<UserTree> ValidateRequesterTree(int requesterId, int requesterTreeId)
     {
-        var userTree = await _userTreeRepository.GetByIdAsync(requesterTreeId)
+        var userTree = await userTreeRepository.GetByIdAsync(requesterTreeId)
                        ?? throw new Exception("Tree does not exist");
 
         if (userTree.TreeOwnerId != requesterId)
@@ -93,7 +81,7 @@ public class TradeTreeService : ITradeTreeService
 
     private async Task<Tree> ValidateDesiredTree(int desiredTreeId, UserTree requesterTree)
     {
-        var desiredTree = await _treeRepository.GetByIdAsync(desiredTreeId)
+        var desiredTree = await treeRepository.GetByIdAsync(desiredTreeId)
                           ?? throw new Exception("Desired tree does not exist");
 
         if (!desiredTree.IsActive)
@@ -105,7 +93,7 @@ public class TradeTreeService : ITradeTreeService
         return desiredTree;
     }
 
-    private decimal CalculateTradeFee(string rarity)
+    private static decimal CalculateTradeFee(string rarity)
     {
         return rarity switch
         {
@@ -119,7 +107,7 @@ public class TradeTreeService : ITradeTreeService
 
     private async Task<UserTree> ValidateRecipientTree(int recipientId, int recipientTreeId, TradeHistory trade)
     {
-        var userTree = await _userTreeRepository.GetByIdAsync(recipientTreeId)
+        var userTree = await userTreeRepository.GetByIdAsync(recipientTreeId)
                        ?? throw new Exception("Your tree does not exist");
 
         if (userTree.TreeOwnerId != recipientId)
@@ -139,7 +127,7 @@ public class TradeTreeService : ITradeTreeService
         if (trade.TreeAid == null || trade.TreeOwnerAid == null)
             throw new InvalidOperationException("Invalid trade data");
 
-        var requesterTree = await _userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(
+        var requesterTree = await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(
                                 trade.TreeAid.Value, trade.TreeOwnerAid.Value)
                             ?? throw new Exception("Original tree no longer exists");
 
@@ -159,14 +147,14 @@ public class TradeTreeService : ITradeTreeService
         trade.TreeOwnerBid = recipientTree.TreeOwnerId;
 
         // Save changes
-        _userTreeRepository.Update(recipientTree);
-        if (await _unitOfWork.CommitAsync() == 0)
+        userTreeRepository.Update(recipientTree);
+        if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update trees");
-        _userTreeRepository.Update(requesterTree);
-        if (await _unitOfWork.CommitAsync() == 0)
+        userTreeRepository.Update(requesterTree);
+        if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update trees");
 
-        await _tradeHistoryRepository.UpdateTradeHistoryAsync(trade);
+        await tradeHistoryRepository.UpdateTradeHistoryAsync(trade);
     }
 
     #endregion

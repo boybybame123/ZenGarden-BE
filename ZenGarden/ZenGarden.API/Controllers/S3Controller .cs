@@ -1,17 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 
+namespace ZenGarden.API.Controllers;
+
 [ApiController]
 [Route("api/s3")]
-public class S3Controller : ControllerBase
+public class S3Controller(IS3Service s3Service) : ControllerBase
 {
-    private readonly IS3Service _s3Service;
-
-    public S3Controller(IS3Service s3Service)
-    {
-        _s3Service = s3Service;
-    }
-
     // 1. Upload File
     //[HttpPost("upload")]
     //public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
@@ -28,7 +23,7 @@ public class S3Controller : ControllerBase
     [HttpGet("list")]
     public async Task<IActionResult> ListFiles()
     {
-        var files = await _s3Service.ListFilesAsync();
+        var files = await s3Service.ListFilesAsync();
         return Ok(files);
     }
 
@@ -36,7 +31,7 @@ public class S3Controller : ControllerBase
     [HttpGet("download/{key}")]
     public async Task<IActionResult> DownloadFile(string key)
     {
-        var fileStream = await _s3Service.DownloadFileAsync(key);
+        var fileStream = await s3Service.DownloadFileAsync(key);
         return File(fileStream, "application/octet-stream", key);
     }
 
@@ -44,14 +39,14 @@ public class S3Controller : ControllerBase
     [HttpDelete("delete/{key}")]
     public async Task<IActionResult> DeleteFile(string key)
     {
-        var result = await _s3Service.DeleteFileAsync(key);
+        var result = await s3Service.DeleteFileAsync(key);
         return result ? Ok("Deleted Successfully") : BadRequest("Failed to delete file");
     }
 
-    [HttpGet("presigned-url/{key}")]
+    [HttpGet("resigned-url/{key}")]
     public async Task<IActionResult> GetPreSignedUrl(string key)
     {
-        var url = await _s3Service.GetPreSignedUrlAsync(key);
+        var url = await s3Service.GetPreSignedUrlAsync(key);
         return Ok(new { Url = url });
     }
 
@@ -59,7 +54,7 @@ public class S3Controller : ControllerBase
     [Consumes("multipart/form-data")] // ⚠️ Bắt buộc có dòng này
     public async Task<IActionResult> UploadFile(IFormFile file)
     {
-        var url = await _s3Service.UploadFileAsync(file);
+        var url = await s3Service.UploadFileAsync(file);
         return Ok(new { Url = url });
     }
 }
