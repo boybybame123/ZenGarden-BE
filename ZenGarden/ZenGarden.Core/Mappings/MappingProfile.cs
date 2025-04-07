@@ -38,7 +38,8 @@ public class MappingProfile : Profile
         CreateMap<Tasks, TaskDto>()
             .ForMember(dest => dest.TaskTypeName, opt => opt.MapFrom(src => src.TaskType.TaskTypeName))
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.FocusMethod.Name))
-            .ForMember(dest => dest.UserTreeName, opt => opt.MapFrom(src => src.UserTree.Name));
+            .ForMember(dest => dest.UserTreeName, opt => opt.MapFrom(src => src.UserTree.Name))
+            .ForMember(dest => dest.RemainingTime, opt => opt.Ignore());
         CreateMap<UserXpLog, UserXpLogDto>().ReverseMap();
         CreateMap<TaskType, TaskTypeDto>();
         CreateMap<CreateTaskTypeDto, TaskType>();
@@ -69,7 +70,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.TaskTypeId, opt => opt.MapFrom(src => src.TaskTypeId))
             .ForMember(dest => dest.UserTreeId, opt => opt.MapFrom(src => src.UserTreeId))
             .ForMember(dest => dest.FocusMethodId, opt => opt.MapFrom(src => src.FocusMethodId));
-
+        CreateMap<UpdateTaskDto, Tasks>();
         CreateMap<UserChallenge, UserChallengeProgressDto>()
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.User != null ? src.User.UserName : "Unknown"))

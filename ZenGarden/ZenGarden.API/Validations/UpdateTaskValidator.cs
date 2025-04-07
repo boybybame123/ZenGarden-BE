@@ -7,9 +7,6 @@ public class UpdateTaskValidator : AbstractValidator<UpdateTaskDto>
 {
     public UpdateTaskValidator()
     {
-        RuleFor(x => x.TaskId)
-            .GreaterThan(0).WithMessage("TaskId must be greater than 0.");
-
         RuleFor(x => x.TaskName)
             .NotEmpty().WithMessage("TaskName is required.")
             .MaximumLength(100).WithMessage("TaskName must be at most 100 characters.");

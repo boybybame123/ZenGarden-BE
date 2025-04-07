@@ -20,6 +20,7 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
     {
         await _context.BagItem.AddRangeAsync(items);
     }
+
     public async Task<bool> HasEquippedXpBoostTreeAsync(int bagId)
     {
         return await _context.BagItem
