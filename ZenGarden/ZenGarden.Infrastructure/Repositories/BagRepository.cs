@@ -14,6 +14,7 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
     {
         return await _context.Bag.FirstOrDefaultAsync(b => b.UserId == userId);
     }
+
     public async Task<bool> HasUsedXpBoostItemAsync(int userId)
     {
         return await _context.Bag
@@ -25,6 +26,7 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
                 bi.Item != null &&
                 bi.Item.Type == ItemType.xp_boostTree);
     }
+
     public async Task<int> GetItemByHavingUse(int userId, ItemType itemType)
     {
         var bag = await _context.Bag
@@ -36,9 +38,11 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
             return 0;
 
         var bagItem = bag.BagItem
-            .FirstOrDefault(bi => bi.isEquipped == true && bi.Item != null && bi.Item.Type == itemType);
+            .FirstOrDefault(bi => bi.isEquipped && bi.Item != null && bi.Item.Type == itemType);
+
+        if (bagItem == null)
+            throw new KeyNotFoundException("BagItem not found.");
 
         return bagItem.BagItemId;
     }
-
 }

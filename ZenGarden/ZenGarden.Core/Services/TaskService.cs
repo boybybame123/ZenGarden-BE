@@ -29,7 +29,11 @@ public class TaskService(
     public async Task<List<TaskDto>> GetAllTaskAsync()
     {
         var tasks = await taskRepository.GetAllWithDetailsAsync();
-        return mapper.Map<List<TaskDto>>(tasks);
+        var taskDto = mapper.Map<List<TaskDto>>(tasks);
+
+        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+
+        return taskDto;
     }
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
@@ -38,63 +42,34 @@ public class TaskService(
         if (task == null) throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var taskDto = mapper.Map<TaskDto>(task);
-
-        switch (task.Status)
-        {
-            case TasksStatus.InProgress when task.StartedAt != null:
-            {
-                var elapsedTime = (DateTime.UtcNow - task.StartedAt.Value).TotalMinutes;
-                var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
-                taskDto.RemainingTime = Math.Max(remainingTime, 0);
-                break;
-            }
-            case TasksStatus.Paused:
-            {
-                if (task is { PausedAt: not null, StartedAt: not null })
-                {
-                    var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
-                    var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
-                    taskDto.RemainingTime = Math.Max(remainingTime, 0);
-                }
-                else
-                {
-                    taskDto.RemainingTime = task.TotalDuration ?? 0;
-                }
-
-                break;
-            }
-            case TasksStatus.NotStarted:
-            case TasksStatus.Completed:
-            case TasksStatus.Overdue:
-            case TasksStatus.Canceled:
-            default:
-                taskDto.RemainingTime = task.TotalDuration ?? 0;
-                break;
-        }
-
+        taskDto.RemainingTime = CalculateRemainingTime(task);
         return taskDto;
     }
-
 
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
         var tasks = await taskRepository.GetTasksByUserIdAsync(userId);
-
         if (tasks == null || tasks.Count == 0)
-            throw new KeyNotFoundException($"Tasks with UserTree ID {userId} not found.");
+            throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
 
-        return mapper.Map<List<TaskDto>>(tasks);
+        var taskDto = mapper.Map<List<TaskDto>>(tasks);
+        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+
+        return taskDto;
     }
 
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
         var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId);
-
         if (tasks == null || tasks.Count == 0)
             throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
 
-        return mapper.Map<List<TaskDto>>(tasks);
+        var taskDto = mapper.Map<List<TaskDto>>(tasks);
+        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+
+        return taskDto;
     }
+
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
@@ -129,13 +104,14 @@ public class TaskService(
         return mapper.Map<TaskDto>(newTask);
     }
 
-    public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
+    public async Task UpdateTaskAsync(int taskId, UpdateTaskDto updateTaskDto)
     {
-        var existingTask = await taskRepository.GetByIdAsync(updateTaskDto.TaskId)
-                           ?? throw new KeyNotFoundException($"Task with ID {updateTaskDto.TaskId} not found.");
+        var existingTask = await taskRepository.GetByIdAsync(taskId)
+                           ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        if (existingTask.Status is not (TasksStatus.InProgress or TasksStatus.Paused))
-            throw new InvalidOperationException("Only tasks in 'InProgress' or 'Paused' state can be completed.");
+        if (existingTask.Status is (TasksStatus.InProgress or TasksStatus.Paused))
+            throw new InvalidOperationException(
+                "Tasks in 'InProgress' or 'Paused' state cannot be updated based on the new requirement.");
 
         mapper.Map(updateTaskDto, existingTask);
 
@@ -503,5 +479,34 @@ public class TaskService(
     {
         var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
         return dailyTaskTypeId.HasValue && taskTypeId == dailyTaskTypeId.Value;
+    }
+
+    private static int CalculateRemainingTime(Tasks task)
+    {
+        var totalDuration = task.TotalDuration ?? 0;
+
+        switch (task.Status)
+        {
+            case TasksStatus.InProgress when task.StartedAt != null:
+            {
+                var elapsedTime = (DateTime.UtcNow - task.StartedAt.Value).TotalMinutes;
+                var remainingTime = totalDuration - (int)elapsedTime;
+                return Math.Max(remainingTime, 0);
+            }
+
+            case TasksStatus.Paused:
+            {
+                if (task.PausedAt == null || task.StartedAt == null) return totalDuration;
+                var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
+                var remainingTime = totalDuration - (int)elapsedTime;
+                return Math.Max(remainingTime, 0);
+            }
+            case TasksStatus.NotStarted:
+            case TasksStatus.Completed:
+            case TasksStatus.Overdue:
+            case TasksStatus.Canceled:
+            default:
+                return totalDuration;
+        }
     }
 }
