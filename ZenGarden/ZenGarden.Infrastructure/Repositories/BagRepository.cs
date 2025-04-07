@@ -45,4 +45,22 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
 
         return bagItem.BagItemId;
     }
+    public async Task UnequipZeroQuantityItems(int userId)
+    {
+   
+        var itemsToUnequip = await _context.BagItem
+            .Where(bi => bi.Bag.UserId == userId
+                        && bi.isEquipped
+                        && bi.Quantity == 0)
+            .ToListAsync();
+
+     
+        foreach (var item in itemsToUnequip)
+        {
+            item.isEquipped = false;
+        }
+
+      
+        await _context.SaveChangesAsync();
+    }
 }
