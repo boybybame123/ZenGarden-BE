@@ -4,8 +4,6 @@ namespace ZenGarden.Domain.DTOs;
 
 public class UpdateTaskDto
 {
-    public int TaskId { get; set; }
-
     public string? TaskName { get; set; }
 
     public string? TaskDescription { get; set; }

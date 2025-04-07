@@ -57,10 +57,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
     public async Task<IActionResult> UpdateTask(
         int taskId, [FromBody] UpdateTaskDto task)
     {
-        if (taskId != task.TaskId)
-            return BadRequest(new { message = "Task ID mismatch" });
-
-        await _taskService.UpdateTaskAsync(task);
+        await _taskService.UpdateTaskAsync(taskId, task);
         return Ok(new { message = "Task updated successfully" });
     }
 
