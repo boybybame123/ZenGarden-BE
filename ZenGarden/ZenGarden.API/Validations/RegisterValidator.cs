@@ -1,4 +1,5 @@
 using FluentValidation;
+using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Validations;

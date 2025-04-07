@@ -15,7 +15,7 @@ public class LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> 
 
         using var reader = new StreamReader(request.Body, leaveOpen: true);
         var bodyText = await reader.ReadToEndAsync();
-        request.Body.Seek(0, SeekOrigin.Begin); // Reset lại vị trí
+        request.Body.Seek(0, SeekOrigin.Begin);
 
         return string.IsNullOrWhiteSpace(bodyText)
             ? "[Empty Body]"

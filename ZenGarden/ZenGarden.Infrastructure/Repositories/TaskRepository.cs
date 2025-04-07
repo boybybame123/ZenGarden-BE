@@ -62,22 +62,32 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .ToListAsync();
     }
 
-    public async Task<List<Tasks>> GetTasksByUserChallengeAsync(int userId, int challengeId)
+    public async Task<List<Tasks>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
     {
         return await (from t in _context.Tasks
-                join ct in _context.ChallengeTask on t.TaskId equals ct.TaskId
+                join original in _context.Tasks on t.CloneFromTaskId equals original.TaskId
+                join ct in _context.ChallengeTask on original.TaskId equals ct.TaskId
                 join uc in _context.UserChallenges on ct.ChallengeId equals uc.ChallengeId
-                where uc.UserId == userId && uc.ChallengeId == challengeId
+                where uc.UserId == userId
+                      && uc.ChallengeId == challengeId
+                      && t.CloneFromTaskId != null
                 select t)
             .ToListAsync();
     }
 
-    public async Task<List<Tasks>> GetTasksByChallengeIdAsync(int challengeId)
+    public async Task<List<Tasks>> GetAllTasksByChallengeIdAsync(int challengeId)
     {
         return await (from t in _context.Tasks
                 join ct in _context.ChallengeTask on t.TaskId equals ct.TaskId
                 where ct.ChallengeId == challengeId
                 select t)
+            .Union(
+                from cloned in _context.Tasks
+                join original in _context.Tasks on cloned.CloneFromTaskId equals original.TaskId
+                join ct in _context.ChallengeTask on original.TaskId equals ct.TaskId
+                where ct.ChallengeId == challengeId
+                select cloned
+            )
             .ToListAsync();
     }
 
@@ -104,5 +114,30 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
         return await _context.Tasks
             .Where(t => t.TaskType.TaskTypeName.Equals("daily", StringComparison.CurrentCultureIgnoreCase))
             .ToListAsync();
+    }
+
+    public async Task<int> GetCompletedTasksAsync(int userId, int challengeId)
+    {
+        return await _context.Tasks
+            .Where(t =>
+                t.CloneFromTaskId != null &&
+                t.UserTree.UserId == userId &&
+                t.Status == TasksStatus.Completed &&
+                _context.ChallengeTask.Any(ct =>
+                    ct.TaskId == t.CloneFromTaskId && ct.ChallengeId == challengeId)
+            )
+            .CountAsync();
+    }
+
+    public async Task<int> GetTotalCloneTasksAsync(int userId, int challengeId)
+    {
+        return await _context.Tasks
+            .Where(t =>
+                t.CloneFromTaskId != null &&
+                t.UserTree.UserId == userId &&
+                _context.ChallengeTask.Any(ct =>
+                    ct.TaskId == t.CloneFromTaskId && ct.ChallengeId == challengeId)
+            )
+            .CountAsync();
     }
 }

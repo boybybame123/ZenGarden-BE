@@ -9,6 +9,6 @@ public interface IItemService
     Task<List<ItemDto>> GetAllItemsAsync();
     Task<Item?> GetItemByIdAsync(int ItemId);
     Task CreateItemAsync(CreateItemDto item);
-    Task UpdateItemAsync(UpdateItemDto item);
+    Task<Item> UpdateItemAsync(UpdateItemDto item);
     Task DeleteItemAsync(int ItemId);
 }

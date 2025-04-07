@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZenGarden.API.Middleware;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -76,25 +77,19 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
     {
-        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId)) return Unauthorized();
+        var userId = HttpContext.GetUserId();
+        if (!userId.HasValue) return Unauthorized();
 
-        await _taskService.StartTaskAsync(taskId, userId);
+        await _taskService.StartTaskAsync(taskId, userId.Value);
         return Ok(new { message = "Task started successfully." });
     }
 
-    [HttpPost("complete-task/{taskId:int}/{userTreeId:int?}")]
-    public async Task<IActionResult> CompleteTask(int taskId, int? userTreeId)
+    [HttpPost("complete-task/{taskId:int}")]
+    public async Task<IActionResult> CompleteTask(int taskId, [FromBody] CompleteTaskDto completeTaskDto)
     {
-        try
-        {
-            await _taskService.CompleteTaskAsync(taskId, userTreeId);
-            return Ok(new { message = "Task completed successfully." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        await _taskService.CompleteTaskAsync(taskId, completeTaskDto);
+        return Ok(new { message = "Task completed successfully." });
+        
     }
 
     [HttpPost("update-overdue")]
@@ -107,19 +102,9 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("calculate-xp/{taskId:int}")]
     public async Task<IActionResult> CalculateTaskXp(int taskId)
     {
-        try
-        {
-            var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
-            return Ok(new { taskId, xpEarned });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var xpEarned = await _taskService.CalculateTaskXpAsync(taskId);
+        return Ok(new { taskId, xpEarned });
+        
     }
 
     [HttpPut("pause/{taskId:int}")]

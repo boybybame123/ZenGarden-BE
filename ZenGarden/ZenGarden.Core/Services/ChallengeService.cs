@@ -14,7 +14,6 @@ public class ChallengeService(
     ITaskRepository taskRepository,
     IChallengeTaskRepository challengeTaskRepository,
     IUserTreeRepository userTreeRepository,
-    ITaskTypeRepository taskTypeRepository,
     IWalletRepository walletRepository,
     IUserRepository userRepository,
     ITaskService taskService,
@@ -48,7 +47,6 @@ public class ChallengeService(
         {
             ChallengeId = challenge.ChallengeId,
             UserId = userId,
-            Progress = 0,
             ChallengeRole = UserChallengeRole.Organizer,
             Status = UserChallengeStatus.Active,
             CreatedAt = DateTime.UtcNow
@@ -80,8 +78,8 @@ public class ChallengeService(
 
     public async Task<bool> JoinChallengeAsync(int userId, int challengeId, JoinChallengeDto joinChallengeDto)
     {
-        var challenge = await challengeRepository.GetByIdAsync(challengeId)
-                        ?? throw new KeyNotFoundException("Challenge not found!");
+        var challenge = await challengeRepository.GetByIdAsync(challengeId);
+        if (challenge is null) return false;
 
         await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
 
@@ -99,35 +97,32 @@ public class ChallengeService(
             });
 
             var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
-            var newTasks = new List<Tasks>();
+            var taskList = new List<Tasks>();
 
             foreach (var ct in challengeTasks)
             {
                 if (ct.Tasks == null) continue;
-
-                if (joinChallengeDto.TaskTypeId.HasValue)
+                var newTask = new Tasks
                 {
-                    var taskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
-                    if (taskType == null) throw new ArgumentException("Invalid TaskTypeId!");
-                }
-
-                var createTaskDto = new CreateTaskDto
-                {
-                    TaskTypeId = joinChallengeDto.TaskTypeId ?? 0,
+                    CloneFromTaskId = ct.TaskId,
+                    TaskTypeId = ct.Tasks.TaskTypeId,
                     UserTreeId = joinChallengeDto.UserTreeId,
                     TaskName = ct.Tasks.TaskName,
                     TaskDescription = ct.Tasks.TaskDescription,
                     TotalDuration = ct.Tasks.TotalDuration,
                     StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
-                    EndDate = ct.Tasks.EndDate ?? challenge.EndDate
+                    EndDate = ct.Tasks.EndDate ?? challenge.EndDate,
+                    WorkDuration = ct.Tasks.WorkDuration,
+                    BreakTime = ct.Tasks.BreakTime,
+                    FocusMethodId = ct.Tasks.FocusMethodId
                 };
 
-                var createdTask = await taskService.CreateTaskWithSuggestedMethodAsync(createTaskDto);
-                newTasks.Add(mapper.Map<Tasks>(createdTask));
+                taskList.Add(newTask);
             }
 
-            if (newTasks.Count != 0) await taskRepository.AddRangeAsync(newTasks);
+            if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
 
+            await unitOfWork.CommitAsync();
             await transaction.CommitAsync();
             return true;
         }
@@ -166,40 +161,36 @@ public class ChallengeService(
     public async Task<bool> LeaveChallengeAsync(int userId, int challengeId)
     {
         var userChallenge = await userChallengeRepository.GetUserChallengeAsync(userId, challengeId);
-        if (userChallenge == null)
-            throw new KeyNotFoundException("You are not part of this challenge!");
+        if (userChallenge == null) return false;
 
         if (userChallenge.ChallengeRole == UserChallengeRole.Organizer)
             throw new InvalidOperationException("Organizer cannot leave the challenge.");
-
+        var userTasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
         await using var transaction = await unitOfWork.BeginTransactionAsync();
-        try
-        {
-            var userTasks = await taskRepository.GetTasksByUserChallengeAsync(userId, challengeId);
 
-            if (userTasks.Count > 0)
+        switch (userTasks.Count)
+        {
+            case 0:
+                return false;
+            case > 0:
             {
-                userTasks.ForEach(task =>
+                foreach (var task in userTasks)
                 {
                     task.Status = TasksStatus.Canceled;
                     task.UpdatedAt = DateTime.UtcNow;
-                });
+                }
 
                 await taskRepository.UpdateRangeAsync(userTasks);
+                break;
             }
-
-            userChallenge.Status = UserChallengeStatus.Canceled;
-            userChallenge.UpdatedAt = DateTime.UtcNow;
-            userChallengeRepository.Update(userChallenge);
-
-            await transaction.CommitAsync();
-            return true;
         }
-        catch (Exception)
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+
+        userChallenge.Status = UserChallengeStatus.Canceled;
+        userChallenge.UpdatedAt = DateTime.UtcNow;
+        userChallengeRepository.Update(userChallenge);
+        await unitOfWork.CommitAsync();
+        await transaction.CommitAsync();
+        return true;
     }
 
     public async Task<bool> CancelChallengeAsync(int challengeId, int userId)
@@ -218,6 +209,7 @@ public class ChallengeService(
             challenge.Status = ChallengeStatus.Canceled;
             challenge.UpdatedAt = DateTime.UtcNow;
             challengeRepository.Update(challenge);
+            await unitOfWork.CommitAsync();
 
             var userChallenges = await userChallengeRepository.GetAllUsersInChallengeAsync(challengeId);
             foreach (var uc in userChallenges)
@@ -227,8 +219,9 @@ public class ChallengeService(
             }
 
             await userChallengeRepository.UpdateRangeAsync(userChallenges);
+            await unitOfWork.CommitAsync();
 
-            var tasks = await taskRepository.GetTasksByChallengeIdAsync(challengeId);
+            var tasks = await taskRepository.GetAllTasksByChallengeIdAsync(challengeId);
             foreach (var task in tasks)
             {
                 task.Status = TasksStatus.Canceled;
@@ -279,12 +272,5 @@ public class ChallengeService(
         var userTree = await userTreeRepository.GetByIdAsync(joinChallengeDto.UserTreeId);
         if (userTree == null || userTree.UserId != userId)
             throw new ArgumentException("Invalid tree selection!");
-
-        if (joinChallengeDto.TaskTypeId.HasValue)
-        {
-            var taskType = await taskTypeRepository.GetByIdAsync(joinChallengeDto.TaskTypeId.Value);
-            if (taskType == null)
-                throw new KeyNotFoundException("TaskType not found.");
-        }
     }
 }

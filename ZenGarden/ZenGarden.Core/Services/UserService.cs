@@ -123,6 +123,8 @@ public class UserService(
         var newUser = mapper.Map<Users>(dto);
 
         newUser.UserName = string.IsNullOrWhiteSpace(dto.UserName) ? GenerateRandomUsername() : dto.UserName;
+        if (await userRepository.ExistsByUserNameAsync(newUser.UserName))
+            throw new InvalidOperationException("Username is already taken.");
 
         newUser.Password = PasswordHasher.HashPassword(dto.Password);
         newUser.RoleId = role.RoleId;

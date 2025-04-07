@@ -95,4 +95,9 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
         return new FilterResult<Users>(users, totalCount);
     }
+
+    public async Task<bool> ExistsByUserNameAsync(string userName)
+    {
+        return await _context.Users.AnyAsync(u => u.UserName.ToLower() == userName.ToLower());
+    }
 }

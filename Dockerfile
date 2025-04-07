@@ -22,9 +22,8 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Thêm các dòng này
-ENV PORT=8080
 ENV ASPNETCORE_URLS="http://+:${PORT}"
-EXPOSE ${PORT}
+EXPOSE 8080
 
 # 7️⃣ Chạy ứng dụng
 ENTRYPOINT ["dotnet", "ZenGarden.API.dll"]

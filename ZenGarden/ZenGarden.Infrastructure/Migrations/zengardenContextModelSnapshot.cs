@@ -18,7 +18,7 @@ namespace ZenGarden.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .UseCollation("utf8mb4_general_ci")
-                .HasAnnotation("ProductVersion", "8.0.14")
+                .HasAnnotation("ProductVersion", "8.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4");
@@ -200,6 +200,8 @@ namespace ZenGarden.Infrastructure.Migrations
                         .HasName("PRIMARY");
 
                     b.HasIndex("ChallengeId");
+
+                    b.HasIndex("TaskId");
 
                     b.ToTable("ChallengeTask");
                 });
@@ -612,6 +614,9 @@ namespace ZenGarden.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(5);
+
+                    b.Property<int?>("CloneFromTaskId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp");
@@ -1463,7 +1468,7 @@ namespace ZenGarden.Infrastructure.Migrations
 
                     b.HasOne("ZenGarden.Domain.Entities.Tasks", "Tasks")
                         .WithMany("ChallengeTasks")
-                        .HasForeignKey("ChallengeId")
+                        .HasForeignKey("TaskId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
@@ -1521,7 +1526,7 @@ namespace ZenGarden.Infrastructure.Migrations
                     b.HasOne("ZenGarden.Domain.Entities.TaskType", "TaskType")
                         .WithMany("Tasks")
                         .HasForeignKey("TaskTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ZenGarden.Domain.Entities.UserTree", "UserTree")

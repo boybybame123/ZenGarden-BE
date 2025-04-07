@@ -1,88 +1,73 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
+using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/wallets")]
 public class WalletsController : ControllerBase
 {
-    private readonly ZenGardenContext _context;
+    private readonly IWalletService _walletService;
 
-    public WalletsController(ZenGardenContext context)
+    public WalletsController(IWalletService walletService)
     {
-        _context = context;
+        _walletService = walletService;
     }
 
-    // GET: api/Wallets
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Wallet>>> GetWallet()
+    [HttpGet("{userId}/balance")]
+    public async Task<ActionResult<decimal>> GetBalance(int userId)
     {
-        return await _context.Wallet.ToListAsync();
-    }
-
-    // GET: api/Wallets/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Wallet>> GetWallet(int id)
-    {
-        var wallet = await _context.Wallet.FindAsync(id);
-
-        if (wallet == null) return NotFound();
-
-        return wallet;
-    }
-
-    // PUT: api/Wallets/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutWallet(int id, Wallet wallet)
-    {
-        if (id != wallet.WalletId) return BadRequest();
-
-        _context.Entry(wallet).State = EntityState.Modified;
-
         try
         {
-            await _context.SaveChangesAsync();
+            var balance = await _walletService.GetBalanceAsync(userId);
+            return Ok(balance);
         }
-        catch (DbUpdateConcurrencyException)
+        catch
         {
-            if (!WalletExists(id)) return NotFound();
-
-            throw;
+            return StatusCode(500);
         }
-
-        return NoContent();
     }
 
-    // POST: api/Wallets
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<Wallet>> PostWallet(Wallet wallet)
+    [HttpGet("{userId}")]
+    public async Task<ActionResult<WalletDto>> GetWallet(int userId)
     {
-        _context.Wallet.Add(wallet);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetWallet", new { id = wallet.WalletId }, wallet);
+        try
+        {
+            var wallet = await _walletService.GetWalletAsync(userId);
+            return Ok(wallet);
+        }
+        catch
+        {
+            return StatusCode(500);
+        }
     }
 
-    // DELETE: api/Wallets/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteWallet(int id)
+    [HttpPost("{userId}/lock")]
+    public async Task<IActionResult> LockWallet(int userId)
     {
-        var wallet = await _context.Wallet.FindAsync(id);
-        if (wallet == null) return NotFound();
-
-        _context.Wallet.Remove(wallet);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        try
+        {
+            await _walletService.LockWalletAsync(userId);
+            return Ok();
+        }
+        catch
+        {
+            return StatusCode(500);
+        }
     }
 
-    private bool WalletExists(int id)
+    [HttpPost("{userId}/unlock")]
+    public async Task<IActionResult> UnlockWallet(int userId)
     {
-        return _context.Wallet.Any(e => e.WalletId == id);
+        try
+        {
+            await _walletService.UnlockWalletAsync(userId);
+            return Ok();
+        }
+        catch
+        {
+            return StatusCode(500);
+        }
     }
 }

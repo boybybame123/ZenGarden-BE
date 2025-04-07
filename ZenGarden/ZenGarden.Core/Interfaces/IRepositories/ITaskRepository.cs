@@ -10,9 +10,11 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<List<Tasks>> GetAllWithDetailsAsync();
     Task<List<Tasks>> GetTasksByUserTreeIdAsync(int userTreeId);
     Task<List<Tasks>> GetTasksByUserIdAsync(int userId);
-    Task<List<Tasks>> GetTasksByUserChallengeAsync(int userId, int challengeId);
-    Task<List<Tasks>> GetTasksByChallengeIdAsync(int challengeId);
+    Task<List<Tasks>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId);
+    Task<List<Tasks>> GetAllTasksByChallengeIdAsync(int challengeId);
     Task<List<Tasks>> GetTasksInProgressBeforeAsync(DateTime thresholdTime);
     Task<Tasks?> GetActiveTaskByUserTreeIdAsync(int userTreeId);
     Task<List<Tasks>> GetDailyTasksAsync();
+    Task<int> GetCompletedTasksAsync(int userId, int challengeId);
+    Task<int> GetTotalCloneTasksAsync(int userId, int challengeId);
 }

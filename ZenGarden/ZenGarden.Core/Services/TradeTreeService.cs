@@ -6,42 +6,43 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class TradeTreeService(
-    ITradeHistoryService tradeHistoryRepository,
-    ITreeRepository treeRepository,
-    IUserTreeRepository userTreeRepository) : ITradeTreeService
+public class TradeTreeService : ITradeTreeService
 {
-    public async Task<string> CreateTradeRequestAsync(TradeDto traded)
+    private readonly ITradeHistoryService _tradeHistoryRepository;
+    private readonly ITreeRepository _treeRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserTreeRepository _userTreeRepository;
+
+    public TradeTreeService(
+        ITradeHistoryService tradeHistoryRepository,
+        ITreeRepository treeRepository,
+        IUserTreeRepository userTreeRepository,
+        IUnitOfWork unitOfWork)
     {
-        // Get requester's tree
+        _tradeHistoryRepository = tradeHistoryRepository;
+        _treeRepository = treeRepository;
+        _userTreeRepository = userTreeRepository;
+        _unitOfWork = unitOfWork;
+    }
 
-        var userTree = await userTreeRepository.GetByIdAsync(traded.requesterTreeId);
+    public async Task<string> CreateTradeRequestAsync(TradeDto tradeDto)
+    {
+        // Validate requester's tree
+        var requesterTree = await ValidateRequesterTree(tradeDto.requesterId, tradeDto.requesterTreeId);
 
-        if (userTree == null) return "Tree does not exist";
-        if (userTree.TreeOwnerId != traded.requesterId) return "Tree does not belong to you";
+        // Validate desired tree
+        var desiredTree = await ValidateDesiredTree(tradeDto.requestDesiredTreeId, requesterTree);
 
-        if (!userTree.FinalTreeId.HasValue) return "Tree is not final";
+        // Calculate trade fee based on rarity
+        var tradeFee = CalculateTradeFee(desiredTree.Rarity);
 
-
-        var desiredTree = await treeRepository.GetByIdAsync(traded.requestDesiredTreeId);
-        if (desiredTree == null) return "The tree you want to trade does not exist";
-        if (!desiredTree.IsActive) return "The tree you want to trade has been deactivated";
-        if (desiredTree.Rarity != userTree.FinalTree?.Rarity) return "Rarity does not match";
-        var tradeFee = 50;
-        if (desiredTree.Rarity == "Rare")
-            tradeFee = 100;
-        if (desiredTree.Rarity == "Super Rare")
-            tradeFee = 200;
-        if (desiredTree.Rarity == "Ultra Rare")
-            tradeFee = 300;
-
-        // Create trade (B and DesiredTree not yet specified)
+        // Create and save trade request
         var trade = new TradeHistory
         {
-            TreeOwnerAid = traded.requesterId,
-            TreeOwnerBid = null, // B is not known yet
-            TreeAid = traded.requesterTreeId,
-            DesiredTreeAID = traded.requestDesiredTreeId,
+            TreeOwnerAid = tradeDto.requesterId,
+            TreeOwnerBid = null,
+            TreeAid = tradeDto.requesterTreeId,
+            DesiredTreeAID = tradeDto.requestDesiredTreeId,
             TradeFee = tradeFee,
             RequestedAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
@@ -49,39 +50,124 @@ public class TradeTreeService(
             Status = TradeStatus.Pending
         };
 
-        await tradeHistoryRepository.CreateTradeHistoryAsync(trade);
-
-        return "Trade request created successfully, waiting for recipient";
+        await _tradeHistoryRepository.CreateTradeHistoryAsync(trade);
+        return "Trade request created successfully. Waiting for recipient to accept.";
     }
 
-
-    public async Task<string> AcceptTradeAsync(int tradeId, int userBId, int usertreeid)
+    public async Task<string> AcceptTradeAsync(int tradeId, int recipientId, int recipientTreeId)
     {
-        var trade = await tradeHistoryRepository.GetTradeHistoryByIdAsync(tradeId);
-        if (trade.Status != TradeStatus.Pending) return "Giao dịch không ở trạng thái chờ";
-        // Lấy UserTree của B
-        var userTreeB = await userTreeRepository.GetByIdAsync(usertreeid);
-        if (userTreeB == null) return "Cây của bạn không tồn tại";
-        if (userTreeB.TreeOwnerId != userBId) return "Cây không thuộc sở hữu của bạn";
-        if (userTreeB.FinalTree != null) return "Tree is not final";
-        if (userTreeB.FinalTree?.TreeId != trade.DesiredTreeAID) return "Tree does not match the desired tree";
+        // Validate trade exists and is pending
+        var trade = await _tradeHistoryRepository.GetTradeHistoryByIdAsync(tradeId)
+                    ?? throw new Exception("Trade not found");
 
-        if (userTreeB.TreeOwnerId == null) return "Cây của bạn không tồn tại";
+        if (trade.Status != TradeStatus.Pending)
+            return "Trade is not in pending status";
 
+        // Validate recipient's tree
+        var recipientTree = await ValidateRecipientTree(recipientId, recipientTreeId, trade);
+
+        // Validate requester's tree
+        var requesterTree = await ValidateRequesterTreeForAcceptance(trade);
+
+        // Execute the trade
+        await ExecuteTrade(trade, requesterTree, recipientTree);
+
+        return "Trade accepted successfully. Ownership has been transferred.";
+    }
+
+    #region Private Helper Methods
+
+    private async Task<UserTree> ValidateRequesterTree(int requesterId, int requesterTreeId)
+    {
+        var userTree = await _userTreeRepository.GetByIdAsync(requesterTreeId)
+                       ?? throw new Exception("Tree does not exist");
+
+        if (userTree.TreeOwnerId != requesterId)
+            throw new Exception("Tree does not belong to you");
+
+        if (!userTree.FinalTreeId.HasValue)
+            throw new InvalidOperationException("Tree is not fully grown and cannot be traded");
+
+        return userTree;
+    }
+
+    private async Task<Tree> ValidateDesiredTree(int desiredTreeId, UserTree requesterTree)
+    {
+        var desiredTree = await _treeRepository.GetByIdAsync(desiredTreeId)
+                          ?? throw new Exception("Desired tree does not exist");
+
+        if (!desiredTree.IsActive)
+            throw new InvalidOperationException("Desired tree has been deactivated");
+
+        if (desiredTree.Rarity != requesterTree.FinalTree?.Rarity)
+            throw new InvalidOperationException("Rarity levels do not match");
+
+        return desiredTree;
+    }
+
+    private decimal CalculateTradeFee(string rarity)
+    {
+        return rarity switch
+        {
+            "Common" => 50,
+            "Rare" => 100,
+            "Super Rare" => 200,
+            "Ultra Rare" => 300,
+            _ => 50
+        };
+    }
+
+    private async Task<UserTree> ValidateRecipientTree(int recipientId, int recipientTreeId, TradeHistory trade)
+    {
+        var userTree = await _userTreeRepository.GetByIdAsync(recipientTreeId)
+                       ?? throw new Exception("Your tree does not exist");
+
+        if (userTree.TreeOwnerId != recipientId)
+            throw new Exception("This tree does not belong to you");
+
+        if (!userTree.FinalTreeId.HasValue)
+            throw new InvalidOperationException("Your tree is not fully grown");
+
+        if (userTree.FinalTree?.TreeId != trade.DesiredTreeAID)
+            throw new InvalidOperationException("Tree does not match the requested type");
+
+        return userTree;
+    }
+
+    private async Task<UserTree> ValidateRequesterTreeForAcceptance(TradeHistory trade)
+    {
         if (trade.TreeAid == null || trade.TreeOwnerAid == null)
-            return "Thiếu dữ liệu đầu vào";
-        var requesterTree =
-            await userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(trade.TreeAid.Value, trade.TreeOwnerAid.Value);
+            throw new InvalidOperationException("Invalid trade data");
 
-        userTreeB.TreeOwnerId = trade.TreeOwnerAid;
-        if (requesterTree != null) requesterTree.TreeOwnerId = userBId;
+        var requesterTree = await _userTreeRepository.GetUserTreeByTreeIdAndOwnerIdAsync(
+                                trade.TreeAid.Value, trade.TreeOwnerAid.Value)
+                            ?? throw new Exception("Original tree no longer exists");
+
+        return requesterTree;
+    }
+
+    private async Task ExecuteTrade(TradeHistory trade, UserTree requesterTree, UserTree recipientTree)
+    {
+        // Swap ownership
+        recipientTree.TreeOwnerId = trade.TreeOwnerAid;
+        requesterTree.TreeOwnerId = trade.TreeOwnerBid;
+
+        // Update trade status
         trade.Status = TradeStatus.Completed;
         trade.CompletedAt = DateTime.UtcNow;
         trade.UpdatedAt = DateTime.UtcNow;
-        trade.TreeOwnerBid = userBId;
+        trade.TreeOwnerBid = recipientTree.TreeOwnerId;
 
+        // Save changes
+        _userTreeRepository.Update(recipientTree);
+        if (await _unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update trees");
+        _userTreeRepository.Update(requesterTree);
+        if (await _unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update trees");
 
-        await tradeHistoryRepository.UpdateTradeHistoryAsync(trade);
-        return "Chấp nhận giao dịch thành công";
+        await _tradeHistoryRepository.UpdateTradeHistoryAsync(trade);
     }
+
+    #endregion
 }
