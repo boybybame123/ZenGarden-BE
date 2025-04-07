@@ -23,7 +23,7 @@ public class AuthController(
     {
         var validationResult = await loginValidator.ValidateAsync(loginDto);
         if (!validationResult.IsValid) return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-        
+
         var user = await userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
         if (user == null)
             return Unauthorized(new { error = "Invalid credentials." });

@@ -12,11 +12,9 @@ public class NotificationHub : Hub
     public override Task OnConnectedAsync()
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId != null)
-        {
-            Connections[userId] = Context.ConnectionId;
-            Console.WriteLine($"✅ User {userId} connected with {Context.ConnectionId}");
-        }
+        if (userId == null) return base.OnConnectedAsync();
+        Connections[userId] = Context.ConnectionId;
+        Console.WriteLine($"✅ User {userId} connected with {Context.ConnectionId}");
 
         return base.OnConnectedAsync();
     }
@@ -24,11 +22,9 @@ public class NotificationHub : Hub
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId != null && Connections.ContainsKey(userId))
-        {
-            Connections.TryRemove(userId, out _);
-            Console.WriteLine($"❌ User {userId} disconnected");
-        }
+        if (userId == null || !Connections.ContainsKey(userId)) return base.OnDisconnectedAsync(exception);
+        Connections.TryRemove(userId, out _);
+        Console.WriteLine($"❌ User {userId} disconnected");
 
         return base.OnDisconnectedAsync(exception);
     }

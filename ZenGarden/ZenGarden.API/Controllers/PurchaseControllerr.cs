@@ -7,15 +7,8 @@ namespace ZenGarden.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PurchaseController : ControllerBase
+public class PurchaseController(IPurchaseService purchaseService) : ControllerBase
 {
-    private readonly IPurchaseService _purchaseService;
-
-    public PurchaseController(IPurchaseService purchaseService)
-    {
-        _purchaseService = purchaseService;
-    }
-
     /// <summary>
     ///     API mua item
     /// </summary>
@@ -27,7 +20,7 @@ public class PurchaseController : ControllerBase
         var userId = Convert.ToInt32(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
 
-        var result = await _purchaseService.PurchaseItem(userId, request.ItemId);
+        var result = await purchaseService.PurchaseItem(userId, request.ItemId);
         if (result == "Purchase successful.")
             return Ok(new { message = result });
 

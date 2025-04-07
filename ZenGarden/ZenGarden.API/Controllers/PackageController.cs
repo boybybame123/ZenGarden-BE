@@ -10,44 +10,44 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class PackageController(IPackagesService packagesService) : ControllerBase
 {
-    private readonly IPackagesService _PackageService =
+    private readonly IPackagesService _packageService =
         packagesService ?? throw new ArgumentNullException(nameof(packagesService));
 
     [HttpGet]
     public async Task<IActionResult> GetPackages()
     {
-        var Packages = await _PackageService.GetAllPackagesAsync();
-        return Ok(Packages);
+        var packages = await _packageService.GetAllPackagesAsync();
+        return Ok(packages);
     }
 
-    [HttpGet("{PackageId}")]
-    public async Task<IActionResult> GetPackageById(int PackageId)
+    [HttpGet("{packageId:int}")]
+    public async Task<IActionResult> GetPackageById(int packageId)
     {
-        var Package = await _PackageService.GetPackageByIdAsync(PackageId);
-        if (Package == null) return NotFound();
-        return Ok(Package);
+        var package = await _packageService.GetPackageByIdAsync(packageId);
+        if (package == null) return NotFound();
+        return Ok(package);
     }
 
-    [HttpDelete("{PackageId}")]
+    [HttpDelete("{packageId:int}")]
     [Produces("application/json")]
-    public async Task<IActionResult> DeletePackage(int PackageId)
+    public async Task<IActionResult> DeletePackage(int packageId)
     {
-        await _PackageService.DeletePackageAsync(PackageId);
+        await _packageService.DeletePackageAsync(packageId);
         return Ok(new { message = "Package deleted successfully" });
     }
 
     [HttpPut("update-Package")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdatePackage(PackageDto Package)
+    public async Task<IActionResult> UpdatePackage(PackageDto package)
     {
-        await _PackageService.UpdatePackageAsync(Package);
+        await _packageService.UpdatePackageAsync(package);
         return Ok(new { message = "Package updated successfully" });
     }
 
     [HttpPost("create-Package")]
     public async Task<IActionResult> CreatePackage([FromBody] PackageDto dto)
     {
-        var Package = await _PackageService.CreatePackageAsync(dto);
-        return Ok(Package);
+        var package = await _packageService.CreatePackageAsync(dto);
+        return Ok(package);
     }
 }

@@ -11,45 +11,45 @@ public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork
 {
     public async Task<List<PackageDto>> GetAllPackagesAsync()
     {
-        var Packages = await packagesRepository.GetAllAsync();
-        return mapper.Map<List<PackageDto>>(Packages);
+        var packages = await packagesRepository.GetAllAsync();
+        return mapper.Map<List<PackageDto>>(packages);
     }
 
 
-    public async Task<Packages?> GetPackageByIdAsync(int PackageId)
+    public async Task<Packages?> GetPackageByIdAsync(int packageId)
     {
-        return await packagesRepository.GetByIdAsync(PackageId)
-               ?? throw new KeyNotFoundException($"Package with ID {PackageId} not found.");
+        return await packagesRepository.GetByIdAsync(packageId)
+               ?? throw new KeyNotFoundException($"Package with ID {packageId} not found.");
     }
 
 
-    public async Task UpdatePackageAsync(PackageDto Package)
+    public async Task UpdatePackageAsync(PackageDto package)
     {
-        var updatePackage = await GetPackageByIdAsync(Package.PackageId);
+        var updatePackage = await GetPackageByIdAsync(package.PackageId);
         if (updatePackage == null)
-            throw new KeyNotFoundException($"Package with ID {Package.PackageId} not found.");
+            throw new KeyNotFoundException($"Package with ID {package.PackageId} not found.");
 
-        mapper.Map(Package, updatePackage);
+        mapper.Map(package, updatePackage);
 
         packagesRepository.Update(updatePackage);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update Package.");
     }
 
-    public async Task DeletePackageAsync(int PackageId)
+    public async Task DeletePackageAsync(int packageId)
     {
-        var Package = await GetPackageByIdAsync(PackageId);
-        if (Package == null)
-            throw new KeyNotFoundException($"Package with ID {PackageId} not found.");
+        var package = await GetPackageByIdAsync(packageId);
+        if (package == null)
+            throw new KeyNotFoundException($"Package with ID {packageId} not found.");
 
-        await packagesRepository.RemoveAsync(Package);
+        await packagesRepository.RemoveAsync(package);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete Package.");
     }
 
-    public async Task<Packages?> CreatePackageAsync(PackageDto Package)
+    public async Task<Packages?> CreatePackageAsync(PackageDto package)
     {
-        var createPackage = mapper.Map<Packages>(Package);
+        var createPackage = mapper.Map<Packages>(package);
 
         await packagesRepository.CreateAsync(createPackage);
         if (await unitOfWork.CommitAsync() == 0)

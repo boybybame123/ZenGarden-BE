@@ -53,7 +53,6 @@ public class UseItemService(
                 falg = await bagRepository.GetItemByHavingUse(userId,ItemType.xp_boostTree);
 
                 break;
-            
             default:
                 return "item not rule";
         }

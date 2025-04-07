@@ -9,7 +9,7 @@ public class BagsController(IBagService bagService) : ControllerBase
 {
     private readonly IBagService _bagService = bagService ?? throw new ArgumentNullException(nameof(bagService));
 
-    [HttpGet("{bagId}")]
+    [HttpGet("{bagId:int}")]
     public async Task<IActionResult> GetItemById(int bagId)
     {
         var bag = await _bagService.GetBagByIdAsync(bagId);

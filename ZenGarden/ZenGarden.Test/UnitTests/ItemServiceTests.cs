@@ -101,7 +101,7 @@ public class ItemServiceTests
     {
         // Arrange
         var itemId = 999;
-        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item)null);
+        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item?)null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => _itemService.GetItemByIdAsync(itemId));
@@ -228,7 +228,7 @@ public class ItemServiceTests
             Name = "Updated Item"
         };
 
-        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item)null);
+        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item?)null);
 
         // Act & Assert
         var exception =
@@ -290,7 +290,7 @@ public class ItemServiceTests
     {
         // Arrange
         var itemId = 999;
-        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item)null);
+        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item?)null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => _itemService.ActiveItem(itemId));
@@ -340,7 +340,7 @@ public class ItemServiceTests
     {
         // Arrange
         var itemId = 999;
-        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item)null);
+        _mockItemRepository.Setup(repo => repo.GetItemByIdAsync(itemId)).ReturnsAsync((Item?)null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => _itemService.DeleteItemAsync(itemId));

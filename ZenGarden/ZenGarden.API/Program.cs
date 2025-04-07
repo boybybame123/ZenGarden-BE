@@ -92,7 +92,7 @@ public partial class Program
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
         builder.Services.AddScoped<PaymentService>();
         builder.Services.AddScoped<ZenGardenContext>();
-        
+
         // SignalR và realtime
         builder.Services.AddSignalR();
         builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
@@ -157,7 +157,7 @@ public partial class Program
         builder.Services.AddScoped<IPackageRepository, PackageRepository>();
         // other repository registrations
     }
-    
+
     private static void ConfigureDbContext(WebApplicationBuilder builder)
     {
         var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -306,22 +306,20 @@ public partial class Program
     private static void ConfigurePipeline(WebApplication app)
     {
         // Middleware exception & logging
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseDeveloperExceptionPage();
-        }
+        if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseMiddleware<LoggingMiddleware>();
+        app.UseMiddleware<ValidationMiddleware>();
         app.UseMiddleware<PerformanceMiddleware>();
 
         // CORS & Routing
         app.UseCors("AllowAll");
         app.UseRouting();
-        
+
         // Authentication & Authorization
         app.UseAuthentication();
         app.UseAuthorization();
-        
+
         app.UseMiddleware<UserContextMiddleware>();
 
         // Rate limiting
@@ -329,12 +327,12 @@ public partial class Program
 
         // Auth middleware
         app.UseMiddleware<JwtMiddleware>();
-        app.UseMiddleware<ValidationMiddleware>();
-        
+
+
         // Endpoints
         app.MapControllers();
         app.MapHub<NotificationHub>("/hubs/notification");
-        
+
         // Swagger
         app.UseSwagger();
         app.UseSwaggerUI();
