@@ -9,5 +9,4 @@ public interface IBagRepository : IGenericRepository<Bag>
     Task<bool> HasUsedXpBoostItemAsync(int userId);
     Task<int> GetItemByHavingUse(int userId, ItemType itemType);
     Task UnequipZeroQuantityItems(int userId);
-
 }
