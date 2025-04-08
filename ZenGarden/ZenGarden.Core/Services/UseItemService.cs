@@ -72,4 +72,30 @@ public class UseItemService(
 
         return "Sử dụng item thành công";
     }
+    public async Task UseItemXpBoostTree(int userId)
+    {
+        var itembagid = bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
+        var itembag = await bagItemRepository.GetByIdAsync(itembagid);
+        if (itembag == null)
+            throw new KeyNotFoundException("Item not found");
+        if (itembag.Quantity <= 0)
+            throw new InvalidOperationException("Item quantity is zero");
+        itembag.Quantity--;
+        itembag.UpdatedAt = DateTime.UtcNow;
+        bagItemRepository.Update(itembag);
+        await unitOfWork.CommitAsync();
+
+    }
+    public async Task Cancel(int bagitemid)
+    {
+        var item = await bagItemRepository.GetByIdAsync(bagitemid);
+        if (item == null)
+            throw new KeyNotFoundException("Item not found");
+        item.isEquipped = false;
+        item.UpdatedAt = DateTime.UtcNow;
+        bagItemRepository.Update(item);
+        await unitOfWork.CommitAsync();
+    }
+
+
 }
