@@ -46,7 +46,9 @@ public class UseItemService(
                 break;
             case ItemType.xp_boostTree:
                 flag = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
-
+                break;
+            case ItemType.Xp_protect:
+                flag = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
                 break;
             default:
                 return "item not rule";
@@ -86,6 +88,21 @@ public class UseItemService(
         await unitOfWork.CommitAsync();
 
     }
+    public async Task UseItemXpProtect(int userId)
+    {
+        var itembagid = bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
+        var itembag = await bagItemRepository.GetByIdAsync(itembagid);
+        if (itembag == null)
+            throw new KeyNotFoundException("Item not found");
+        if (itembag.Quantity <= 0)
+            throw new InvalidOperationException("Item quantity is zero");
+        itembag.Quantity--;
+        itembag.UpdatedAt = DateTime.UtcNow;
+        bagItemRepository.Update(itembag);
+        await unitOfWork.CommitAsync();
+    }
+
+
     public async Task Cancel(int bagitemid)
     {
         var item = await bagItemRepository.GetByIdAsync(bagitemid);
