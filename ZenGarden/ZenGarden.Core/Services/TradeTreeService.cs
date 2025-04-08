@@ -127,6 +127,9 @@ public class TradeTreeService(
         if (!desiredTree.IsActive)
             throw new InvalidOperationException("Desired tree has been deactivated");
 
+        if (!requesterTree.FinalTreeId.HasValue)
+            throw new InvalidOperationException("Requester tree is not fully grown");
+
         var TreeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId.Value)
                      ?? throw new Exception("Original tree does not exist");
 
@@ -142,9 +145,9 @@ public class TradeTreeService(
         {
             "Common" => 50,
             "Rare" => 100,
-            "Super Rare" => 200,
-            "Ultra Rare" => 300,
-            _ => 50
+            "Epic" => 200,
+            "Legendary" => 300
+           
         };
     }
 
