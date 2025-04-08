@@ -19,4 +19,12 @@ public class UseItemController(IUseItemService useItemService) : ControllerBase
 
         return Ok(result);
     }
+    [HttpPost("cancel")]
+    public async Task<IActionResult> Cancel(int itemBagId)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdString, out var parsedUserId)) return BadRequest(new { message = "Invalid user ID" });
+        await useItemService.Cancel(itemBagId);
+        return Ok(new { message = "Item cancelled successfully" });
+    }
 }
