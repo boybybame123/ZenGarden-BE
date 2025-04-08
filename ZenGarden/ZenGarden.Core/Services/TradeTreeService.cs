@@ -34,8 +34,8 @@ public class TradeTreeService(
             // Calculate trade fee based on rarity
             var tradeFee = CalculateTradeFee(desiredTree.Rarity);
 
-            _ = await userTreeRepository.GetByIdAsync(tradeDto.requesterTreeId)
-                ?? throw new Exception("Your tree does not exist");
+            var userTree = await userTreeRepository.GetByIdAsync(tradeDto.requesterTreeId)
+                           ?? throw new Exception("Your tree does not exist");
 
             // Deduct trade fee from owner's wallet
             var wallet = await walletRepository.GetByUserIdAsync(tradeDto.requesterId)
@@ -127,10 +127,13 @@ public class TradeTreeService(
         if (!desiredTree.IsActive)
             throw new InvalidOperationException("Desired tree has been deactivated");
 
-        var treeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId.HasValue)
+        if (!requesterTree.FinalTreeId.HasValue)
+            throw new InvalidOperationException("Requester tree is not fully grown");
+
+        var TreeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId.Value)
                      ?? throw new Exception("Original tree does not exist");
 
-        if (desiredTree.Rarity != treeA.Rarity)
+        if (desiredTree.Rarity != TreeA.Rarity)
             throw new InvalidOperationException("Rarity levels do not match");
 
         return desiredTree;
@@ -142,9 +145,9 @@ public class TradeTreeService(
         {
             "Common" => 50,
             "Rare" => 100,
-            "Super Rare" => 200,
-            "Ultra Rare" => 300,
-            _ => 50
+            "Epic" => 200,
+            "Legendary" => 300
+           
         };
     }
 
@@ -182,7 +185,9 @@ public class TradeTreeService(
     private async Task ExecuteTrade(TradeHistory trade, UserTree requesterTree, UserTree recipientTree)
     {
         // Swap ownership
-        (requesterTree.TreeOwnerId, recipientTree.TreeOwnerId) = (recipientTree.TreeOwnerId, requesterTree.TreeOwnerId);
+        var originalRequesterTreeOwnerId = requesterTree.TreeOwnerId;
+        requesterTree.TreeOwnerId = recipientTree.TreeOwnerId;
+        recipientTree.TreeOwnerId = originalRequesterTreeOwnerId;
 
         // Update trade status
         trade.Status = TradeStatus.Completed;
