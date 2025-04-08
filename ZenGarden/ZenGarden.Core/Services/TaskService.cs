@@ -7,6 +7,7 @@ using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
+using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
@@ -35,10 +36,18 @@ public class TaskService(
         var tasks = await taskRepository.GetAllWithDetailsAsync();
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
 
-        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
 
         return taskDto;
     }
+
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
@@ -46,7 +55,11 @@ public class TaskService(
         if (task == null) throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var taskDto = mapper.Map<TaskDto>(task);
-        taskDto.RemainingTime = CalculateRemainingTime(task);
+        var remaining = CalculateRemainingSeconds(task);
+        taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remaining);
+        var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
+        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+
         return taskDto;
     }
 
@@ -57,7 +70,14 @@ public class TaskService(
             throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
 
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
-        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
 
         return taskDto;
     }
@@ -69,10 +89,18 @@ public class TaskService(
             throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
 
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
-        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
 
         return taskDto;
     }
+
 
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
@@ -320,22 +348,27 @@ public class TaskService(
         if (task.Status != TasksStatus.InProgress)
             throw new InvalidOperationException("Only in-progress tasks can be paused.");
 
-        if (task.StartedAt != null)
-        {
-            var elapsedTime = (DateTime.UtcNow - task.StartedAt.Value).TotalMinutes;
-            var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
+        if (task.StartedAt == null)
+            throw new InvalidOperationException("Task has no start time.");
 
-            if (remainingTime <= 0)
-                throw new InvalidOperationException("Task has already exceeded its duration.");
-        }
+        var now = DateTime.UtcNow;
 
-        task.PausedAt = DateTime.UtcNow;
+        var delta = (now - task.StartedAt.Value).TotalMinutes;
+
+        task.AccumulatedTime = (task.AccumulatedTime ?? 0) + delta;
+
+        var remainingTime = (task.TotalDuration ?? 0) - (int)task.AccumulatedTime.Value;
+        if (remainingTime <= 0)
+            throw new InvalidOperationException("Task has already exceeded its duration.");
+
+        task.PausedAt = now;
         task.Status = TasksStatus.Paused;
 
         taskRepository.Update(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to pause the task.");
     }
+
 
     public async Task AutoPauseTasksAsync()
     {
@@ -558,32 +591,33 @@ public class TaskService(
         return taskTypeId == dailyTaskTypeId;
     }
 
-    private static int CalculateRemainingTime(Tasks task)
+    private static int CalculateRemainingSeconds(Tasks task)
     {
-        var totalDuration = task.TotalDuration ?? 0;
+        var totalDuration = TimeSpan.FromMinutes(task.TotalDuration ?? 0);
+        var accumulated = TimeSpan.FromMinutes(task.AccumulatedTime ?? 0);
+
+        TimeSpan remaining;
 
         switch (task.Status)
         {
             case TasksStatus.InProgress when task.StartedAt != null:
-            {
-                var elapsedTime = (DateTime.UtcNow - task.StartedAt.Value).TotalMinutes;
-                var remainingTime = totalDuration - (int)elapsedTime;
-                return Math.Max(remainingTime, 0);
-            }
+                var elapsed = DateTime.UtcNow - task.StartedAt.Value;
+                remaining = totalDuration - (accumulated + elapsed);
+                break;
 
             case TasksStatus.Paused:
-            {
-                if (task.PausedAt == null || task.StartedAt == null) return totalDuration;
-                var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
-                var remainingTime = totalDuration - (int)elapsedTime;
-                return Math.Max(remainingTime, 0);
-            }
+                remaining = totalDuration - accumulated;
+                break;
+
             case TasksStatus.NotStarted:
-            case TasksStatus.Completed:
-            case TasksStatus.Overdue:
-            case TasksStatus.Canceled:
+                remaining = totalDuration;
+                break;
+
             default:
-                return totalDuration;
+                remaining = TimeSpan.Zero;
+                break;
         }
+
+        return (int)Math.Max(remaining.TotalSeconds, 0);
     }
 }
