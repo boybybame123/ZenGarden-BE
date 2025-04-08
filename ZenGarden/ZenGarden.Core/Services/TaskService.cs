@@ -253,7 +253,7 @@ public class TaskService(
                 if (itemBagId > 0)
                 {
                     var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-                    if (itemBag?.isEquipped == true &&
+                    if (itemBag is { isEquipped: true } &&
                         double.TryParse(itemBag.Item.ItemDetail.Effect, out var effectPercent) &&
                         effectPercent > 0)
                     {
