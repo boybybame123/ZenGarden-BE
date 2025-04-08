@@ -70,22 +70,23 @@ public class UseItemService(
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
 
-        return "Sử dụng item thành công";
+        return "Use Item successfully";
     }
+
     public async Task UseItemXpBoostTree(int userId)
     {
-        var itembagid = bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
-        var itembag = await bagItemRepository.GetByIdAsync(itembagid);
-        if (itembag == null)
+        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
+        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+        if (itemBag == null)
             throw new KeyNotFoundException("Item not found");
-        if (itembag.Quantity <= 0)
+        if (itemBag.Quantity <= 0)
             throw new InvalidOperationException("Item quantity is zero");
-        itembag.Quantity--;
-        itembag.UpdatedAt = DateTime.UtcNow;
-        bagItemRepository.Update(itembag);
+        itemBag.Quantity--;
+        itemBag.UpdatedAt = DateTime.UtcNow;
+        bagItemRepository.Update(itemBag);
         await unitOfWork.CommitAsync();
-
     }
+
     public async Task Cancel(int bagitemid)
     {
         var item = await bagItemRepository.GetByIdAsync(bagitemid);
@@ -96,6 +97,4 @@ public class UseItemService(
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
     }
-
-
 }

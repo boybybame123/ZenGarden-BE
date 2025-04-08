@@ -60,6 +60,9 @@ public class TaskServiceTests
             Mock.Of<IChallengeTaskRepository>(),
             _s3ServiceMock.Object,
             _mapperMock.Object,
+            Mock.Of<IBagRepository>(),
+            Mock.Of<IBagItemRepository>(),
+            Mock.Of<IUseItemService>(),
             _taskValidatorMock.Object
         );
     }

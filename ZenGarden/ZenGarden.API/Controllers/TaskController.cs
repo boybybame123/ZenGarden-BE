@@ -101,7 +101,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { taskId, xpEarned });
     }
 
-    [HttpPut("pause/{taskId:int}")]
+    [HttpPost("pause/{taskId:int}")]
     public async Task<IActionResult> PauseTask(int taskId)
     {
         await _taskService.PauseTaskAsync(taskId);

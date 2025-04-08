@@ -90,6 +90,7 @@ public partial class Program
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<IWalletService, WalletService>();
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
+        builder.Services.AddScoped<IUseItemService, UseItemService>();
         builder.Services.AddScoped<PaymentService>();
         builder.Services.AddScoped<ZenGardenContext>();
 
