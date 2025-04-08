@@ -34,21 +34,15 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
             .ThenInclude(bi => bi.Item)
             .FirstOrDefaultAsync(b => b.UserId == userId);
 
-        if (bag == null)
-            return 0;
-
-        var bagItem = bag.BagItem
+        var bagItem = bag?.BagItem
             .FirstOrDefault(bi => bi.isEquipped && bi.Item != null && bi.Item.Type == itemType);
 
-        if (bagItem == null)
-            throw new KeyNotFoundException("BagItem not found.");
-
-        return bagItem.BagItemId;
+        return bagItem?.BagItemId ?? 0;
     }
 
     public async Task UnequipZeroQuantityItems(int userId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
             var affectedRows = await _context.BagItem
@@ -65,7 +59,7 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            throw new Exception($"Failed to unequip items for user {userId}.", ex);
+            throw new Exception($"Failed to unequipped items for user {userId}.", ex);
         }
     }
 
