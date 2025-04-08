@@ -38,8 +38,11 @@ public class TaskService(
 
         foreach (var (dto, entity) in taskDto.Zip(tasks))
         {
-            var remaining = CalculateRemainingSeconds(entity);
-            dto.RemainingTime = StringHelper.FormatSecondsToTime(remaining);
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
         return taskDto;
@@ -54,6 +57,8 @@ public class TaskService(
         var taskDto = mapper.Map<TaskDto>(task);
         var remaining = CalculateRemainingSeconds(task);
         taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remaining);
+        var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
+        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
         return taskDto;
     }
@@ -67,8 +72,11 @@ public class TaskService(
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
         foreach (var (dto, entity) in taskDto.Zip(tasks))
         {
-            var remaining = CalculateRemainingSeconds(entity);
-            dto.RemainingTime = StringHelper.FormatSecondsToTime(remaining);
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
         return taskDto;
@@ -83,8 +91,11 @@ public class TaskService(
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
         foreach (var (dto, entity) in taskDto.Zip(tasks))
         {
-            var remaining = CalculateRemainingSeconds(entity);
-            dto.RemainingTime = StringHelper.FormatSecondsToTime(remaining);
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
         return taskDto;
