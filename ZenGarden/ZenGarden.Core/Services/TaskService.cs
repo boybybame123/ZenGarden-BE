@@ -250,16 +250,18 @@ public class TaskService(
 
                 var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
                 var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
-                var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-
-                if (itemBag?.isEquipped == true &&
-                    double.TryParse(itemBag.Item.ItemDetail.Effect, out var effectPercent) &&
-                    effectPercent > 0)
+                if (itemBagId > 0)
                 {
-                    var bonusXp = (int)Math.Floor(xpEarned * (effectPercent / 100));
-                    xpEarned += bonusXp;
+                    var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+                    if (itemBag?.isEquipped == true &&
+                        double.TryParse(itemBag.Item.ItemDetail.Effect, out var effectPercent) &&
+                        effectPercent > 0)
+                    {
+                        var bonusXp = (int)Math.Floor(xpEarned * (effectPercent / 100));
+                        xpEarned += bonusXp;
 
-                    await useItemService.UseItemXpBoostTree(userId);
+                        await useItemService.UseItemXpBoostTree(userId);
+                    }
                 }
 
                 if (xpEarned > 0 && task.UserTree != null)
