@@ -73,7 +73,7 @@ public class TaskServiceTests
         // Arrange
         const int taskId = 1;
         var task = new Tasks { TaskId = taskId, Status = TasksStatus.NotStarted, TotalDuration = 60 };
-        var expectedDto = new TaskDto { TaskId = taskId, RemainingTime = 60 };
+        var expectedDto = new TaskDto { TaskId = taskId, RemainingTime = "60" };
 
         _taskRepositoryMock
             .Setup(repo => repo.GetTaskWithDetailsAsync(taskId))
