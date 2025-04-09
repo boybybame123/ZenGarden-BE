@@ -59,23 +59,28 @@ public class PurchaseService(
 
         var item = await itemRepo.GetByIdAsync(itemId)
                    ?? throw new PurchaseException("Item not found.");
-
+        var itemDetail = await itemDetailRepo.GetItemDetailsByItemId(itemId)
+                          ?? throw new PurchaseException("Item detail not found.");
         if (item.Status != ItemStatus.Active)
             throw new PurchaseException("Item is not available for purchase.");
 
         if (item.Cost == null || wallet.Balance < item.Cost.Value)
             throw new PurchaseException("Insufficient balance.");
 
-        if (item.ItemDetail?.MonthlyPurchaseLimit is { } limit and > 0)
+        if (itemDetail.MonthlyPurchaseLimit is int limit && limit > 0)
         {
-            var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var now = DateTime.UtcNow;
+            var startOfMonth = new DateTime(now.Year, now.Month, 1);
+
             var purchaseCount = await purchaseHistoryRepo.CountPurchaseThisMonth(userId, itemId, startOfMonth);
 
             if (purchaseCount >= limit)
-                throw new PurchaseException("Purchase limit for this month reached.");
+            {
+                throw new PurchaseException("You have reached the monthly purchase limit for this item.");
+            }
         }
 
-        if (item.ItemDetail?.IsUnique != true) return (wallet, item);
+        if (itemDetail.IsUnique != true) return (wallet, item);
         var bagItem = await bagItemRepo.GetByBagAndItemAsync(userId, itemId);
         if (bagItem != null)
             throw new PurchaseException("Item is unique and can only be purchased once.");
@@ -102,6 +107,7 @@ public class PurchaseService(
             bagItem.Quantity += 1;
             bagItem.UpdatedAt = DateTime.UtcNow;
             bagItemRepo.Update(bagItem);
+            await unitOfWork.CommitAsync();
         }
         else
         {
@@ -120,6 +126,7 @@ public class PurchaseService(
         {
             item.ItemDetail.Sold += 1;
             itemDetailRepo.Update(item.ItemDetail);
+            await unitOfWork.CommitAsync();
         }
     }
 

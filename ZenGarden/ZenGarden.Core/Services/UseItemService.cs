@@ -7,27 +7,37 @@ namespace ZenGarden.Core.Services;
 public class UseItemService(
     IUserConfigRepository userConfigRepository,
     IBagItemRepository bagItemRepository,
+    IItemRepository itemRepository,
+    IItemDetailRepository itemDetailRepository,
     IBagRepository bagRepository,
     IUnitOfWork unitOfWork
 ) : IUseItemService
 {
-    public async Task<string> UseItemAsync(int userId, int itembagId, int? usertreeId)
+    public async Task<string> UseItemAsync(int userId, int itembagId)
     {
         var item = await bagItemRepository.GetByIdAsync(itembagId);
         if (item == null || item.Quantity <= 0)
-            return "Item không tồn tại hoặc đã hết số lượng";
+            throw new KeyNotFoundException("Item not found or quantity is zero");
+        var bag = await bagRepository.GetByIdAsync(item.BagId);
+        if (bag == null)
+            throw new KeyNotFoundException("Bag not found");
+        if (bag.UserId != userId)
+            throw new UnauthorizedAccessException("User not authorized to use this item");
 
-        var itemDetail = item.Item.ItemDetail;
+        var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(item.ItemId.Value);
+        if (itemDetail == null)
+            throw new KeyNotFoundException("Item detail not found");
+
+        if (item.Item == null)
+
+
+            throw new KeyNotFoundException("Item details not found");
+
         var userConfig = await userConfigRepository.GetByIdAsync(userId);
         if (userConfig == null)
-            return "UserConfig không tồn tại";
+            throw new KeyNotFoundException("User config not found");
 
-        double percent = 0;
-        if (item.Item.Type is ItemType.xp_boostTree)
-            percent = double.TryParse(itemDetail.Effect, out var effect) ? effect : 0;
 
-        if (percent <= 0)
-            return "Hiệu ứng item không hợp lệ";
         int flag;
         // ✅ Apply item vào UserConfig
         switch (item.Item.Type)
