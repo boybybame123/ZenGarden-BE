@@ -46,4 +46,13 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
             .Where(ut => ut.FinalTreeId == treeId && ut.TreeOwnerId == ownerId)
             .FirstOrDefaultAsync();
     }
+    public async Task<List<UserTree>> GetUserTreeByOwnerIdAsync( int ownerId)
+    {
+        return await _context.UserTree
+            .Include(ut => ut.FinalTree)
+            .Where(ut => ut.TreeOwnerId == ownerId)
+            .ToListAsync();
+    }
+
+
 }
