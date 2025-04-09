@@ -5,4 +5,5 @@ namespace ZenGarden.Core.Interfaces.IRepositories;
 public interface ITradeHistoryRepository : IGenericRepository<TradeHistory>
 {
     Task<bool> IsTreeInPendingTradeAsync(int userTreeId);
+    Task<List<TradeHistory>> GetAllTradeHistoriesbyStatutsAsync(int Statuts);
 }
