@@ -34,42 +34,35 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
             .ThenInclude(bi => bi.Item)
             .FirstOrDefaultAsync(b => b.UserId == userId);
 
-        if (bag == null)
-            return 0;
-
-        var bagItem = bag.BagItem
+        var bagItem = bag?.BagItem
             .FirstOrDefault(bi => bi.isEquipped && bi.Item != null && bi.Item.Type == itemType);
 
-        if (bagItem == null)
-            throw new KeyNotFoundException("BagItem not found.");
-
-        return bagItem.BagItemId ;
+        return bagItem?.BagItemId ?? 0;
     }
+
     public async Task UnequipZeroQuantityItems(int userId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
             var affectedRows = await _context.BagItem
                 .Where(bi => bi.Bag.UserId == userId &&
-                            bi.isEquipped &&
-                            bi.Quantity == 0)
+                             bi.isEquipped &&
+                             bi.Quantity == 0)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(bi => bi.isEquipped, false));
 
-            if (affectedRows == 0)
-            {
-                throw new InvalidOperationException("No items found to unequip.");
-            }
+            if (affectedRows == 0) throw new InvalidOperationException("No items found to unequip.");
 
             await transaction.CommitAsync();
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            throw new Exception($"Failed to unequip items for user {userId}.", ex);
+            throw new Exception($"Failed to unequipped items for user {userId}.", ex);
         }
     }
+
     public async Task<bool> UnequipAllZeroQuantityItems()
     {
         var hasItems = await _context.BagItem
@@ -85,7 +78,4 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
 
         return true;
     }
-
-
-
 }

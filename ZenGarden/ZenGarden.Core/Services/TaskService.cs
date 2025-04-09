@@ -1,11 +1,13 @@
 using AutoMapper;
 using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
+using ZenGarden.Shared.Helpers;
 
 namespace ZenGarden.Core.Services;
 
@@ -24,6 +26,9 @@ public class TaskService(
     IChallengeTaskRepository challengeTaskRepository,
     IS3Service s3Service,
     IMapper mapper,
+    IBagRepository bagRepository,
+    IBagItemRepository bagItemRepository,
+    IUseItemService useItemService,
     IValidator<CreateTaskDto> createTaskValidator) : ITaskService
 {
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -31,10 +36,18 @@ public class TaskService(
         var tasks = await taskRepository.GetAllWithDetailsAsync();
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
 
-        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
 
         return taskDto;
     }
+
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
@@ -42,7 +55,11 @@ public class TaskService(
         if (task == null) throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var taskDto = mapper.Map<TaskDto>(task);
-        taskDto.RemainingTime = CalculateRemainingTime(task);
+        var remaining = CalculateRemainingSeconds(task);
+        taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remaining);
+        var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
+        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+
         return taskDto;
     }
 
@@ -53,7 +70,14 @@ public class TaskService(
             throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
 
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
-        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
 
         return taskDto;
     }
@@ -65,10 +89,18 @@ public class TaskService(
             throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
 
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
-        foreach (var (dto, entity) in taskDto.Zip(tasks)) dto.RemainingTime = CalculateRemainingTime(entity);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
 
         return taskDto;
     }
+
 
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
@@ -90,8 +122,8 @@ public class TaskService(
             TaskName = dto.TaskName,
             TaskDescription = dto.TaskDescription,
             TotalDuration = dto.TotalDuration,
-            WorkDuration = selectedMethod.DefaultDuration ?? 25,
-            BreakTime = selectedMethod.DefaultBreak ?? 5,
+            WorkDuration = dto.WorkDuration ?? selectedMethod.DefaultDuration ?? 25,
+            BreakTime = dto.BreakTime ?? selectedMethod.DefaultBreak ?? 5,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             CreatedAt = DateTime.UtcNow,
@@ -152,6 +184,13 @@ public class TaskService(
         var task = await taskRepository.GetByIdAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
+        var now = DateTime.UtcNow;
+        if (now < task.StartDate)
+            throw new InvalidOperationException("Task has not started yet.");
+        if (now > task.EndDate)
+            throw new InvalidOperationException("Task deadline has passed.");
+
+
         if (task.Status == TasksStatus.InProgress)
             throw new InvalidOperationException("Task is already in progress.");
 
@@ -208,6 +247,22 @@ public class TaskService(
                                ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
                 var xpEarned = xpConfig.BaseXp * xpConfig.XpMultiplier;
+
+                var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
+                var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
+                if (itemBagId > 0)
+                {
+                    var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+                    if (itemBag is { isEquipped: true } &&
+                        double.TryParse(itemBag.Item.ItemDetail.Effect, out var effectPercent) &&
+                        effectPercent > 0)
+                    {
+                        var bonusXp = (int)Math.Floor(xpEarned * (effectPercent / 100));
+                        xpEarned += bonusXp;
+
+                        await useItemService.UseItemXpBoostTree(userId);
+                    }
+                }
 
                 if (xpEarned > 0 && task.UserTree != null)
                 {
@@ -295,22 +350,27 @@ public class TaskService(
         if (task.Status != TasksStatus.InProgress)
             throw new InvalidOperationException("Only in-progress tasks can be paused.");
 
-        if (task.StartedAt != null)
-        {
-            var elapsedTime = (DateTime.UtcNow - task.StartedAt.Value).TotalMinutes;
-            var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
+        if (task.StartedAt == null)
+            throw new InvalidOperationException("Task has no start time.");
 
-            if (remainingTime <= 0)
-                throw new InvalidOperationException("Task has already exceeded its duration.");
-        }
+        var now = DateTime.UtcNow;
 
-        task.PausedAt = DateTime.UtcNow;
+        var delta = (now - task.StartedAt.Value).TotalMinutes;
+
+        task.AccumulatedTime = (task.AccumulatedTime ?? 0) + delta;
+
+        var remainingTime = (task.TotalDuration ?? 0) - (int)task.AccumulatedTime.Value;
+        if (remainingTime <= 0)
+            throw new InvalidOperationException("Task has already exceeded its duration.");
+
+        task.PausedAt = now;
         task.Status = TasksStatus.Paused;
 
         taskRepository.Update(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to pause the task.");
     }
+
 
     public async Task AutoPauseTasksAsync()
     {
@@ -400,19 +460,71 @@ public class TaskService(
     public async Task ValidateTaskDto(CreateTaskDto dto)
     {
         var validationResult = await createTaskValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid) throw new ValidationException(validationResult.Errors);
+
+        // Tạo danh sách lỗi tổng hợp
+        var errors = new List<ValidationFailure>(validationResult.Errors);
+
+        // Kiểm tra tồn tại của TaskType
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (taskType == null)
-            throw new KeyNotFoundException($"TaskType not found. TaskTypeId = {dto.TaskTypeId}");
+            errors.Add(new ValidationFailure("TaskTypeId", $"TaskType not found. TaskTypeId = {dto.TaskTypeId}"));
 
+        // Kiểm tra tồn tại của UserTree nếu có
         if (dto.UserTreeId is > 0)
         {
             var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value);
             if (userTree == null)
-                throw new KeyNotFoundException($"UserTree not found. UserTreeId = {dto.UserTreeId}");
+                errors.Add(new ValidationFailure("UserTreeId", $"UserTree not found. UserTreeId = {dto.UserTreeId}"));
         }
+
+        // Kiểm tra cài đặt FocusMethod
+        if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
+        {
+            var focusMethodErrors = await ValidateFocusMethodSettings(dto);
+            errors.AddRange(focusMethodErrors);
+        }
+
+        // Nếu có bất kỳ lỗi nào, ném ValidationException
+        if (errors.Any()) throw new ValidationException(errors);
     }
 
+    private async Task<List<ValidationFailure>> ValidateFocusMethodSettings(CreateTaskDto dto)
+    {
+        var errors = new List<ValidationFailure>();
+
+        if (dto.FocusMethodId == null) return errors;
+
+        var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
+        if (method == null)
+        {
+            errors.Add(new ValidationFailure("FocusMethodId", $"FocusMethod not found. Id = {dto.FocusMethodId}"));
+            return errors;
+        }
+
+        // Kiểm tra WorkDuration
+        if (dto.WorkDuration.HasValue && method is { MinDuration: not null, MaxDuration: not null })
+        {
+            if (dto.WorkDuration.Value < method.MinDuration.Value)
+                errors.Add(new ValidationFailure("WorkDuration",
+                    $"Work duration must be at least {method.MinDuration.Value} minutes for the selected focus method."));
+            else if (dto.WorkDuration.Value > method.MaxDuration.Value)
+                errors.Add(new ValidationFailure("WorkDuration",
+                    $"Work duration cannot exceed {method.MaxDuration.Value} minutes for the selected focus method."));
+        }
+
+        // Kiểm tra BreakTime
+        if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
+        {
+            if (dto.BreakTime.Value < method.MinBreak.Value)
+                errors.Add(new ValidationFailure("BreakTime",
+                    $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method."));
+            else if (dto.BreakTime.Value > method.MaxBreak.Value)
+                errors.Add(new ValidationFailure("BreakTime",
+                    $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method."));
+        }
+
+        return errors;
+    }
 
     private async Task<FocusMethodDto> GetFocusMethodAsync(CreateTaskDto dto)
     {
@@ -478,35 +590,36 @@ public class TaskService(
     private async Task<bool> IsDailyTask(int taskTypeId)
     {
         var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
-        return dailyTaskTypeId.HasValue && taskTypeId == dailyTaskTypeId.Value;
+        return taskTypeId == dailyTaskTypeId;
     }
 
-    private static int CalculateRemainingTime(Tasks task)
+    private static int CalculateRemainingSeconds(Tasks task)
     {
-        var totalDuration = task.TotalDuration ?? 0;
+        var totalDuration = TimeSpan.FromMinutes(task.TotalDuration ?? 0);
+        var accumulated = TimeSpan.FromMinutes(task.AccumulatedTime ?? 0);
+
+        TimeSpan remaining;
 
         switch (task.Status)
         {
             case TasksStatus.InProgress when task.StartedAt != null:
-            {
-                var elapsedTime = (DateTime.UtcNow - task.StartedAt.Value).TotalMinutes;
-                var remainingTime = totalDuration - (int)elapsedTime;
-                return Math.Max(remainingTime, 0);
-            }
+                var elapsed = DateTime.UtcNow - task.StartedAt.Value;
+                remaining = totalDuration - (accumulated + elapsed);
+                break;
 
             case TasksStatus.Paused:
-            {
-                if (task.PausedAt == null || task.StartedAt == null) return totalDuration;
-                var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
-                var remainingTime = totalDuration - (int)elapsedTime;
-                return Math.Max(remainingTime, 0);
-            }
+                remaining = totalDuration - accumulated;
+                break;
+
             case TasksStatus.NotStarted:
-            case TasksStatus.Completed:
-            case TasksStatus.Overdue:
-            case TasksStatus.Canceled:
+                remaining = totalDuration;
+                break;
+
             default:
-                return totalDuration;
+                remaining = TimeSpan.Zero;
+                break;
         }
+
+        return (int)Math.Max(remaining.TotalSeconds, 0);
     }
 }

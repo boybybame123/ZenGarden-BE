@@ -14,6 +14,8 @@ public class UserTreeService(
     ITreeXpConfigRepository treeXpConfigRepository,
     ITreeXpLogRepository treeXpLogRepository,
     ITaskRepository taskRepository,
+    IBagRepository bagRepository,
+    IBagItemRepository bagItemRepository,
     IMapper mapper)
     : IUserTreeService
 {
@@ -178,6 +180,17 @@ public class UserTreeService(
             return;
 
         var daysSinceLastCheckIn = (currentDate - lastUpdatedDate).Days;
+        var userId = userTree.UserId ?? throw new InvalidOperationException("UserId is null.");
+        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
+        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+
+        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1))
+        {
+            daysSinceLastCheckIn -= 1;
+        }
+
+        if (daysSinceLastCheckIn <= 0)
+            return;
         var xpDecay = daysSinceLastCheckIn * dailyXpDecayRate;
         userTree.TotalXp = Math.Max(0, userTree.TotalXp - xpDecay);
 

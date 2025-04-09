@@ -31,6 +31,7 @@ public partial class Tasks
     public bool IsSuggested { get; set; } = true;
     public string TaskNote { get; set; } 
     public string TaskResult { get; set; } 
+    public double? AccumulatedTime { get; set; }
     public virtual FocusMethod FocusMethod { get; set; }
     public virtual TaskType TaskType { get; set; }
     public virtual UserTree UserTree { get; set; }
