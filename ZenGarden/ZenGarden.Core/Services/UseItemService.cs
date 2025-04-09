@@ -76,18 +76,16 @@ public class UseItemService(
     }
     public async Task UseItemXpBoostTree(int userId)
     {
-        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
-        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-        if (itemBag == null)
-            throw new KeyNotFoundException("Item not found");
-        if (itemBag.Quantity <= 0)
-            throw new InvalidOperationException("Item quantity is zero");
+        var itemBag = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
+        if (itemBag == null || itemBag.Quantity <= 0)
+            return; 
+
         itemBag.Quantity--;
         itemBag.UpdatedAt = DateTime.UtcNow;
         bagItemRepository.Update(itemBag);
         await unitOfWork.CommitAsync();
-
     }
+
     public async Task UseItemXpProtect(int userId)
     {
         var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
@@ -102,9 +100,9 @@ public class UseItemService(
         await unitOfWork.CommitAsync();
     }
 
-    public async Task Cancel(int bagitemid)
+    public async Task Cancel(int bagItemId)
     {
-        var item = await bagItemRepository.GetByIdAsync(bagitemid);
+        var item = await bagItemRepository.GetByIdAsync(bagItemId);
         if (item == null)
             throw new KeyNotFoundException("Item not found");
         item.isEquipped = false;
