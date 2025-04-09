@@ -67,6 +67,78 @@ public class UserTreeService(
 
         await userTreeRepository.CreateAsync(userTree);
         await unitOfWork.CommitAsync();
+
+        var defaultTasks = new List<Tasks>
+        {
+            new()
+            {
+                TaskName = "Morning Check-in",
+                TaskDescription = "Write down your goals for the day",
+                TaskTypeId = 1,
+                UserTreeId = userTree.UserTreeId,
+                FocusMethodId = 1,
+                TotalDuration = 30,
+                WorkDuration = 25,
+                BreakTime = 5,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Status = TasksStatus.NotStarted,
+                IsSuggested = true
+            },
+            new()
+            {
+                TaskName = "Focused Study",
+                TaskDescription = "Spend 30 minutes studying your main subject",
+                TaskTypeId = 1,
+                UserTreeId = userTree.UserId,
+                FocusMethodId = 1,
+                TotalDuration = 30,
+                WorkDuration = 25,
+                BreakTime = 5,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Status = TasksStatus.NotStarted,
+                IsSuggested = true
+            },
+            new()
+            {
+                TaskName = "Relaxation Time",
+                TaskDescription = "Listen to music or take a short walk for 20 minutes",
+                TaskTypeId = 1,
+                UserTreeId = userTree.UserTreeId,
+                FocusMethodId = 1,
+                TotalDuration = 20,
+                WorkDuration = 15,
+                BreakTime = 5,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Status = TasksStatus.NotStarted,
+                IsSuggested = true
+            },
+            new()
+            {
+                TaskName = "End-of-Day Reflection",
+                TaskDescription = "Review your day and evaluate your productivity",
+                TaskTypeId = 1,
+                UserTreeId = userTree.UserTreeId,
+                FocusMethodId = 1,
+                TotalDuration = 25,
+                WorkDuration = 20,
+                BreakTime = 5,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Status = TasksStatus.NotStarted,
+                IsSuggested = true
+            }
+        };
+
+        foreach (var task in defaultTasks) await taskRepository.CreateAsync(task);
+
+        await unitOfWork.CommitAsync();
     }
 
 
@@ -184,10 +256,7 @@ public class UserTreeService(
         var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
         var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
 
-        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1))
-        {
-            daysSinceLastCheckIn -= 1;
-        }
+        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1)) daysSinceLastCheckIn -= 1;
 
         if (daysSinceLastCheckIn <= 0)
             return;
@@ -212,14 +281,6 @@ public class UserTreeService(
         await unitOfWork.CommitAsync();
     }
 
-    private async Task<int?> AssignRandomFinalTreeIdAsync()
-    {
-        var treeIds = await treeRepository.GetAllTreeIdsAsync();
-        if (treeIds.Count == 0) return null;
-        var random = new Random();
-        return treeIds[random.Next(treeIds.Count)];
-    }
-
 
     public async Task<List<UserTree>> ListUserTreeByOwner(int ownerId)
     {
@@ -227,5 +288,11 @@ public class UserTreeService(
         return userTrees;
     }
 
-
+    private async Task<int?> AssignRandomFinalTreeIdAsync()
+    {
+        var treeIds = await treeRepository.GetAllTreeIdsAsync();
+        if (treeIds.Count == 0) return null;
+        var random = new Random();
+        return treeIds[random.Next(treeIds.Count)];
+    }
 }
