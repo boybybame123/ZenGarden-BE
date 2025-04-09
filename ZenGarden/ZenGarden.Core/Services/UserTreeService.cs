@@ -219,4 +219,13 @@ public class UserTreeService(
         var random = new Random();
         return treeIds[random.Next(treeIds.Count)];
     }
+
+
+    public async Task<List<UserTree>> ListUserTreeByOwner(int ownerId)
+    {
+        var userTrees = await userTreeRepository.GetUserTreeByOwnerIdAsync(ownerId);
+        return userTrees;
+    }
+
+
 }
