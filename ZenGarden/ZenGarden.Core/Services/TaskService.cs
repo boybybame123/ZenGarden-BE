@@ -27,7 +27,6 @@ public class TaskService(
     IS3Service s3Service,
     IMapper mapper,
     IBagRepository bagRepository,
-    IBagItemRepository bagItemRepository,
     IUseItemService useItemService,
     IValidator<CreateTaskDto> createTaskValidator) : ITaskService
 {
@@ -246,23 +245,9 @@ public class TaskService(
                 var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
                                ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
-                var xpEarned = xpConfig.BaseXp * xpConfig.XpMultiplier;
+                var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
 
-                var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
-                var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
-                if (itemBagId > 0)
-                {
-                    var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-                    if (itemBag is { isEquipped: true } &&
-                        double.TryParse(itemBag.Item.ItemDetail.Effect, out var effectPercent) &&
-                        effectPercent > 0)
-                    {
-                        var bonusXp = (int)Math.Floor(xpEarned * (effectPercent / 100));
-                        xpEarned += bonusXp;
-
-                        await useItemService.UseItemXpBoostTree(userId);
-                    }
-                }
+                var xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
 
                 if (xpEarned > 0 && task.UserTree != null)
                 {
@@ -621,5 +606,22 @@ public class TaskService(
         }
 
         return (int)Math.Max(remaining.TotalSeconds, 0);
+    }
+    
+    private async Task<double> CalculateXpWithBoostAsync(Tasks task, double baseXp)
+    {
+        var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
+
+        var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
+        if (equippedItem != null &&
+            double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) &&
+            effectPercent > 0)
+        {
+            var bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
+            await useItemService.UseItemXpBoostTree(userId);
+            return baseXp + bonusXp;
+        }
+
+        return baseXp;
     }
 }
