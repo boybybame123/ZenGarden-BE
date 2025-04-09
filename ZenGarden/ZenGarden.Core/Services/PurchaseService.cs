@@ -110,6 +110,7 @@ public class PurchaseService(
                 BagId = bag.BagId,
                 ItemId = itemId,
                 Quantity = 1,
+                isEquipped = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });

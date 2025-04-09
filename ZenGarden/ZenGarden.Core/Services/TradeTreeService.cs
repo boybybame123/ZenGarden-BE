@@ -188,7 +188,7 @@ public class TradeTreeService(
         (requesterTree.TreeOwnerId, recipientTree.TreeOwnerId) = (recipientTree.TreeOwnerId, requesterTree.TreeOwnerId);
 
         // Update trade status
-        trade.Status = TradeStatus.Completed;
+        trade.Status = TradeStatus.Success;
         trade.CompletedAt = DateTime.UtcNow;
         trade.UpdatedAt = DateTime.UtcNow;
         trade.TreeOwnerBid = recipientTree.TreeOwnerId;
@@ -201,6 +201,51 @@ public class TradeTreeService(
 
         await tradeHistoryService.UpdateTradeHistoryAsync(trade);
     }
+
+
+    public async Task<List<TradeHistory>> GetTradeHistoryAsync()
+    {
+        var tradeHistories = await tradeHistoryRepository.GetAllAsync();
+        return tradeHistories.ToList();
+    }
+
+    public async Task<List<TradeHistory>> GetTradeHistoryByStatusAsync(int status)
+    {
+        if (!Enum.IsDefined(typeof(TradeStatus), status))
+            throw new ArgumentOutOfRangeException(nameof(status), "Invalid trade status");
+
+        var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesbyStatutsAsync(status);
+        return tradeHistories.ToList();
+    }
+    public async Task<TradeHistory> CancelTradeAsync(int tradeId, int userA)
+    {
+        var trade = await tradeHistoryRepository.GetByIdAsync(tradeId)
+                     ?? throw new KeyNotFoundException("Trade not found");
+
+        if (trade.TreeOwnerAid != userA)
+            throw new UnauthorizedAccessException("You are not the owner of this trade");
+
+        if (trade.Status != TradeStatus.Pending)
+            throw new InvalidOperationException("Trade is not in pending status");
+
+        trade.Status = TradeStatus.Canceled;
+        trade.UpdatedAt = DateTime.UtcNow;
+
+        tradeHistoryRepository.Update(trade);
+        await unitOfWork.CommitAsync();
+
+        return trade;
+    }
+
+    public async Task<TradeHistory> GetTradeHistoryByIdAsync(int tradeId)
+    {
+        var tradeHistory = await tradeHistoryRepository.GetByIdAsync(tradeId);
+        if (tradeHistory == null)
+            throw new KeyNotFoundException("Trade not found");
+        return tradeHistory;
+    }
+
+
 
     #endregion
 }
