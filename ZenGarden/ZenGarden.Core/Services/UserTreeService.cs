@@ -62,7 +62,7 @@ public class UserTreeService(
         userTree.LevelId = 1;
         userTree.TotalXp = 0;
         userTree.IsMaxLevel = false;
-        userTree.TreeStatus = TreeStatus.Growing;
+        userTree.TreeStatus = TreeStatus.Seed;
         userTree.TreeOwnerId = createUserTreeDto.UserId;
 
         await userTreeRepository.CreateAsync(userTree);
