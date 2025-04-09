@@ -112,7 +112,7 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<List<Tasks>> GetDailyTasksAsync()
     {
         return await _context.Tasks
-            .Where(t => t.TaskType.TaskTypeName.Equals("daily", StringComparison.CurrentCultureIgnoreCase))
+            .Where(t => t.TaskType.TaskTypeName.ToLower() == "daily")
             .ToListAsync();
     }
 
