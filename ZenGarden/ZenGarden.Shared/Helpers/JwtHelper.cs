@@ -11,7 +11,7 @@ namespace ZenGarden.Shared.Helpers;
 
 public static class JwtHelper
 {
-    public static string GenerateToken(Users user, JwtSettings jwtSettings)
+    private static string GenerateToken(Users user, JwtSettings jwtSettings)
     {
         if (string.IsNullOrEmpty(jwtSettings.Key) || jwtSettings.Key.Length < 32)
             throw new InvalidOperationException("JWT Key must be at least 32 characters long.");
@@ -50,6 +50,9 @@ public static class JwtHelper
     public static TokenResponse GenerateTokens(Users user, JwtSettings jwtSettings)
     {
         var accessToken = GenerateToken(user, jwtSettings);
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(accessToken);
+        Console.WriteLine("Access Token expires at: " + jwtToken.ValidTo);
         var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
         user.RefreshTokenHash = PasswordHasher.HashPassword(refreshToken);
