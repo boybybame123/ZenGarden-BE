@@ -91,7 +91,7 @@ public class UserTreeService(
                 TaskName = "Focused Study",
                 TaskDescription = "Spend 30 minutes studying your main subject",
                 TaskTypeId = 1,
-                UserTreeId = userTree.UserId,
+                UserTreeId = userTree.UserTreeId,
                 FocusMethodId = 1,
                 TotalDuration = 30,
                 WorkDuration = 25,
