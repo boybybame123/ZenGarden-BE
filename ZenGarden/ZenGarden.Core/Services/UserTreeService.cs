@@ -81,7 +81,7 @@ public class UserTreeService(
                 WorkDuration = 25,
                 BreakTime = 5,
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted,
                 IsSuggested = true
@@ -97,7 +97,7 @@ public class UserTreeService(
                 WorkDuration = 25,
                 BreakTime = 5,
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted,
                 IsSuggested = true
@@ -113,7 +113,7 @@ public class UserTreeService(
                 WorkDuration = 15,
                 BreakTime = 5,
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted,
                 IsSuggested = true
@@ -129,7 +129,7 @@ public class UserTreeService(
                 WorkDuration = 20,
                 BreakTime = 5,
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted,
                 IsSuggested = true
