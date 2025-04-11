@@ -40,5 +40,17 @@ public class TradeTreeController(ITradeTreeService tradeTreeService) : Controlle
         var result = await tradeTreeService.CancelTradeAsync(tradeId, userA);
         return Ok(result);
     }
+    [HttpGet("history/all/{userId}")]
+    public async Task<IActionResult> GetAllTradeHistoriesByOwnerId(int userId)
+    {
+        var tradeHistory = await tradeTreeService.GetAllTradeHistoriesByOwneridAsync(userId);
+        return Ok(tradeHistory);
+    }
+    [HttpGet("history/not-owner/{userId}")]
+    public async Task<IActionResult> GetAllTradeHistoriesByNotOwnerId(int userId)
+    {
+        var tradeHistory = await tradeTreeService.GetAllTradeHistoriesByNotOwnerIdAsync(userId);
+        return Ok(tradeHistory);
+    }
 
 }

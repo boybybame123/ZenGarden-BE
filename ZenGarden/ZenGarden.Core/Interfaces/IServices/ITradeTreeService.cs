@@ -11,4 +11,6 @@ public interface ITradeTreeService
     Task<List<TradeHistory>> GetTradeHistoryByStatusAsync(int status);
     Task<TradeHistory> GetTradeHistoryByIdAsync(int tradeId);
     Task<TradeHistory> CancelTradeAsync(int tradeId, int userA);
+    Task<List<TradeHistory>> GetAllTradeHistoriesByOwneridAsync(int userId);
+    Task<List<TradeHistory>> GetAllTradeHistoriesByNotOwnerIdAsync(int userId);
 }

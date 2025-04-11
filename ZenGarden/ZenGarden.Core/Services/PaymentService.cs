@@ -64,8 +64,8 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl = $"https://zengarden-fe.vercel.app/home",
-            CancelUrl = $"https://zengarden-fe.vercel.app/home",
+            SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success",
+            CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel",
             Metadata = new Dictionary<string, string>
             {
                 { "user_id", request.UserId.ToString() },

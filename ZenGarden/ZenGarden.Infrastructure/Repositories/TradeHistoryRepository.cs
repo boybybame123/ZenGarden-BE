@@ -27,4 +27,18 @@ public class TradeHistoryRepository : GenericRepository<TradeHistory>, ITradeHis
     .Where(th => th.Status == (TradeStatus)Statuts)
     .ToListAsync();
     }
+
+    public async Task<List<TradeHistory>> GetAllTradeHistoriesByOwneridAsync(int ownerId)
+    {
+        return await _context.TradeHistory
+            .Where(th => th.TreeOwnerAid == ownerId)
+            .ToListAsync();
+    }
+    public async Task<List<TradeHistory>> GetAllTradeHistoriesByNotOwneridAsync(int userId)
+    {
+        return await _context.TradeHistory
+            .Where(th => th.TreeOwnerAid != userId)
+            .ToListAsync();
+
+    }
 }

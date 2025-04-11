@@ -26,13 +26,13 @@ public class PaymentController(PaymentService paymentService) : ControllerBase
     public async Task<IActionResult> Success(string paymentIntentId)
     {
         await paymentService.HandlePaymentSucceeded(paymentIntentId);
-        return Ok("success");
+        return Ok("https://zengarden-fe.vercel.app/home");
     }
 
     [HttpGet("cancel")]
     public async Task<IActionResult> Cancel(string paymentIntentId)
     {
         await paymentService.HandlePaymentCanceled(paymentIntentId);
-        return Ok("cancel");
+        return Ok("https://zengarden-fe.vercel.app/home");
     }
 }
