@@ -273,4 +273,31 @@ public class ChallengeService(
         if (userTree == null || userTree.UserId != userId)
             throw new ArgumentException("Invalid tree selection!");
     }
+
+    public async Task<string> ChangeStatusChallenge(int userId, int challengeId)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new KeyNotFoundException("User not found.");
+        
+        if(user.Role is { RoleId: 2 })
+            throw new InvalidOperationException("Only users with role 1 or 3 change challenge status.");
+
+        var Challenge = await challengeRepository.GetByIdAsync(challengeId);
+        if (Challenge == null)
+            throw new KeyNotFoundException("Challenge not found.");
+
+        if (Challenge.Status == ChallengeStatus.Pending)
+        {
+            Challenge.Status = ChallengeStatus.Active;
+            Challenge.UpdatedAt = DateTime.UtcNow;
+            
+            challengeRepository.Update(Challenge);
+            await unitOfWork.CommitAsync();
+            return "Challenge status changed to Active";
+        }
+
+
+        return "Challenge status is already Active or Canceled";
+    }
 }
