@@ -77,6 +77,10 @@ public class TradeTreeService(
         var trade = await tradeHistoryService.GetTradeHistoryByIdAsync(tradeId)
                     ?? throw new Exception("Trade not found");
 
+        if (trade.TreeOwnerBid == recipientId)
+            throw new Exception("You are already the owner of this trade");
+
+
         if (trade.Status != TradeStatus.Pending)
             return "Trade is not in pending status";
 
@@ -245,6 +249,16 @@ public class TradeTreeService(
         return tradeHistory;
     }
 
+    public async Task<List<TradeHistory>> GetAllTradeHistoriesByOwneridAsync(int userId)
+    {
+        var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesByOwneridAsync(userId);
+        return tradeHistories.ToList();
+    }
+    public async Task<List<TradeHistory>> GetAllTradeHistoriesByNotOwnerIdAsync(int userId)
+    {
+        var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesByNotOwneridAsync(userId);
+        return tradeHistories.ToList();
+    }
 
 
     #endregion
