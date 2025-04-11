@@ -13,15 +13,12 @@ public class DailyTaskResetJob(IServiceScopeFactory scopeFactory, ILogger<DailyT
         while (!stoppingToken.IsCancellationRequested)
             try
             {
-                // Tính toán thời gian đến 00:00 ngày mai
                 var now = DateTime.UtcNow;
-                var tomorrow = now.Date.AddDays(1);
-                var timeUntilMidnight = tomorrow - now;
+                var nextMidnight = now.Date.AddDays(1);
+                var delay = nextMidnight - now;
 
-                // Chờ đến 00:00
-                await Task.Delay(timeUntilMidnight, stoppingToken);
+                await Task.Delay(delay, stoppingToken);
 
-                // Thực hiện reset task
                 using var scope = scopeFactory.CreateScope();
                 var taskService = scope.ServiceProvider.GetRequiredService<ITaskService>();
                 await taskService.ResetDailyTasksAsync();
@@ -39,7 +36,6 @@ public class DailyTaskResetJob(IServiceScopeFactory scopeFactory, ILogger<DailyT
                 logger.LogError(ex, "An unhandled exception occurred in DailyTaskResetJob with Error ID {ErrorId}",
                     errorId);
 
-                // Nếu có lỗi, chờ một khoảng thời gian trước khi thử lại
                 try
                 {
                     await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
