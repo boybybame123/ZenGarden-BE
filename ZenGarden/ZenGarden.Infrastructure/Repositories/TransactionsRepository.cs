@@ -19,4 +19,10 @@ public class TransactionsRepository : GenericRepository<Transactions>, ITransact
         return await _context.Set<Transactions>()
             .FirstOrDefaultAsync(t => t.TransactionRef == transactionRef);
     }
+    public async Task<List<Transactions>?> ListAllTransactionsByIdAsync(int userId)
+    {
+        return await _context.Set<Transactions>()
+            .Where(t => t.UserId == userId)
+            .ToListAsync();
+    }
 }
