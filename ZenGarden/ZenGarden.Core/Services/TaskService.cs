@@ -184,9 +184,9 @@ public class TaskService(
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var now = DateTime.UtcNow;
-        if (now < task.StartDate)
+        if (now <= task.StartDate)
             throw new InvalidOperationException("Task has not started yet.");
-        if (now > task.EndDate)
+        if (now >= task.EndDate)
             throw new InvalidOperationException("Task deadline has passed.");
 
 
@@ -266,7 +266,7 @@ public class TaskService(
 
                 task.CompletedAt = DateTime.UtcNow;
 
-                if (!await IsDailyTask(task.TaskTypeId)) task.Status = TasksStatus.Completed;
+                task.Status = TasksStatus.Completed;
 
                 taskRepository.Update(task);
 
@@ -286,8 +286,7 @@ public class TaskService(
         else
         {
             task.CompletedAt = DateTime.UtcNow;
-
-            if (!await IsDailyTask(task.TaskTypeId)) task.Status = TasksStatus.Completed;
+            task.Status = TasksStatus.Completed;
 
             taskRepository.Update(task);
             await unitOfWork.CommitAsync();
@@ -470,7 +469,7 @@ public class TaskService(
         }
 
         // Nếu có bất kỳ lỗi nào, ném ValidationException
-        if (errors.Any()) throw new ValidationException(errors);
+        if (errors.Count != 0) throw new ValidationException(errors);
     }
 
     private async Task<List<ValidationFailure>> ValidateFocusMethodSettings(CreateTaskDto dto)
@@ -498,15 +497,13 @@ public class TaskService(
         }
 
         // Kiểm tra BreakTime
-        if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
-        {
-            if (dto.BreakTime.Value < method.MinBreak.Value)
-                errors.Add(new ValidationFailure("BreakTime",
-                    $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method."));
-            else if (dto.BreakTime.Value > method.MaxBreak.Value)
-                errors.Add(new ValidationFailure("BreakTime",
-                    $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method."));
-        }
+        if (!dto.BreakTime.HasValue || method is not { MinBreak: not null, MaxBreak: not null }) return errors;
+        if (dto.BreakTime.Value < method.MinBreak.Value)
+            errors.Add(new ValidationFailure("BreakTime",
+                $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method."));
+        else if (dto.BreakTime.Value > method.MaxBreak.Value)
+            errors.Add(new ValidationFailure("BreakTime",
+                $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method."));
 
         return errors;
     }
@@ -572,11 +569,11 @@ public class TaskService(
         return task.CompletedAt.HasValue && task.CompletedAt.Value.Date == DateTime.UtcNow.Date;
     }
 
-    private async Task<bool> IsDailyTask(int taskTypeId)
-    {
-        var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
-        return taskTypeId == dailyTaskTypeId;
-    }
+    // private async Task<bool> IsDailyTask(int taskTypeId)
+    // {
+    //     var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
+    //     return taskTypeId == dailyTaskTypeId;
+    // }
 
     private static int CalculateRemainingSeconds(Tasks task)
     {

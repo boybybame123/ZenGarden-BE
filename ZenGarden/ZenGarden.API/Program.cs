@@ -298,6 +298,7 @@ public partial class Program
     {
         builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
+        builder.Services.AddHostedService<DailyTaskResetJob>();
 
         // Cấu hình logging
         builder.Logging.AddConsole();
