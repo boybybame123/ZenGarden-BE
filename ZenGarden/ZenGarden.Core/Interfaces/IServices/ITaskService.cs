@@ -17,5 +17,5 @@ public interface ITaskService
     Task PauseTaskAsync(int taskId);
     Task AutoPauseTasksAsync();
     Task ResetDailyTasksAsync();
-    Task CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto);
+    Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto);
 }

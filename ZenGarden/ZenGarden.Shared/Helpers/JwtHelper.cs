@@ -19,7 +19,7 @@ public static class JwtHelper
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var expiresInMinutes = jwtSettings.ExpiresInMinutes > 0 ? jwtSettings.ExpiresInMinutes : 60;
+        var expiresInMinutes = jwtSettings.ExpiresInMinutes > 0 ? jwtSettings.ExpiresInMinutes : 180;
         var now = DateTime.UtcNow;
 
         var claims = new List<Claim>
