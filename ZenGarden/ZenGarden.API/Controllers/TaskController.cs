@@ -83,8 +83,12 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpPost("complete-task/{taskId:int}")]
     public async Task<IActionResult> CompleteTask(int taskId, [FromBody] CompleteTaskDto completeTaskDto)
     {
-        await _taskService.CompleteTaskAsync(taskId, completeTaskDto);
-        return Ok(new { message = "Task completed successfully." });
+        var xp = await _taskService.CompleteTaskAsync(taskId, completeTaskDto);
+        return Ok(new
+        {
+            message = "Task completed successfully.",
+            xpEarned = xp
+        });
     }
 
     [HttpPost("update-overdue")]
