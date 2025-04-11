@@ -14,4 +14,5 @@ public interface IChallengeService
     Task<List<UserChallengeRankingDto>> GetChallengeRankingsAsync(int challengeId);
     Task<UserChallengeProgressDto?> GetUserChallengeProgressAsync(int userId, int challengeId);
     Task<TaskDto> CreateTaskForChallengeAsync(int challengeId, CreateTaskDto taskDto);
+    Task<string> ChangeStatusChallenge(int userId, int challengeId);
 }
