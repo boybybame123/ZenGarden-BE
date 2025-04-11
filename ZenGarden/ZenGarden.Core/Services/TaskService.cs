@@ -204,13 +204,16 @@ public class TaskService(
         }
         else if (task is { Status: TasksStatus.Paused, PausedAt: not null, StartedAt: not null })
         {
-            var elapsedTime = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
-            var remainingTime = (task.TotalDuration ?? 0) - (int)elapsedTime;
+            var elapsedBeforePause = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
+            var totalAccumulated = task.AccumulatedTime + (int)elapsedBeforePause;
 
-            if (remainingTime <= 0)
+            if (totalAccumulated >= task.TotalDuration)
                 throw new InvalidOperationException("Task has already expired.");
 
+            task.AccumulatedTime = totalAccumulated;
+
             task.StartedAt = DateTime.UtcNow;
+            task.PausedAt = null;
             task.Status = TasksStatus.InProgress;
         }
         else
@@ -224,75 +227,78 @@ public class TaskService(
             throw new InvalidOperationException("Failed to start the task.");
     }
 
-    public async Task CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
+    public async Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
+{
+    double xpEarned = 0;
+
+    var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+               ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+    if (await IsDailyTaskAlreadyCompleted(task))
+        throw new InvalidOperationException("You have already completed this daily task today.");
+
+    await UpdateUserTreeIfNeeded(task, completeTaskDto);
+
+    ValidateTaskForCompletion(task);
+
+    if (task.FocusMethodId != null)
     {
-        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
-                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-
-        if (await IsDailyTaskAlreadyCompleted(task))
-            throw new InvalidOperationException("You have already completed this daily task today.");
-
-        await UpdateUserTreeIfNeeded(task, completeTaskDto);
-
-        ValidateTaskForCompletion(task);
-
-        if (task.FocusMethodId != null)
+        await using var transaction = await unitOfWork.BeginTransactionAsync();
+        try
         {
-            await using var transaction = await unitOfWork.BeginTransactionAsync();
-            try
+            var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
+                           ?? throw new KeyNotFoundException("XP configuration not found for this task.");
+
+            var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
+            
+            xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
+
+            if (xpEarned > 0 && task.UserTree != null)
             {
-                var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
-                               ?? throw new KeyNotFoundException("XP configuration not found for this task.");
+                task.UserTree.TotalXp += xpEarned;
 
-                var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
-
-                var xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
-
-                if (xpEarned > 0 && task.UserTree != null)
+                await treeXpLogRepository.CreateAsync(new TreeXpLog
                 {
-                    task.UserTree.TotalXp += xpEarned;
+                    TaskId = task.TaskId,
+                    ActivityType = ActivityType.TaskXp,
+                    XpAmount = xpEarned,
+                    CreatedAt = DateTime.UtcNow
+                });
 
-                    await treeXpLogRepository.CreateAsync(new TreeXpLog
-                    {
-                        TaskId = task.TaskId,
-                        ActivityType = ActivityType.TaskXp,
-                        XpAmount = xpEarned,
-                        CreatedAt = DateTime.UtcNow
-                    });
-
-                    await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
-                }
-
-                task.CompletedAt = DateTime.UtcNow;
-
-                task.Status = TasksStatus.Completed;
-
-                taskRepository.Update(task);
-
-                if (task.UserTree != null) userTreeRepository.Update(task.UserTree);
-
-                await unitOfWork.CommitAsync();
-                await transaction.CommitAsync();
-
-                await UpdateChallengeProgress(task);
+                await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
             }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                throw new InvalidOperationException($"Failed to complete task: {ex.Message}", ex);
-            }
-        }
-        else
-        {
+
             task.CompletedAt = DateTime.UtcNow;
             task.Status = TasksStatus.Completed;
 
             taskRepository.Update(task);
+            if (task.UserTree != null) userTreeRepository.Update(task.UserTree);
+
             await unitOfWork.CommitAsync();
+            await transaction.CommitAsync();
 
             await UpdateChallengeProgress(task);
         }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException($"Failed to complete task: {ex.Message}", ex);
+        }
     }
+    else
+    {
+        task.CompletedAt = DateTime.UtcNow;
+        task.Status = TasksStatus.Completed;
+
+        taskRepository.Update(task);
+        await unitOfWork.CommitAsync();
+
+        await UpdateChallengeProgress(task);
+    }
+
+    return xpEarned;
+}
+
 
     public async Task UpdateOverdueTasksAsync()
     {
