@@ -184,12 +184,11 @@ public class TaskService(
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var now = DateTime.UtcNow;
-        if (now <= task.StartDate)
+        if (now < task.StartDate)
             throw new InvalidOperationException("Task has not started yet.");
-        if (now >= task.EndDate)
+        if (now > task.EndDate)
             throw new InvalidOperationException("Task deadline has passed.");
-
-
+        
         if (task.Status == TasksStatus.InProgress)
             throw new InvalidOperationException("Task is already in progress.");
 
