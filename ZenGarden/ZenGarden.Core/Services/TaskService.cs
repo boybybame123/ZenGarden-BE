@@ -104,7 +104,7 @@ public class TaskService(
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
-        await ValidateTaskDto(dto);
+        //await ValidateTaskDto(dto);
         var selectedMethod = await GetFocusMethodAsync(dto);
 
         await xpConfigService.EnsureXpConfigExists(
@@ -234,7 +234,7 @@ public class TaskService(
 
         await UpdateUserTreeIfNeeded(task, completeTaskDto);
 
-        ValidateTaskForCompletion(task);
+        //ValidateTaskForCompletion(task);
 
         if (task.FocusMethodId != null)
         {

@@ -22,12 +22,12 @@ public class PaymentService(
         var package = await packageRepository.GetByIdAsync(request.PackageId);
         if (package is not { IsActive: true })
             throw new Exception("Invalid package");
-
+        long amountInCents = (long)(package.Price * 100);
         // 2. Create PaymentIntent first
         var paymentIntentService = new PaymentIntentService(_stripeClient);
         var paymentIntentOptions = new PaymentIntentCreateOptions
         {
-            Amount = (long)package.Price,
+            Amount = amountInCents,
             Currency = "usd",
             Metadata = new Dictionary<string, string>
             {
@@ -50,7 +50,7 @@ public class PaymentService(
                 {
                     PriceData = new SessionLineItemPriceDataOptions
                     {
-                        UnitAmount = (long)package.Price,
+                        UnitAmount = amountInCents,
                         Currency = "usd",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
@@ -64,8 +64,8 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success?paymentIntentId={paymentIntent.Id}",
-            CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel?paymentIntentId={paymentIntent.Id}",
+            SuccessUrl = $"https://zengarden-fe.vercel.app/home",
+            CancelUrl = $"https://zengarden-fe.vercel.app/home",
             Metadata = new Dictionary<string, string>
             {
                 { "user_id", request.UserId.ToString() },
