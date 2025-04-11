@@ -44,6 +44,7 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
     {
         return await _context.BagItem
             .Include(bi => bi.Item) // Ensure Item is loaded
+            .ThenInclude(i => i.ItemDetail) // Ensure ItemDetail is loaded
             .Where(bi => bi.BagId == bagId)
             .ToListAsync();
     }
