@@ -104,7 +104,7 @@ public class TaskService(
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
-        //await ValidateTaskDto(dto);
+        await ValidateTaskDto(dto);
         var selectedMethod = await GetFocusMethodAsync(dto);
 
         await xpConfigService.EnsureXpConfigExists(
@@ -239,7 +239,7 @@ public class TaskService(
 
     await UpdateUserTreeIfNeeded(task, completeTaskDto);
 
-        //ValidateTaskForCompletion(task);
+        ValidateTaskForCompletion(task);
 
     if (task.FocusMethodId != null)
     {
@@ -535,9 +535,9 @@ public class TaskService(
 
     private static void ValidateTaskForCompletion(Tasks task)
     {
-        if (task.Status != TasksStatus.InProgress && task.Status != TasksStatus.Paused)
-            throw new InvalidOperationException(
-                $"Only 'In Progress' or 'Paused' tasks can be completed. Current status: {task.Status}.");
+        // if (task.Status != TasksStatus.InProgress && task.Status != TasksStatus.Paused)
+        //     throw new InvalidOperationException(
+        //         $"Only 'In Progress' or 'Paused' tasks can be completed. Current status: {task.Status}.");
 
         if (task.UserTree == null)
             throw new InvalidOperationException("Task is not linked to any UserTree.");
@@ -545,12 +545,12 @@ public class TaskService(
         if (task.FocusMethodId == null)
             throw new InvalidOperationException("Task does not have an assigned FocusMethod.");
 
-        if (task.StartedAt == null)
-            throw new InvalidOperationException("Task must have a start time to be completed.");
-
-        if (task.TotalDuration.HasValue &&
-            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
-            throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
+        // if (task.StartedAt == null)
+        //     throw new InvalidOperationException("Task must have a start time to be completed.");
+        //
+        // if (task.TotalDuration.HasValue &&
+        //     DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
+        //     throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
