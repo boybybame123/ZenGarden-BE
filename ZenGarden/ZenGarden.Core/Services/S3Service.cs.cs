@@ -10,76 +10,138 @@ namespace ZenGarden.Core.Services;
 
 public class S3Service : IS3Service
 {
-    private readonly string? _bucketName;
+    private readonly string _bucketName;
     private readonly AmazonS3Client _s3Client;
+    private readonly string _serviceUrl;
+    private readonly string _baseUrl;
 
     public S3Service(IConfiguration config)
     {
         var awsSection = config.GetSection("AWS");
-        var accessKey = awsSection["AccessKey"];
-        var secretKey = awsSection["SecretKey"];
-        var serviceUrl = awsSection["ServiceURL"];
+        var accessKey = awsSection["AccessKey"] ?? throw new ArgumentNullException("AccessKey missing");
+        var secretKey = awsSection["SecretKey"] ?? throw new ArgumentNullException("SecretKey missing");
+        _serviceUrl = awsSection["ServiceURL"] ?? throw new ArgumentNullException("ServiceURL missing");
+        _bucketName = awsSection["BucketName"] ?? throw new ArgumentNullException("BucketName missing");
 
-        // Cấu hình S3 cho BizflyCloud
+        // Xác định base URL từ service URL
+        var uri = new Uri(_serviceUrl);
+        _baseUrl = $"https://zengarden.hcm.ss.bfcplatform.vn";
+
         var s3Config = new AmazonS3Config
         {
-            ServiceURL = serviceUrl, // VD: "https://hcm.ss.bfcplatform.vn"
+            ServiceURL = _serviceUrl,
             ForcePathStyle = true
         };
 
         _s3Client = new AmazonS3Client(accessKey, secretKey, s3Config);
-        _bucketName = awsSection["BucketName"];
     }
 
     public async Task<string> UploadFileAsync(IFormFile file)
     {
+        return await UploadFileInternalAsync(file, string.Empty);
+    }
+
+    public async Task<string> UploadFileToFolderAsync(IFormFile file, string folderName)
+    {
+        if (string.IsNullOrWhiteSpace(folderName))
+            throw new ArgumentException("Folder name cannot be empty");
+
+        return await UploadFileInternalAsync(file, folderName);
+    }
+
+    private async Task<string> UploadFileInternalAsync(IFormFile file, string folderName)
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("File is empty");
+
+        // Tạo tên file ngẫu nhiên để tránh trùng lặp
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var key = string.IsNullOrEmpty(folderName) 
+            ? fileName 
+            : $"{folderName.Trim('/')}/{fileName}";
+
         await using var stream = file.OpenReadStream();
-        var key = file.FileName;
+        
         var uploadRequest = new TransferUtilityUploadRequest
         {
             BucketName = _bucketName,
-            InputStream = stream,
             Key = key,
+            InputStream = stream,
             ContentType = file.ContentType,
             CannedACL = S3CannedACL.PublicRead,
-            PartSize = 10 * 1024 * 1024, // Set chunk size for large files
-            AutoCloseStream = true
+            AutoCloseStream = true,
+            PartSize = 10 * 1024 * 1024 // 10MB
         };
 
         var transferUtility = new TransferUtility(_s3Client);
         await transferUtility.UploadAsync(uploadRequest);
 
-        return GeneratePreSignedUrl(key);
+        return $"{_baseUrl}/{key}";
     }
 
-
-    // 2. Get File List
     public async Task<List<string>> ListFilesAsync()
     {
         var request = new ListObjectsV2Request { BucketName = _bucketName };
         var response = await _s3Client.ListObjectsV2Async(request);
 
-        return response.S3Objects.Select(obj => obj.Key).ToList();
+        return response.S3Objects
+            .Select(obj => $"{_baseUrl}/{obj.Key}")
+            .ToList();
     }
 
-    // 3. Download File
+    public async Task<List<string>> ListFilesInFolderAsync(string folderName)
+    {
+        if (string.IsNullOrWhiteSpace(folderName))
+            throw new ArgumentException("Folder name cannot be empty");
+
+        var request = new ListObjectsV2Request 
+        { 
+            BucketName = _bucketName,
+            Prefix = $"{folderName.Trim('/')}/"
+        };
+
+        var response = await _s3Client.ListObjectsV2Async(request);
+
+        return response.S3Objects
+            .Select(obj => $"{_baseUrl}/{obj.Key}")
+            .ToList();
+    }
+
     public async Task<Stream> DownloadFileAsync(string key)
     {
-        var request = new GetObjectRequest { BucketName = _bucketName, Key = key };
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Key cannot be empty");
+
+        var request = new GetObjectRequest 
+        { 
+            BucketName = _bucketName, 
+            Key = key 
+        };
+
         var response = await _s3Client.GetObjectAsync(request);
         return response.ResponseStream;
     }
 
-    // 4. Delete File
     public async Task<bool> DeleteFileAsync(string key)
     {
-        var request = new DeleteObjectRequest { BucketName = _bucketName, Key = key };
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Key cannot be empty");
+
+        var request = new DeleteObjectRequest 
+        { 
+            BucketName = _bucketName, 
+            Key = key 
+        };
+
         var response = await _s3Client.DeleteObjectAsync(request);
         return response.HttpStatusCode == HttpStatusCode.NoContent;
     }
 
-    public Task<string> GetPreSignedUrlAsync(string key, int expiryInMinutes = 60)
+    public async Task<string> GetPreSignedUrlAsync(string key, int expiryInMinutes = 60)
     {
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Key cannot be empty");
+
         var request = new GetPreSignedUrlRequest
         {
             BucketName = _bucketName,
@@ -87,18 +149,14 @@ public class S3Service : IS3Service
             Expires = DateTime.UtcNow.AddMinutes(expiryInMinutes)
         };
 
-        return Task.FromResult(_s3Client.GetPreSignedURL(request));
+        return await Task.FromResult(_s3Client.GetPreSignedURL(request));
     }
 
-    private string GeneratePreSignedUrl(string fileKey, int expiryDuration = 3600)
+    public string GetPublicUrl(string key)
     {
-        var request = new GetPreSignedUrlRequest
-        {
-            BucketName = _bucketName,
-            Key = fileKey,
-            Expires = DateTime.UtcNow.AddSeconds(expiryDuration) // Hết hạn sau 1 giờ
-        };
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Key cannot be empty");
 
-        return _s3Client.GetPreSignedURL(request);
+        return $"{_baseUrl}/{key}";
     }
 }

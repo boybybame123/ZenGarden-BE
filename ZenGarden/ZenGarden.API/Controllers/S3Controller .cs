@@ -57,4 +57,34 @@ public class S3Controller(IS3Service s3Service) : ControllerBase
         var url = await s3Service.UploadFileAsync(file);
         return Ok(new { Url = url });
     }
+
+    [HttpPost("upload-file-to-folder")]
+    [Consumes("multipart/form-data")] // ⚠️ Bắt buộc có dòng này
+    public async Task<IActionResult> UploadFileToFolder(IFormFile file, string folderName)
+    {
+        var url = await s3Service.UploadFileToFolderAsync(file, folderName);
+        return Ok(new { Url = url });
+    }
+    [HttpGet("list-files-in-folder")]
+    public async Task<IActionResult> ListFilesInFolder(string folderName)
+    {
+        var files = await s3Service.ListFilesInFolderAsync(folderName);
+        return Ok(files);
+    }
+    [HttpGet("public-url/{key}")]
+    public IActionResult GetPublicUrl(string key)
+    {
+        var url = s3Service.GetPublicUrl(key);
+        return Ok(new { Url = url });
+    }
+    [HttpGet("download-file/{key}")]
+    public async Task<IActionResult> DownloadFileFromS3(string key)
+    {
+        var stream = await s3Service.DownloadFileAsync(key);
+        if (stream == null)
+            return NotFound();
+        return File(stream, "application/octet-stream", key);
+    }
+
+
 }

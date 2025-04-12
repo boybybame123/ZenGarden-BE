@@ -3,6 +3,7 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
@@ -48,6 +49,9 @@ public class ItemDetailService(
             if (itemDetail.MonthlyPurchaseLimit.HasValue)
                 updateItemDetail.MonthlyPurchaseLimit = itemDetail.MonthlyPurchaseLimit;
 
+            
+
+
             if (itemDetail.File != null)
             {
                 var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
@@ -61,5 +65,18 @@ public class ItemDetailService(
         }
 
         throw new KeyNotFoundException("ItemDetail not found.");
+    }
+
+    public string GetFolderNameByItemType(ItemType type)
+    {
+        return type switch
+        {
+            ItemType.Xp_protect => "Farming",
+            ItemType.xp_boostTree => "Farming",
+            ItemType.Avatar => "avatar",
+            ItemType.Background => "background",
+            ItemType.Music => "music",
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
     }
 }
