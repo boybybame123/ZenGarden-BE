@@ -33,4 +33,24 @@ public class NotificationService(
         logger.LogInformation("📢 [SignalR] Sent to user {UserId}: {NotificationContent}", userId,
             notification.Content);
     }
+
+    public async Task PushNotificationToAllAsync(string title, string content)
+    {
+        var notification = new Notification
+        {
+            Content = $"{title}: {content}",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.Notifications.Add(notification);
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("✅ Notification saved and pushed to all users");
+
+        // Gửi đến tất cả user qua NotificationHub
+        await hubContext.Clients.All
+            .SendAsync("ReceiveNotification", notification.Content, notification.CreatedAt);
+
+        logger.LogInformation("📢 [SignalR] Sent to all users: {NotificationContent}", notification.Content);
+    }
 }
