@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ZenGarden.API.Hubs;
+using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
@@ -7,7 +8,7 @@ using ZenGarden.Infrastructure.Persistence;
 namespace ZenGarden.API.Services;
 
 public class NotificationService(
-    ZenGardenContext db,
+    INotificationRepository notificationRepository,
     IHubContext<NotificationHub> hubContext,
     ILogger<NotificationService> logger)
     : INotificationService
@@ -17,12 +18,13 @@ public class NotificationService(
         var notification = new Notification
         {
             UserId = userId,
+
             Content = $"{title}: {content}",
             CreatedAt = DateTime.UtcNow
         };
 
-        db.Notifications.Add(notification);
-        await db.SaveChangesAsync();
+        await notificationRepository.CreateAsync(notification);
+        
 
         logger.LogInformation($"✅ Notification saved and pushed to user {userId}");
 
@@ -42,8 +44,7 @@ public class NotificationService(
             CreatedAt = DateTime.UtcNow
         };
 
-        db.Notifications.Add(notification);
-        await db.SaveChangesAsync();
+        await notificationRepository.CreateAsync(notification);
 
         logger.LogInformation("✅ Notification saved and pushed to all users");
 
