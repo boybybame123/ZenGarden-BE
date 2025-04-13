@@ -1,5 +1,9 @@
-﻿namespace ZenGarden.Infrastructure.Repositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Domain.Entities;
+using ZenGarden.Infrastructure.Persistence;
 
-internal class NotificationRepository
+namespace ZenGarden.Infrastructure.Repositories;
+
+public  class NotificationRepository(ZenGardenContext context) : GenericRepository<Notification>(context), INotificationRepository
 {
 }

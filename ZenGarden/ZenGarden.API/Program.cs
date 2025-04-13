@@ -159,6 +159,7 @@ public partial class Program
         builder.Services.AddScoped<IUserConfigRepository, UserConfigRepository>();
         builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
         builder.Services.AddScoped<IPackageRepository, PackageRepository>();
+        builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
         // other repository registrations
     }
 
