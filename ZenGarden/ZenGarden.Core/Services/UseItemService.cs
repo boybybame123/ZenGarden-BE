@@ -7,7 +7,6 @@ namespace ZenGarden.Core.Services;
 public class UseItemService(
     IUserConfigRepository userConfigRepository,
     IBagItemRepository bagItemRepository,
-    IItemRepository itemRepository,
     IItemDetailRepository itemDetailRepository,
     IBagRepository bagRepository,
     IUnitOfWork unitOfWork
@@ -24,7 +23,7 @@ public class UseItemService(
         if (bag.UserId != userId)
             throw new UnauthorizedAccessException("User not authorized to use this item");
 
-        var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(item.ItemId.Value);
+        var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(item.ItemId!.Value);
         if (itemDetail == null)
             throw new KeyNotFoundException("Item detail not found");
 
@@ -84,26 +83,13 @@ public class UseItemService(
 
         return "Sử dụng item thành công";
     }
+
     public async Task UseItemXpBoostTree(int userId)
     {
         var itemBag = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
         if (itemBag == null || itemBag.Quantity <= 0)
-            return; 
+            return;
 
-        itemBag.Quantity--;
-        itemBag.UpdatedAt = DateTime.UtcNow;
-        bagItemRepository.Update(itemBag);
-        await unitOfWork.CommitAsync();
-    }
-
-    public async Task UseItemXpProtect(int userId)
-    {
-        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
-        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-        if (itemBag == null)
-            throw new KeyNotFoundException("Item not found");
-        if (itemBag.Quantity <= 0)
-            throw new InvalidOperationException("Item quantity is zero");
         itemBag.Quantity--;
         itemBag.UpdatedAt = DateTime.UtcNow;
         bagItemRepository.Update(itemBag);
@@ -118,6 +104,20 @@ public class UseItemService(
         item.isEquipped = false;
         item.UpdatedAt = DateTime.UtcNow;
         bagItemRepository.Update(item);
+        await unitOfWork.CommitAsync();
+    }
+
+    public async Task UseItemXpProtect(int userId)
+    {
+        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
+        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+        if (itemBag == null)
+            throw new KeyNotFoundException("Item not found");
+        if (itemBag.Quantity <= 0)
+            throw new InvalidOperationException("Item quantity is zero");
+        itemBag.Quantity--;
+        itemBag.UpdatedAt = DateTime.UtcNow;
+        bagItemRepository.Update(itemBag);
         await unitOfWork.CommitAsync();
     }
 }

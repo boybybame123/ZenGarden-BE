@@ -18,6 +18,7 @@ public class TaskDto
     public string? TaskResult { get; set; }
     public string? RemainingTime { get; set; }
     public string? AccumulatedTime { get; set; }
+    public int? Priority { get; set; }
     public string? UserTreeName { get; set; }
     public string? TaskTypeName { get; set; }
     public string? FocusMethodName { get; set; }

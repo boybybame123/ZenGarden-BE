@@ -10,10 +10,10 @@ namespace ZenGarden.Core.Services;
 
 public class S3Service : IS3Service
 {
+    private readonly string _baseUrl;
     private readonly string _bucketName;
     private readonly AmazonS3Client _s3Client;
     private readonly string _serviceUrl;
-    private readonly string _baseUrl;
 
     public S3Service(IConfiguration config)
     {
@@ -25,7 +25,7 @@ public class S3Service : IS3Service
 
         // Xác định base URL từ service URL
         var uri = new Uri(_serviceUrl);
-        _baseUrl = $"https://zengarden.hcm.ss.bfcplatform.vn";
+        _baseUrl = "https://zengarden.hcm.ss.bfcplatform.vn";
 
         var s3Config = new AmazonS3Config
         {
@@ -49,36 +49,6 @@ public class S3Service : IS3Service
         return await UploadFileInternalAsync(file, folderName);
     }
 
-    private async Task<string> UploadFileInternalAsync(IFormFile file, string folderName)
-    {
-        if (file == null || file.Length == 0)
-            throw new ArgumentException("File is empty");
-
-        // Tạo tên file ngẫu nhiên để tránh trùng lặp
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-        var key = string.IsNullOrEmpty(folderName) 
-            ? fileName 
-            : $"{folderName.Trim('/')}/{fileName}";
-
-        await using var stream = file.OpenReadStream();
-        
-        var uploadRequest = new TransferUtilityUploadRequest
-        {
-            BucketName = _bucketName,
-            Key = key,
-            InputStream = stream,
-            ContentType = file.ContentType,
-            CannedACL = S3CannedACL.PublicRead,
-            AutoCloseStream = true,
-            PartSize = 10 * 1024 * 1024 // 10MB
-        };
-
-        var transferUtility = new TransferUtility(_s3Client);
-        await transferUtility.UploadAsync(uploadRequest);
-
-        return $"{_baseUrl}/{key}";
-    }
-
     public async Task<List<string>> ListFilesAsync()
     {
         var request = new ListObjectsV2Request { BucketName = _bucketName };
@@ -94,8 +64,8 @@ public class S3Service : IS3Service
         if (string.IsNullOrWhiteSpace(folderName))
             throw new ArgumentException("Folder name cannot be empty");
 
-        var request = new ListObjectsV2Request 
-        { 
+        var request = new ListObjectsV2Request
+        {
             BucketName = _bucketName,
             Prefix = $"{folderName.Trim('/')}/"
         };
@@ -112,10 +82,10 @@ public class S3Service : IS3Service
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("Key cannot be empty");
 
-        var request = new GetObjectRequest 
-        { 
-            BucketName = _bucketName, 
-            Key = key 
+        var request = new GetObjectRequest
+        {
+            BucketName = _bucketName,
+            Key = key
         };
 
         var response = await _s3Client.GetObjectAsync(request);
@@ -127,10 +97,10 @@ public class S3Service : IS3Service
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("Key cannot be empty");
 
-        var request = new DeleteObjectRequest 
-        { 
-            BucketName = _bucketName, 
-            Key = key 
+        var request = new DeleteObjectRequest
+        {
+            BucketName = _bucketName,
+            Key = key
         };
 
         var response = await _s3Client.DeleteObjectAsync(request);
@@ -156,6 +126,36 @@ public class S3Service : IS3Service
     {
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("Key cannot be empty");
+
+        return $"{_baseUrl}/{key}";
+    }
+
+    private async Task<string> UploadFileInternalAsync(IFormFile file, string folderName)
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("File is empty");
+
+        // Tạo tên file ngẫu nhiên để tránh trùng lặp
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var key = string.IsNullOrEmpty(folderName)
+            ? fileName
+            : $"{folderName.Trim('/')}/{fileName}";
+
+        await using var stream = file.OpenReadStream();
+
+        var uploadRequest = new TransferUtilityUploadRequest
+        {
+            BucketName = _bucketName,
+            Key = key,
+            InputStream = stream,
+            ContentType = file.ContentType,
+            CannedACL = S3CannedACL.PublicRead,
+            AutoCloseStream = true,
+            PartSize = 10 * 1024 * 1024 // 10MB
+        };
+
+        var transferUtility = new TransferUtility(_s3Client);
+        await transferUtility.UploadAsync(uploadRequest);
 
         return $"{_baseUrl}/{key}";
     }

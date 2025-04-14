@@ -3,7 +3,6 @@ using ZenGarden.API.Hubs;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.API.Services;
 
@@ -24,7 +23,7 @@ public class NotificationService(
         };
 
         await notificationRepository.CreateAsync(notification);
-        
+
 
         logger.LogInformation($"✅ Notification saved and pushed to user {userId}");
 

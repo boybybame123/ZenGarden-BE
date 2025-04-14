@@ -37,10 +37,4 @@ public class TradeHistoryService(ITradeHistoryRepository tradeHistoryRepository,
             throw new Exception("Failed to update trade history");
         return tradeHistory;
     }
-
-
-
-
-
-
 }

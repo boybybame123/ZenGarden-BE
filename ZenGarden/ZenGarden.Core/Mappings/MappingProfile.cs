@@ -51,9 +51,6 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Tasks, opt => opt.MapFrom(src => src.ChallengeTasks.Select(ct => ct.Tasks)));
         CreateMap<CreateChallengeDto, Challenge>();
         CreateMap<UpdateChallengeDto, Challenge>();
-        CreateMap<UpdateTaskDto, Task>()
-            .ForAllMembers(opts => opts.Condition((_, dest, srcMember) =>
-                srcMember != null && !Equals(srcMember, dest)));
         CreateMap<TaskDto, Tasks>()
             .ForMember(dest => dest.TaskName, opt => opt.MapFrom(src => src.TaskName))
             .ForMember(dest => dest.TaskDescription, opt => opt.MapFrom(src => src.TaskDescription))

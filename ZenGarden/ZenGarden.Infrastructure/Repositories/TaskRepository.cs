@@ -140,4 +140,39 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             )
             .CountAsync();
     }
+
+    public async Task<int> GetNextPriorityForTreeAsync(int userTreeId)
+    {
+        var tasks = await _context.Tasks
+            .Where(t => t.UserTreeId == userTreeId &&
+                        (t.Status == TasksStatus.NotStarted ||
+                         t.Status == TasksStatus.InProgress ||
+                         t.Status == TasksStatus.Paused))
+            .ToListAsync();
+
+        var maxPriority = tasks
+            .Select(t => t.Priority)
+            .Max() ?? 0;
+
+        return maxPriority + 1;
+    }
+
+    public async Task<List<Tasks>> GetTasksByIdsAsync(List<int> taskIds)
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t => taskIds.Contains(t.TaskId))
+            .ToListAsync();
+    }
+
+    public async Task<List<Tasks>> GetActiveTasksByUserTreeIdAsync(int userTreeId)
+    {
+        return await _context.Tasks
+            .Where(t => t.UserTreeId == userTreeId &&
+                        (t.TaskTypeId == 2 || t.TaskTypeId == 3) &&
+                        t.Status != TasksStatus.Completed &&
+                        t.Status != TasksStatus.Overdue &&
+                        t.Status != TasksStatus.Canceled)
+            .ToListAsync();
+    }
 }

@@ -51,6 +51,7 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         var userTrees = await userTreeService.GetAllUserTreesByUserIdAsync(id);
         return Ok(userTrees);
     }
+
     [HttpGet("ListUserTree-ByOwner/{ownerId:int}")]
     public async Task<IActionResult> ListUserTreeByOwner(int ownerId)
     {

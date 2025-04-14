@@ -6,7 +6,7 @@ public static class StringHelper
     {
         return input?.Trim().ToLower() ?? string.Empty;
     }
-    
+
     public static string FormatSecondsToTime(int seconds)
     {
         return TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");

@@ -8,5 +8,4 @@ public interface ITradeHistoryService
     Task<TradeHistory> GetTradeHistoryByIdAsync(int id);
     Task<TradeHistory> CreateTradeHistoryAsync(TradeHistory tradeHistory);
     Task<TradeHistory> UpdateTradeHistoryAsync(TradeHistory tradeHistory);
-   
 }

@@ -101,7 +101,6 @@ public class TaskService(
     }
 
 
-
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
         await ValidateTaskDto(dto);
@@ -112,6 +111,9 @@ public class TaskService(
             dto.TaskTypeId,
             dto.TotalDuration ?? 30
         );
+        int? nextPriority = null;
+        if (dto.TaskTypeId is 2 or 3 && dto.UserTreeId != null)
+            nextPriority = await taskRepository.GetNextPriorityForTreeAsync(dto.UserTreeId.Value);
 
         var newTask = new Tasks
         {
@@ -125,6 +127,7 @@ public class TaskService(
             BreakTime = dto.BreakTime ?? selectedMethod.DefaultBreak ?? 5,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
+            Priority = nextPriority ?? 0,
             CreatedAt = DateTime.UtcNow,
             Status = TasksStatus.NotStarted,
             IsSuggested = dto.WorkDuration == null && dto.BreakTime == null
@@ -140,15 +143,24 @@ public class TaskService(
         var existingTask = await taskRepository.GetByIdAsync(taskId)
                            ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        if (existingTask.Status is (TasksStatus.InProgress or TasksStatus.Paused))
+        if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
             throw new InvalidOperationException(
                 "Tasks in 'InProgress' or 'Paused' state cannot be updated based on the new requirement.");
 
-        mapper.Map(updateTaskDto, existingTask);
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskName))
+            existingTask.TaskName = updateTaskDto.TaskName;
 
-        var updatedTaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult);
-        if (!string.IsNullOrWhiteSpace(updatedTaskResult))
-            existingTask.TaskResult = updatedTaskResult;
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription))
+            existingTask.TaskDescription = updateTaskDto.TaskDescription;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
+            existingTask.TaskNote = updateTaskDto.TaskNote;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
+            existingTask.TaskResult = updateTaskDto.TaskResult;
+
+        if (updateTaskDto.TotalDuration.HasValue)
+            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
 
         if (updateTaskDto.FocusMethodId.HasValue)
         {
@@ -157,6 +169,26 @@ public class TaskService(
                     $"FocusMethod with ID {updateTaskDto.FocusMethodId.Value} not found.");
 
             existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
+        }
+
+        if (updateTaskDto.WorkDuration.HasValue)
+            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
+
+        if (updateTaskDto.BreakTime.HasValue)
+            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+
+        if (updateTaskDto.StartDate.HasValue)
+            existingTask.StartDate = updateTaskDto.StartDate.Value;
+
+        if (updateTaskDto.EndDate.HasValue)
+            existingTask.EndDate = updateTaskDto.EndDate.Value;
+
+        // Xử lý cập nhật file nếu có
+        if (updateTaskDto.TaskFile != null)
+        {
+            var uploadedFileUrl = await s3Service.UploadFileAsync(updateTaskDto.TaskFile);
+            if (!string.IsNullOrWhiteSpace(uploadedFileUrl))
+                existingTask.TaskResult = uploadedFileUrl;
         }
 
         existingTask.UpdatedAt = DateTime.UtcNow;
@@ -188,7 +220,7 @@ public class TaskService(
             throw new InvalidOperationException("Task has not started yet.");
         if (now > task.EndDate)
             throw new InvalidOperationException("Task deadline has passed.");
-        
+
         if (task.Status == TasksStatus.InProgress)
             throw new InvalidOperationException("Task is already in progress.");
 
@@ -228,76 +260,88 @@ public class TaskService(
     }
 
     public async Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
-{
-    double xpEarned = 0;
+    {
+        double xpEarned = 0;
 
-    var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
-               ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-    if (await IsDailyTaskAlreadyCompleted(task))
-        throw new InvalidOperationException("You have already completed this daily task today.");
+        if (await IsDailyTaskAlreadyCompleted(task))
+            throw new InvalidOperationException("You have already completed this daily task today.");
 
-    await UpdateUserTreeIfNeeded(task, completeTaskDto);
+        await UpdateUserTreeIfNeeded(task, completeTaskDto);
 
         ValidateTaskForCompletion(task);
 
-    if (task.FocusMethodId != null)
-    {
-        await using var transaction = await unitOfWork.BeginTransactionAsync();
-        try
+        if (task.FocusMethodId != null)
         {
-            var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
-                           ?? throw new KeyNotFoundException("XP configuration not found for this task.");
-
-            var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
-            
-            xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
-
-            if (xpEarned > 0 && task.UserTree != null)
+            await using var transaction = await unitOfWork.BeginTransactionAsync();
+            try
             {
-                task.UserTree.TotalXp += xpEarned;
+                var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
+                               ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
-                await treeXpLogRepository.CreateAsync(new TreeXpLog
+                var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
+
+                if (task.TaskTypeId is 2 or 3 && task.Priority is { } priority)
                 {
-                    TaskId = task.TaskId,
-                    ActivityType = ActivityType.TaskXp,
-                    XpAmount = xpEarned,
-                    CreatedAt = DateTime.UtcNow
-                });
+                    var decayRate = xpConfig.PriorityDecayRate ?? 0.1;
+                    var minMultiplier = xpConfig.MinDecayMultiplier ?? 0.3;
 
-                await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
+                    var rawMultiplier = 1 - (priority - 1) * decayRate;
+                    var decayMultiplier = Math.Max(rawMultiplier, minMultiplier);
+
+                    baseXp *= decayMultiplier;
+                }
+
+
+                xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
+
+                if (xpEarned > 0 && task.UserTree != null)
+                {
+                    task.UserTree.TotalXp += xpEarned;
+
+                    await treeXpLogRepository.CreateAsync(new TreeXpLog
+                    {
+                        TaskId = task.TaskId,
+                        ActivityType = ActivityType.TaskXp,
+                        XpAmount = xpEarned,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    await userTreeService.CheckAndSetMaxLevelAsync(task.UserTree);
+                }
+
+                task.CompletedAt = DateTime.UtcNow;
+                task.Status = TasksStatus.Completed;
+
+                taskRepository.Update(task);
+                if (task.UserTree != null) userTreeRepository.Update(task.UserTree);
+
+                await unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+
+                await UpdateChallengeProgress(task);
             }
-
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new InvalidOperationException($"Failed to complete task: {ex.Message}", ex);
+            }
+        }
+        else
+        {
             task.CompletedAt = DateTime.UtcNow;
             task.Status = TasksStatus.Completed;
 
             taskRepository.Update(task);
-            if (task.UserTree != null) userTreeRepository.Update(task.UserTree);
-
             await unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
 
             await UpdateChallengeProgress(task);
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            throw new InvalidOperationException($"Failed to complete task: {ex.Message}", ex);
-        }
+
+        return xpEarned;
     }
-    else
-    {
-        task.CompletedAt = DateTime.UtcNow;
-        task.Status = TasksStatus.Completed;
-
-        taskRepository.Update(task);
-        await unitOfWork.CommitAsync();
-
-        await UpdateChallengeProgress(task);
-    }
-
-    return xpEarned;
-}
 
 
     public async Task UpdateOverdueTasksAsync()
@@ -391,6 +435,64 @@ public class TaskService(
         await unitOfWork.CommitAsync();
     }
 
+    public async Task ReorderTasksAsync(int userTreeId, List<ReorderTaskDto> reorderList)
+    {
+        if (reorderList.Count == 0)
+            throw new ArgumentException("Reorder list cannot be empty.");
+
+        var taskIds = reorderList.Select(x => x.TaskId).ToList();
+
+        // Lấy tất cả task để kiểm tra
+        var tasks = await taskRepository.GetTasksByIdsAsync(taskIds);
+        tasks = tasks.Where(t => t.TaskTypeId == 2 || t.TaskTypeId == 3).ToList();
+
+        if (tasks.Count != reorderList.Count)
+            throw new KeyNotFoundException("Some tasks not found.");
+
+        var firstTaskTypeId = tasks.First().TaskTypeId;
+        foreach (var task in tasks)
+        {
+            if (task.UserTreeId != userTreeId)
+                throw new InvalidOperationException($"Task {task.TaskId} does not belong to the specified tree.");
+
+            if (task.TaskTypeId != firstTaskTypeId)
+                throw new InvalidOperationException(
+                    $"Task {task.TaskId} has a different TaskTypeId ({task.TaskTypeId}) than expected ({firstTaskTypeId}). " +
+                    "Tasks with different TaskTypeIds cannot be reordered together.");
+        }
+
+        foreach (var task in tasks)
+        {
+            var newPriority = reorderList.First(x => x.TaskId == task.TaskId).Priority;
+            task.Priority = newPriority;
+        }
+
+        await taskRepository.UpdateRangeAsync(tasks);
+        await unitOfWork.CommitAsync();
+    }
+
+    public async Task WeeklyTaskPriorityResetAsync()
+    {
+        var allUserTrees = await userTreeRepository.GetAllActiveUserTreesAsync();
+
+        foreach (var userTree in allUserTrees)
+        {
+            var activeTasks = await taskRepository.GetActiveTasksByUserTreeIdAsync(userTree.UserTreeId);
+
+            // Sắp xếp lại tasks theo priority hiện tại
+            var orderedTasks = activeTasks
+                .OrderBy(t => t.Priority)
+                .ToList();
+
+            // Gán lại priority từ 1 đến n
+            for (var i = 0; i < orderedTasks.Count; i++) orderedTasks[i].Priority = i + 1;
+
+            if (orderedTasks.Count != 0) await taskRepository.UpdateRangeAsync(orderedTasks);
+        }
+
+        await unitOfWork.CommitAsync();
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)
@@ -448,33 +550,56 @@ public class TaskService(
 
     public async Task ValidateTaskDto(CreateTaskDto dto)
     {
+        const int maxTaskPerUser = 20;
+        var errors = new List<ValidationFailure>();
+
+        // 1. FluentValidation cơ bản
         var validationResult = await createTaskValidator.ValidateAsync(dto);
+        errors.AddRange(validationResult.Errors);
 
-        // Tạo danh sách lỗi tổng hợp
-        var errors = new List<ValidationFailure>(validationResult.Errors);
-
-        // Kiểm tra tồn tại của TaskType
+        // 2. Kiểm tra TaskType
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (taskType == null)
             errors.Add(new ValidationFailure("TaskTypeId", $"TaskType not found. TaskTypeId = {dto.TaskTypeId}"));
 
-        // Kiểm tra tồn tại của UserTree nếu có
-        if (dto.UserTreeId is > 0)
+        switch (dto.UserTreeId)
         {
-            var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value);
-            if (userTree == null)
+            // 3. Kiểm tra UserTree + giới hạn số lượng task
+            case > 0 when await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value) is { } userTree:
+            {
+                var userId = userTree.UserId;
+                if (userId == null)
+                {
+                    errors.Add(new ValidationFailure("UserTreeId", "UserId is null in UserTree."));
+                }
+                else
+                {
+                    var userTasks = await taskRepository.GetTasksByUserIdAsync(userId.Value);
+                    var activeTasksCount = userTasks.Count(t =>
+                        t.Status is TasksStatus.NotStarted or TasksStatus.InProgress or TasksStatus.Paused);
+
+                    if (activeTasksCount >= maxTaskPerUser)
+                        errors.Add(new ValidationFailure("UserTreeId",
+                            $"You can only have up to {maxTaskPerUser} active tasks."));
+                }
+
+                break;
+            }
+            case > 0:
                 errors.Add(new ValidationFailure("UserTreeId", $"UserTree not found. UserTreeId = {dto.UserTreeId}"));
+                break;
         }
 
-        // Kiểm tra cài đặt FocusMethod
+        // 4. Validate FocusMethod nếu có
         if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
         {
             var focusMethodErrors = await ValidateFocusMethodSettings(dto);
             errors.AddRange(focusMethodErrors);
         }
 
-        // Nếu có bất kỳ lỗi nào, ném ValidationException
-        if (errors.Count != 0) throw new ValidationException(errors);
+        // 5. Throw nếu có lỗi
+        if (errors.Count > 0)
+            throw new ValidationException(errors);
     }
 
     private async Task<List<ValidationFailure>> ValidateFocusMethodSettings(CreateTaskDto dto)
@@ -535,9 +660,9 @@ public class TaskService(
 
     private static void ValidateTaskForCompletion(Tasks task)
     {
-        // if (task.Status != TasksStatus.InProgress && task.Status != TasksStatus.Paused)
-        //     throw new InvalidOperationException(
-        //         $"Only 'In Progress' or 'Paused' tasks can be completed. Current status: {task.Status}.");
+        if (task.Status != TasksStatus.InProgress && task.Status != TasksStatus.Paused)
+            throw new InvalidOperationException(
+                $"Only 'In Progress' or 'Paused' tasks can be completed. Current status: {task.Status}.");
 
         if (task.UserTree == null)
             throw new InvalidOperationException("Task is not linked to any UserTree.");
@@ -545,12 +670,12 @@ public class TaskService(
         if (task.FocusMethodId == null)
             throw new InvalidOperationException("Task does not have an assigned FocusMethod.");
 
-        // if (task.StartedAt == null)
-        //     throw new InvalidOperationException("Task must have a start time to be completed.");
-        //
-        // if (task.TotalDuration.HasValue &&
-        //     DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
-        //     throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
+        if (task.StartedAt == null)
+            throw new InvalidOperationException("Task must have a start time to be completed.");
+
+        if (task.TotalDuration.HasValue &&
+            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
+            throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
@@ -602,6 +727,9 @@ public class TaskService(
                 remaining = totalDuration;
                 break;
 
+            case TasksStatus.Completed:
+            case TasksStatus.Overdue:
+            case TasksStatus.Canceled:
             default:
                 remaining = TimeSpan.Zero;
                 break;
@@ -609,21 +737,17 @@ public class TaskService(
 
         return (int)Math.Max(remaining.TotalSeconds, 0);
     }
-    
+
     private async Task<double> CalculateXpWithBoostAsync(Tasks task, double baseXp)
     {
         var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
 
         var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
-        if (equippedItem != null &&
-            double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) &&
-            effectPercent > 0)
-        {
-            var bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
-            await useItemService.UseItemXpBoostTree(userId);
-            return baseXp + bonusXp;
-        }
-
-        return baseXp;
+        if (equippedItem == null ||
+            !double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) ||
+            !(effectPercent > 0)) return baseXp;
+        var bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
+        await useItemService.UseItemXpBoostTree(userId);
+        return baseXp + bonusXp;
     }
 }

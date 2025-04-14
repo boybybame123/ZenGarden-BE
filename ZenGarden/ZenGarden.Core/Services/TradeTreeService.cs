@@ -27,9 +27,8 @@ public class TradeTreeService(
 
             var isTreeInPendingTrade = await tradeHistoryRepository.IsTreeInPendingTradeAsync(tradeDto.requesterTreeId);
             if (isTreeInPendingTrade)
-            {
-                return "Your tree is already in a pending trade. Please wait for it to be completed or canceled before creating a new trade request.";
-            }
+                return
+                    "Your tree is already in a pending trade. Please wait for it to be completed or canceled before creating a new trade request.";
 
             // Calculate trade fee based on rarity
             var tradeFee = CalculateTradeFee(desiredTree.Rarity);
@@ -39,7 +38,7 @@ public class TradeTreeService(
 
             // Deduct trade fee from owner's wallet
             var wallet = await walletRepository.GetByUserIdAsync(tradeDto.requesterId)
-                          ?? throw new Exception("Wallet not found");
+                         ?? throw new Exception("Wallet not found");
 
             // Create and save trade request
             var trade = new TradeHistory
@@ -57,10 +56,7 @@ public class TradeTreeService(
 
             await tradeHistoryRepository.CreateAsync(trade);
             await unitOfWork.CommitAsync();
-            if (wallet.Balance < tradeFee)
-            {
-                return "Insufficient balance to create trade request.";
-            }
+            if (wallet.Balance < tradeFee) return "Insufficient balance to create trade request.";
             wallet.Balance -= tradeFee;
             walletRepository.Update(wallet);
             await unitOfWork.CommitAsync();
@@ -71,6 +67,7 @@ public class TradeTreeService(
             return $"Error creating trade request: {ex.Message}";
         }
     }
+
     public async Task<string> AcceptTradeAsync(int tradeId, int recipientId, int recipientTreeId)
     {
         // Validate trade exists and is pending
@@ -92,15 +89,12 @@ public class TradeTreeService(
 
         // Deduct trade fee from recipient's wallet
         var wallet = await walletRepository.GetByUserIdAsync(recipientId)
-                      ?? throw new Exception("Wallet not found");
+                     ?? throw new Exception("Wallet not found");
 
 
         // Execute the trade
         await ExecuteTrade(trade, requesterTree, recipientTree);
-        if (wallet.Balance < trade.TradeFee)
-        {
-            return "Insufficient balance to accept trade request.";
-        }
+        if (wallet.Balance < trade.TradeFee) return "Insufficient balance to accept trade request.";
         wallet.Balance -= trade.TradeFee;
         walletRepository.Update(wallet);
         await unitOfWork.CommitAsync();
@@ -135,7 +129,7 @@ public class TradeTreeService(
             throw new InvalidOperationException("Requester tree is not fully grown");
 
         var treeA = await treeRepository.GetByIdAsync(requesterTree.FinalTreeId.Value)
-                     ?? throw new Exception("Original tree does not exist");
+                    ?? throw new Exception("Original tree does not exist");
 
         if (desiredTree.Rarity != treeA.Rarity)
             throw new InvalidOperationException("Rarity levels do not match");
@@ -178,7 +172,7 @@ public class TradeTreeService(
             throw new InvalidOperationException("Invalid trade data");
 
         var requesterTree = await userTreeRepository.GetByIdAsync(trade.TreeAid)
-                           ?? throw new Exception("Your tree does not exist");
+                            ?? throw new Exception("Your tree does not exist");
         if (requesterTree.TreeOwnerId != trade.TreeOwnerAid)
             throw new Exception("This tree does not belong to you");
 
@@ -221,10 +215,11 @@ public class TradeTreeService(
         var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesbyStatutsAsync(status);
         return tradeHistories.ToList();
     }
+
     public async Task<TradeHistory> CancelTradeAsync(int tradeId, int userA)
     {
         var trade = await tradeHistoryRepository.GetByIdAsync(tradeId)
-                     ?? throw new KeyNotFoundException("Trade not found");
+                    ?? throw new KeyNotFoundException("Trade not found");
 
         if (trade.TreeOwnerAid != userA)
             throw new UnauthorizedAccessException("You are not the owner of this trade");
@@ -254,12 +249,12 @@ public class TradeTreeService(
         var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesByOwneridAsync(userId);
         return tradeHistories.ToList();
     }
+
     public async Task<List<TradeHistory>> GetAllTradeHistoriesByNotOwnerIdAsync(int userId)
     {
         var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesByNotOwneridAsync(userId);
         return tradeHistories.ToList();
     }
-
 
     #endregion
 }
