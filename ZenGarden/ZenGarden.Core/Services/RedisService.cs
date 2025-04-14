@@ -106,6 +106,44 @@ namespace ZenGarden.Core.Services
             return await _database.KeyTimeToLiveAsync(key);
         }
 
+        public async Task<bool> AddToSortedSetAsync(string setKey, string member, double score)
+        {
+            return await _database.SortedSetAddAsync(setKey, member, score);
+        }
+
+        public async Task<List<string>> GetTopSortedSetAsync(string setKey, int count)
+        {
+            var result = await _database.SortedSetRangeByRankAsync(setKey, 0, count - 1, Order.Descending);
+            return result.Select(x => x.ToString()).ToList();
+        }
+
+        public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> getDataFunc, TimeSpan? expiry = null)
+        {
+            var cached = await _database.StringGetAsync(key);
+            if (!cached.IsNullOrEmpty)
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<T>(cached);
+            }
+
+            var data = await getDataFunc();
+            var json = System.Text.Json.JsonSerializer.Serialize(data);
+            await _database.StringSetAsync(key, json, expiry);
+            return data;
+        }
+
+        public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
+            return await _database.StringSetAsync(key, json, expiry);
+        }
+
+        public async Task<T?> GetAsync<T>(string key)
+        {
+            var json = await _database.StringGetAsync(key);
+            if (json.IsNullOrEmpty) return default;
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+        }
+
         public void Dispose()
         {
             _redis?.Dispose();
