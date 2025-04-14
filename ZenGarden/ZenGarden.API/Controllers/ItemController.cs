@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Core.Services;
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Enums;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -77,13 +75,13 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
         if (request.File == null)
             return BadRequest(new { message = "File is required" });
 
-        var type =  _itemDetailService.GetFolderNameByItemType(request.Type);
+        var type = _itemDetailService.GetFolderNameByItemType(request.Type);
 
 
         // Upload file to S3
         var mediaUrl =
             await _s3Service.UploadFileToFolderAsync(request
-                .File,type); // Null forgiving operator is safe here due to the earlier null check
+                .File, type); // Null forgiving operator is safe here due to the earlier null check
 
         if (string.IsNullOrEmpty(mediaUrl))
             return BadRequest(new { message = "File upload failed" });

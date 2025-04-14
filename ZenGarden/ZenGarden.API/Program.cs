@@ -93,7 +93,7 @@ public partial class Program
         builder.Services.AddScoped<IUserChallengeService, UserChallengeService>();
         builder.Services.AddScoped<IUseItemService, UseItemService>();
         builder.Services.AddScoped<ITransactionsService, TransactionsService>();
-        builder.Services.AddScoped<IBagItemService,BagItemService>();
+        builder.Services.AddScoped<IBagItemService, BagItemService>();
         builder.Services.AddScoped<PaymentService>();
         builder.Services.AddScoped<ZenGardenContext>();
 

@@ -22,7 +22,7 @@ public class PaymentService(
         var package = await packageRepository.GetByIdAsync(request.PackageId);
         if (package is not { IsActive: true })
             throw new Exception("Invalid package");
-        long amountInCents = (long)(package.Price * 100);
+        var amountInCents = (long)(package.Price * 100);
         // 2. Create PaymentIntent first
         var paymentIntentService = new PaymentIntentService(_stripeClient);
         var paymentIntentOptions = new PaymentIntentCreateOptions
@@ -64,8 +64,8 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success",
-            CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel",
+            SuccessUrl = "https://zengarden-be.onrender.com/api/Payment/success",
+            CancelUrl = "https://zengarden-be.onrender.com/api/Payment/cancel",
             Metadata = new Dictionary<string, string>
             {
                 { "user_id", request.UserId.ToString() },

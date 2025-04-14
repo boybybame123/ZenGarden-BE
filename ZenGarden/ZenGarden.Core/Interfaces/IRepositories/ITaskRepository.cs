@@ -17,4 +17,7 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<List<Tasks>> GetDailyTasksAsync();
     Task<int> GetCompletedTasksAsync(int userId, int challengeId);
     Task<int> GetTotalCloneTasksAsync(int userId, int challengeId);
+    Task<int> GetNextPriorityForTreeAsync(int userTreeId);
+    Task<List<Tasks>> GetTasksByIdsAsync(List<int> taskIds);
+    Task<List<Tasks>> GetActiveTasksByUserTreeIdAsync(int userTreeId);
 }

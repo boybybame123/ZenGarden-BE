@@ -49,8 +49,6 @@ public class ItemDetailService(
             if (itemDetail.MonthlyPurchaseLimit.HasValue)
                 updateItemDetail.MonthlyPurchaseLimit = itemDetail.MonthlyPurchaseLimit;
 
-            
-
 
             if (itemDetail.File != null)
             {
