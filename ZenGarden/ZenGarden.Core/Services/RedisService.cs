@@ -21,22 +21,36 @@ namespace ZenGarden.Core.Services
 
             try
             {
-                // Get connection details
-                var host = "centerbeam.proxy.rlwy.net";
-                var port = 20762;
-                var password = "ErBpHLsdsDMxlZMpSZXqKqTmuiSUFfzp";
+                // Lấy thông tin kết nối từ appsettings.json
+                var host = _configuration["Redis:Host"];
+                var portStr = _configuration["Redis:Port"];
+                var password = _configuration["Redis:Password"];
+                var user = _configuration["Redis:User"] ?? "default";
+                var useSSL = bool.Parse(_configuration["Redis:UseSSL"] ?? "false");
 
-                // For Railway connections, try this format
+                // Kiểm tra thông tin cấu hình
+                if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(portStr) || string.IsNullOrEmpty(password))
+                {
+                    throw new ArgumentException("Redis configuration is missing or incomplete in appsettings.json");
+                }
+
+                // Parse port
+                if (!int.TryParse(portStr, out int port))
+                {
+                    throw new ArgumentException("Invalid Redis port configuration");
+                }
+
+                // Tạo cấu hình kết nối
                 var configOptions = new ConfigurationOptions
                 {
                     EndPoints = { { host, port } },
                     Password = password,
-                    User = "default", // Railway often requires this user
+                    User = user,
                     AbortOnConnectFail = false,
-                    ConnectTimeout = 15000,
-                    SyncTimeout = 10000,
-                    Ssl = false, // Try without SSL first
-                    ClientName = "ZenGardenApp"
+                    ConnectTimeout = int.Parse(_configuration["Redis:ConnectTimeout"] ?? "15000"),
+                    SyncTimeout = int.Parse(_configuration["Redis:SyncTimeout"] ?? "10000"),
+                    Ssl = useSSL,
+                    ClientName = _configuration["Redis:ClientName"] ?? "ZenGardenApp"
                 };
 
                 _logger.LogInformation("Attempting to connect to Redis at {host}:{port}", host, port);
