@@ -15,6 +15,8 @@ public class MappingProfile : Profile
             .AfterMap((src, dest) => dest.Password = PasswordHasher.HashPassword(src.Password));
         CreateMap<Item, ItemDto>()
             .ReverseMap();
+        CreateMap<BagItem, BagItemDto>()
+            .ReverseMap();
         CreateMap<CreateItemDetailDto, ItemDetail>();
         CreateMap<CreateItemDto, Item>().ReverseMap();
         CreateMap<ItemDetail, ItemDetailDto>()
