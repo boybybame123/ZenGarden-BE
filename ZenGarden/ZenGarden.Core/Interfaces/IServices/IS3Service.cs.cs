@@ -19,5 +19,4 @@ public interface IS3Service
     // URL operations
     Task<string> GetPreSignedUrlAsync(string key, int expiryInMinutes = 60);
     string GetPublicUrl(string key);
-    
 }

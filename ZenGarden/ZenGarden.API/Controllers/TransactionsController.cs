@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Domain.Entities;
-using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.API.Controllers;
 
@@ -27,5 +24,4 @@ public class TransactionsController(ITransactionsService transactionsService) : 
             return StatusCode(500, ex.Message);
         }
     }
-
 }

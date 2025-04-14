@@ -18,4 +18,6 @@ public interface ITaskService
     Task AutoPauseTasksAsync();
     Task ResetDailyTasksAsync();
     Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto);
+    Task ReorderTasksAsync(int userTreeId, List<ReorderTaskDto> reorderList);
+    Task WeeklyTaskPriorityResetAsync();
 }

@@ -63,6 +63,18 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
         }
     }
 
+    public async Task<BagItem?> GetEquippedItemAsync(int userId, ItemType itemType)
+    {
+        var bag = await _context.Bag
+            .Include(b => b.BagItem)
+            .ThenInclude(bi => bi.Item)
+            .ThenInclude(i => i.ItemDetail)
+            .FirstOrDefaultAsync(b => b.UserId == userId);
+
+        return bag?.BagItem
+            .FirstOrDefault(bi => bi.isEquipped && bi.Item?.Type == itemType);
+    }
+
     public async Task<bool> UnequipAllZeroQuantityItems()
     {
         var hasItems = await _context.BagItem
@@ -77,17 +89,5 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
             );
 
         return true;
-    }
-    
-    public async Task<BagItem?> GetEquippedItemAsync(int userId, ItemType itemType)
-    {
-        var bag = await _context.Bag
-            .Include(b => b.BagItem)
-            .ThenInclude(bi => bi.Item)
-            .ThenInclude(i => i.ItemDetail)
-            .FirstOrDefaultAsync(b => b.UserId == userId);
-
-        return bag?.BagItem
-            .FirstOrDefault(bi => bi.isEquipped && bi.Item?.Type == itemType);
     }
 }

@@ -23,6 +23,15 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
             .FirstOrDefaultAsync(b => b.BagItemId == itembagId);
     }
 
+    public async Task<List<BagItem>?> GetBagItemsByBagIdAsync(int bagId)
+    {
+        return await _context.BagItem
+            .Include(bi => bi.Item) // Ensure Item is loaded
+            .ThenInclude(i => i.ItemDetail) // Ensure ItemDetail is loaded
+            .Where(bi => bi.BagId == bagId)
+            .ToListAsync();
+    }
+
 
     public async Task CreateRangeAsync(IEnumerable<BagItem> items)
     {
@@ -39,15 +48,4 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
                 bi.Item != null &&
                 bi.Item.Type == ItemType.xp_boostTree);
     }
-
-    public async Task<List<BagItem>?> GetBagItemsByBagIdAsync(int bagId)
-    {
-        return await _context.BagItem
-            .Include(bi => bi.Item) // Ensure Item is loaded
-            .ThenInclude(i => i.ItemDetail) // Ensure ItemDetail is loaded
-            .Where(bi => bi.BagId == bagId)
-            .ToListAsync();
-    }
-
-
 }

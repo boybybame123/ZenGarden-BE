@@ -28,29 +28,32 @@ public class TradeTreeController(ITradeTreeService tradeTreeService) : Controlle
         var tradeHistory = await tradeTreeService.GetTradeHistoryByStatusAsync(status);
         return Ok(tradeHistory);
     }
+
     [HttpGet("history/by-id/{tradeId}")]
     public async Task<IActionResult> GetTradeHistoryById(int tradeId)
     {
         var tradeHistory = await tradeTreeService.GetTradeHistoryByIdAsync(tradeId);
         return Ok(tradeHistory);
     }
+
     [HttpDelete("cancel/{tradeId}")]
     public async Task<IActionResult> CancelTrade(int tradeId, int userA)
     {
         var result = await tradeTreeService.CancelTradeAsync(tradeId, userA);
         return Ok(result);
     }
+
     [HttpGet("history/all/{userId}")]
     public async Task<IActionResult> GetAllTradeHistoriesByOwnerId(int userId)
     {
         var tradeHistory = await tradeTreeService.GetAllTradeHistoriesByOwneridAsync(userId);
         return Ok(tradeHistory);
     }
+
     [HttpGet("history/not-owner/{userId}")]
     public async Task<IActionResult> GetAllTradeHistoriesByNotOwnerId(int userId)
     {
         var tradeHistory = await tradeTreeService.GetAllTradeHistoriesByNotOwnerIdAsync(userId);
         return Ok(tradeHistory);
     }
-
 }

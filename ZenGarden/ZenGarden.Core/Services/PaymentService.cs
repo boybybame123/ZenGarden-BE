@@ -22,7 +22,7 @@ public class PaymentService(
         var package = await packageRepository.GetByIdAsync(request.PackageId);
         if (package is not { IsActive: true })
             throw new Exception("Invalid package");
-        long amountInCents = (long)(package.Price * 100);
+        var amountInCents = (long)(package.Price * 100);
         // 2. Create PaymentIntent first
         var paymentIntentService = new PaymentIntentService(_stripeClient);
         var paymentIntentOptions = new PaymentIntentCreateOptions

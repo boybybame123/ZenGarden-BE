@@ -241,9 +241,8 @@ public class UserTreeService(
             || userTree.TreeStatus == TreeStatus.Seed)
             return;
 
-        var activeTask = await taskRepository.GetActiveTaskByUserTreeIdAsync(userTreeId);
-        if (activeTask == null ||
-            (activeTask.Status != TasksStatus.InProgress && activeTask.Status != TasksStatus.Paused))
+        var activeTask = await taskRepository.GetUserTaskInProgressAsync(userTreeId);
+        if (activeTask is not { Status: TasksStatus.InProgress })
             return;
 
         var lastUpdatedDate = userTree.UpdatedAt.Date;

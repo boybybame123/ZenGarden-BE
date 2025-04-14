@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.API.Middleware;
@@ -53,7 +54,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "task deleted successfully" });
     }
 
-    [HttpPut("Update-Task/{taskId:int}")]
+    [HttpPatch("Update-Task/{taskId:int}")]
     public async Task<IActionResult> UpdateTask(
         int taskId, [FromBody] UpdateTaskDto task)
     {
@@ -110,5 +111,17 @@ public class TaskController(ITaskService taskService) : ControllerBase
     {
         await _taskService.PauseTaskAsync(taskId);
         return Ok(new { message = "Task paused successfully." });
+    }
+
+    [HttpPost("reorder/{userTreeId:int}")]
+    public async Task<IActionResult> ReorderTasks(int userTreeId, [FromBody] List<ReorderTaskDto> reorderList,
+        [FromServices] IValidator<List<ReorderTaskDto>> reorderValidator)
+    {
+        var validationResult = await reorderValidator.ValidateAsync(reorderList);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
+        await taskService.ReorderTasksAsync(userTreeId, reorderList);
+        return Ok(new { message = "reorder task successfully." });
     }
 }
