@@ -287,6 +287,13 @@ public class UserTreeService(
         return userTrees;
     }
 
+
+    public async Task<List<UserTree>> GetAllUserTreesHavingMaxLevelByOwnerIdAsync(int userId)
+    {
+        var userTrees = await userTreeRepository.GetAllUserTreesHavingMaxLevelByOwnerIdAsync(userId);
+        return userTrees;
+    }
+
     private async Task<int?> AssignRandomFinalTreeIdAsync()
     {
         var treeIds = await treeRepository.GetAllTreeIdsAsync();
