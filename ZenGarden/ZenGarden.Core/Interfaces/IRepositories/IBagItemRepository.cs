@@ -6,6 +6,5 @@ public interface IBagItemRepository : IGenericRepository<BagItem>
 {
     Task<BagItem?> GetByBagAndItemAsync(int bagId, int itemId);
     Task<BagItem?> GetByIdAsync(int itembagId);
-    Task<List<BagItem>?>GetBagItemsByBagIdAsync(int bagId);
-
+    Task<List<BagItem>?> GetBagItemsByBagIdAsync(int bagId);
 }

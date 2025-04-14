@@ -60,7 +60,7 @@ public class PurchaseService(
         var item = await itemRepo.GetByIdAsync(itemId)
                    ?? throw new PurchaseException("Item not found.");
         var itemDetail = await itemDetailRepo.GetItemDetailsByItemId(itemId)
-                          ?? throw new PurchaseException("Item detail not found.");
+                         ?? throw new PurchaseException("Item detail not found.");
         if (item.Status != ItemStatus.Active)
             throw new PurchaseException("Item is not available for purchase.");
 
@@ -75,9 +75,7 @@ public class PurchaseService(
             var purchaseCount = await purchaseHistoryRepo.CountPurchaseThisMonth(userId, itemId, startOfMonth);
 
             if (purchaseCount >= limit)
-            {
                 throw new PurchaseException("You have reached the monthly purchase limit for this item.");
-            }
         }
 
         if (itemDetail.IsUnique != true) return (wallet, item);

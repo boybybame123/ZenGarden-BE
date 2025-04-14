@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
@@ -46,7 +47,8 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
             .Where(ut => ut.FinalTreeId == treeId && ut.TreeOwnerId == ownerId)
             .FirstOrDefaultAsync();
     }
-    public async Task<List<UserTree>> GetUserTreeByOwnerIdAsync( int ownerId)
+
+    public async Task<List<UserTree>> GetUserTreeByOwnerIdAsync(int ownerId)
     {
         return await _context.UserTree
             .Include(ut => ut.FinalTree)
@@ -54,5 +56,10 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
             .ToListAsync();
     }
 
-
+    public async Task<List<UserTree>> GetAllActiveUserTreesAsync()
+    {
+        return await _context.UserTree
+            .Where(ut => ut.TreeStatus == TreeStatus.Seed == true)
+            .ToListAsync();
+    }
 }

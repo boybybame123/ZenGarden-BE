@@ -18,14 +18,15 @@ public class TradeHistoryRepository : GenericRepository<TradeHistory>, ITradeHis
     public async Task<bool> IsTreeInPendingTradeAsync(int userTreeId)
     {
         return await _context.TradeHistory
-            .AnyAsync(t => (t.TreeOwnerAid == userTreeId)
-                        && t.Status == TradeStatus.Pending);
+            .AnyAsync(t => t.TreeOwnerAid == userTreeId
+                           && t.Status == TradeStatus.Pending);
     }
+
     public async Task<List<TradeHistory>> GetAllTradeHistoriesbyStatutsAsync(int Statuts)
     {
         return await _context.TradeHistory
-    .Where(th => th.Status == (TradeStatus)Statuts)
-    .ToListAsync();
+            .Where(th => th.Status == (TradeStatus)Statuts)
+            .ToListAsync();
     }
 
     public async Task<List<TradeHistory>> GetAllTradeHistoriesByOwneridAsync(int ownerId)
@@ -34,11 +35,11 @@ public class TradeHistoryRepository : GenericRepository<TradeHistory>, ITradeHis
             .Where(th => th.TreeOwnerAid == ownerId)
             .ToListAsync();
     }
+
     public async Task<List<TradeHistory>> GetAllTradeHistoriesByNotOwneridAsync(int userId)
     {
         return await _context.TradeHistory
             .Where(th => th.TreeOwnerAid != userId)
             .ToListAsync();
-
     }
 }

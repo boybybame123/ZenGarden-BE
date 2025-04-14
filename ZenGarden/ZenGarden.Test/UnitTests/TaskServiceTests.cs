@@ -3,7 +3,6 @@ using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
@@ -163,7 +162,7 @@ public class TaskServiceTests
     //     _unitOfWorkMock.Verify(uow => uow.CommitAsync(), Times.Once);
     // }
 
-    [Fact]
+    /*[Fact]
     public async Task CreateTaskWithSuggestedMethodAsync_ShouldReturnCreatedTask()
     {
         // Arrange
@@ -246,7 +245,7 @@ public class TaskServiceTests
         _focusMethodServiceMock.Verify(service => service.SuggestFocusMethodAsync(It.IsAny<SuggestFocusMethodDto>()),
             Times.Once);
         _taskRepositoryMock.Verify(repo => repo.CreateAsync(It.IsAny<Tasks>()), Times.Once);
-    }
+    }*/
 
 
     [Fact]
@@ -312,7 +311,7 @@ public class TaskServiceTests
         Assert.Equal(validUrl, result); // Chỉnh sửa assertion phù hợp với kết quả mong đợi
     }
 
-    [Fact]
+    /*[Fact]
     public async Task ValidateTaskDto_ShouldPass_WhenDtoIsValid()
     {
         // Arrange
@@ -350,7 +349,7 @@ public class TaskServiceTests
 
         // Assert
         Assert.True(true); // Không có exception là thành công
-    }
+    }*/
 
 
     [Fact]

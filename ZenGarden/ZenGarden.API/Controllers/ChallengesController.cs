@@ -126,6 +126,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
 
         return Ok(progressDto);
     }
+
     [HttpPut("change-status/{challengeId:int}")]
     [Authorize]
     public async Task<IActionResult> ChangeStatusChallenge(int challengeId)

@@ -4,6 +4,7 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public  class NotificationRepository(ZenGardenContext context) : GenericRepository<Notification>(context), INotificationRepository
+public class NotificationRepository(ZenGardenContext context)
+    : GenericRepository<Notification>(context), INotificationRepository
 {
 }
