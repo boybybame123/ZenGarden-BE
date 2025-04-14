@@ -64,8 +64,8 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success",
-            CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel",
+            SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success/{paymentIntent.Id}",
+            CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel/{paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
             {
                 { "user_id", request.UserId.ToString() },
