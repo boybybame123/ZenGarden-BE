@@ -158,4 +158,10 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         var activeChallenges = await _challengeService.GetChallengesOngoing();
         return Ok(activeChallenges);
     }
+    [HttpGet("GetNotStartedChallenges")]
+    public async Task<IActionResult> GetNotStartedChallenges()
+    {
+        var notStartedChallenges = await _challengeService.GetChallengesNotStarted();
+        return Ok(notStartedChallenges);
+    }
 }
