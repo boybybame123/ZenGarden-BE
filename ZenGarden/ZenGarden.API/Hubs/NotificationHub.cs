@@ -9,6 +9,7 @@ public class NotificationHub : Hub
     // Ví dụ hàm đơn giản nhận tin nhắn từ client (có thể mở rộng)
     private static readonly ConcurrentDictionary<string, string> Connections = new();
 
+
     public override Task OnConnectedAsync()
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

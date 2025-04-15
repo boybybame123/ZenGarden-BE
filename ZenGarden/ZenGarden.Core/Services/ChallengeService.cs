@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using System.Text.Json;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -18,6 +19,7 @@ public class ChallengeService(
     IWalletRepository walletRepository,
     IUserRepository userRepository,
     ITaskService taskService,
+    IRedisService redisService,
     IMapper mapper)
     : IChallengeService
 {
@@ -355,4 +357,22 @@ public class ChallengeService(
         if (userTree == null || userTree.UserId != userId)
             throw new ArgumentException("Invalid tree selection!");
     }
+
+
+
+    public async Task NotifyOngoingChallenges()
+    {
+        var ongoingChallenges = await challengeRepository.GetOngoingChallengesAsync();
+        var ongoingChallengesDto = mapper.Map<List<ChallengeDto>>(ongoingChallenges);
+        var serializedChallenges = JsonSerializer.Serialize(ongoingChallengesDto);
+        await redisService.SetStringAsync("active_challenges", serializedChallenges, TimeSpan.FromMinutes(10));
+    }
+
+    public async Task<List<ChallengeDto>> GetChallengesOngoing()
+    {
+        var ongoingChallenges = await challengeRepository.GetOngoingChallengesAsync();
+        return mapper.Map<List<ChallengeDto>>(ongoingChallenges);
+    }
+
+
 }
