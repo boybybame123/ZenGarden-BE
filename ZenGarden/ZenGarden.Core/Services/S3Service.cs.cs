@@ -148,8 +148,8 @@ public class S3Service : IS3Service
         if (file == null || file.Length == 0)
             throw new ArgumentException("File is empty");
 
-        // Tạo tên file ngẫu nhiên để tránh trùng lặp
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        // Sử dụng tên file gốc để có thể ghi đè
+        var fileName = Path.GetFileName(file.FileName);
         var key = string.IsNullOrEmpty(folderName)
             ? fileName
             : $"{folderName.Trim('/')}/{fileName}";
@@ -172,6 +172,7 @@ public class S3Service : IS3Service
 
         return $"{_baseUrl}/{key}";
     }
+
 
 
 

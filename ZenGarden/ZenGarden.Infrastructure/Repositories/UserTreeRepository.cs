@@ -59,7 +59,21 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
     public async Task<List<UserTree>> GetAllActiveUserTreesAsync()
     {
         return await _context.UserTree
-            .Where(ut => ut.TreeStatus == TreeStatus.Seed == true)
+            .Where(ut => ut.TreeStatus == TreeStatus.Seed)
+            .ToListAsync();
+    }
+
+    public async Task<List<UserTree>> GetAllMaxLevelUserTreesAsync()
+    {
+        return await _context.UserTree
+            .Where(ut => ut.IsMaxLevel)
+            .ToListAsync();
+    }
+    public async Task<List<UserTree>> GetAllUserTreesHavingMaxLevelByOwnerIdAsync(int userId)
+    {
+        return await _context.UserTree
+            .Where(ut => ut.IsMaxLevel)
+            .Where(ut => ut.TreeOwnerId == userId)
             .ToListAsync();
     }
 }
