@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ZenGarden.API.Filters;
 using ZenGarden.API.Hubs;
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Services;
@@ -94,7 +95,7 @@ public partial class Program
         builder.Services.AddScoped<IUseItemService, UseItemService>();
         builder.Services.AddScoped<ITransactionsService, TransactionsService>();
         builder.Services.AddScoped<IBagItemService, BagItemService>();
-        builder.Services.AddScoped<IBagItemService,BagItemService>();
+        builder.Services.AddScoped<IBagItemService, BagItemService>();
         builder.Services.AddScoped<IRedisService, RedisService>();
         builder.Services.AddScoped<PaymentService>();
         builder.Services.AddScoped<ZenGardenContext>();
@@ -235,6 +236,7 @@ public partial class Program
         builder.Services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
+            c.OperationFilter<SwaggerFileOperationFilter>();
 
             c.MapType<FileObject>(() => new OpenApiSchema
             {
@@ -302,6 +304,7 @@ public partial class Program
         builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
         builder.Services.AddHostedService<DailyTaskResetJob>();
+        builder.Services.AddHostedService<HandleExpiredChallengesJob>();
 
         // Cấu hình logging
         builder.Logging.AddConsole();
