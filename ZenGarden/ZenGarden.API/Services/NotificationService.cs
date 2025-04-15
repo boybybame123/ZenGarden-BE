@@ -17,8 +17,9 @@ public class NotificationService(
         var notification = new Notification
         {
             UserId = userId,
-
-            Content = $"{title}: {content}",
+            Title = title,
+            Content = content,
+            Type = "system",
             CreatedAt = DateTime.UtcNow
         };
 

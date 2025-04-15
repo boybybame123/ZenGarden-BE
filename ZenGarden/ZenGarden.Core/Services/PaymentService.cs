@@ -1,6 +1,7 @@
 ﻿using Stripe;
 using Stripe.Checkout;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -10,6 +11,7 @@ namespace ZenGarden.Core.Services;
 public class PaymentService(
     ITransactionsRepository transactionRepository,
     IWalletRepository walletRepository,
+    INotificationService notificationService,
     IPackageRepository packageRepository,
     IUnitOfWork unitOfWork)
 {
@@ -113,6 +115,12 @@ public class PaymentService(
     public async Task HandlePaymentSucceeded(string paymentIntentId)
     {
         var transaction = await transactionRepository.FindByRefAsync(paymentIntentId);
+        if (transaction is null)
+            throw new Exception("Transaction not found");
+        if (transaction.UserId == null)
+            throw new Exception("User not found");
+
+        // Check if the transaction is pending
         if (transaction is { Status: TransactionStatus.Pending })
         {
             transaction.Status = TransactionStatus.Completed;
@@ -131,16 +139,31 @@ public class PaymentService(
             transactionRepository.Update(transaction);
             await unitOfWork.CommitAsync();
         }
+        else
+        {
+            throw new Exception("Transaction not found or already completed");
+        }
+        await notificationService.PushNotificationAsync(transaction.UserId.Value, "Payment", "Success");
     }
 
     public async Task HandlePaymentCanceled(string paymentIntentId)
     {
         var transaction = await transactionRepository.FindByRefAsync(paymentIntentId);
+        if (transaction is null)
+            throw new Exception("Transaction not found");
+        if (transaction.UserId == null)
+            throw new Exception("User not found");
+
         if (transaction is { Status: TransactionStatus.Pending })
         {
             transaction.Status = TransactionStatus.Failed;
             transactionRepository.Update(transaction);
             await unitOfWork.CommitAsync();
+            await notificationService.PushNotificationAsync(transaction.UserId.Value, "Payment", "Canceled");
+        }
+        else
+        {
+            throw new Exception("Transaction not found or already completed");
         }
     }
 }

@@ -9,6 +9,7 @@ public class UseItemService(
     IBagItemRepository bagItemRepository,
     IItemDetailRepository itemDetailRepository,
     IBagRepository bagRepository,
+    INotificationService notificationService,
     IUnitOfWork unitOfWork
 ) : IUseItemService
 {
@@ -81,7 +82,12 @@ public class UseItemService(
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
 
-        return "Sử dụng item thành công";
+        
+        await notificationService.PushNotificationAsync(userId, "Use Item", $"You have successfully used {item.Item.Name} item");
+
+
+
+        return "Use Item success";
     }
 
     public async Task UseItemXpBoostTree(int userId)
