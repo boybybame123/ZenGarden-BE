@@ -142,6 +142,7 @@ public class TaskService(
     {
         var existingTask = await taskRepository.GetByIdAsync(taskId)
                            ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ?? throw new InvalidOperationException("UserId is null.");
 
         if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
             throw new InvalidOperationException(
@@ -156,8 +157,7 @@ public class TaskService(
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
             existingTask.TaskNote = updateTaskDto.TaskNote;
 
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
-            existingTask.TaskResult = updateTaskDto.TaskResult;
+        existingTask.TaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult,userid);
 
         if (updateTaskDto.TotalDuration.HasValue)
             existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
@@ -183,12 +183,16 @@ public class TaskService(
         if (updateTaskDto.EndDate.HasValue)
             existingTask.EndDate = updateTaskDto.EndDate.Value;
 
-        // Xử lý cập nhật file nếu có
-        if (updateTaskDto.TaskFile != null)
+        if (updateTaskDto.UserTreeId.HasValue)
         {
-            var uploadedFileUrl = await s3Service.UploadFileAsync(updateTaskDto.TaskFile);
-            if (!string.IsNullOrWhiteSpace(uploadedFileUrl))
-                existingTask.TaskResult = uploadedFileUrl;
+            var newUserTree = await userTreeRepository.GetByIdAsync(updateTaskDto.UserTreeId.Value)
+                              ?? throw new KeyNotFoundException(
+                                  $"UserTree with ID {updateTaskDto.UserTreeId.Value} not found.");
+
+            if (existingTask.UserTree != null && existingTask.UserTree.UserId != newUserTree.UserId)
+                throw new InvalidOperationException("Cannot assign a UserTree that belongs to a different user.");
+
+            existingTask.UserTreeId = updateTaskDto.UserTreeId.Value;
         }
 
         existingTask.UpdatedAt = DateTime.UtcNow;
@@ -265,6 +269,23 @@ public class TaskService(
 
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+
+        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ?? throw new InvalidOperationException("UserId is null.");
+
+        if (task.TaskTypeId == 4)
+        {
+            // Kiểm tra bắt buộc có taskNote và taskResult
+            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
+                throw new InvalidOperationException("TaskNote is required for challenge tasks.");
+
+            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
+                throw new InvalidOperationException("TaskResult is required for challenge tasks.");
+
+            // Cập nhật taskNote và taskResult vào task
+            task.TaskNote = completeTaskDto.TaskNote;
+            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult,userid);
+        }
 
         if (await IsDailyTaskAlreadyCompleted(task))
             throw new InvalidOperationException("You have already completed this daily task today.");
@@ -536,10 +557,16 @@ public class TaskService(
             );
     }
 
-    public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
+
+
+
+
+
+
+    public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl, int userid)
     {
         if (taskResultFile != null)
-            return await s3Service.UploadFileAsync(taskResultFile);
+            return await s3Service.UploadFileToTaskUserFolderAsync(taskResultFile, userid);
 
         if (string.IsNullOrWhiteSpace(taskResultUrl)) return string.Empty;
         if (Uri.IsWellFormedUriString(taskResultUrl, UriKind.Absolute))

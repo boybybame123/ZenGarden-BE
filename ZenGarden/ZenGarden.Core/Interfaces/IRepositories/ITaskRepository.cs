@@ -20,4 +20,5 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<int> GetNextPriorityForTreeAsync(int userTreeId);
     Task<List<Tasks>> GetTasksByIdsAsync(List<int> taskIds);
     Task<List<Tasks>> GetActiveTasksByUserTreeIdAsync(int userTreeId);
+    Task<int?> GetUserIdByTaskIdAsync(int taskId);
 }

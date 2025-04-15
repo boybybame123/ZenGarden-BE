@@ -6,4 +6,5 @@ public class UserChallengeRankingDto
     public string UserName { get; set; } = string.Empty;
     public int Progress { get; set; }
     public int CompletedTasks { get; set; }
+    public bool IsWinner { get; set; }
 }

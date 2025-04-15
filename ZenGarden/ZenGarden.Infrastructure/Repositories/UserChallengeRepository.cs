@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
@@ -13,6 +14,8 @@ public class UserChallengeRepository(ZenGardenContext context)
     public async Task<UserChallenge?> GetUserChallengeAsync(int userId, int challengeId)
     {
         return await _context.UserChallenges
+            .Include(uc => uc.User)
+            .Include(uc => uc.Challenge)
             .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == challengeId);
     }
 
@@ -26,7 +29,7 @@ public class UserChallengeRepository(ZenGardenContext context)
     public async Task<List<UserChallenge>> GetRankedUserChallengesAsync(int challengeId)
     {
         return await _context.UserChallenges
-            .Where(uc => uc.ChallengeId == challengeId)
+            .Where(uc => uc.ChallengeId == challengeId && uc.ChallengeRole != UserChallengeRole.Organizer)
             .Include(uc => uc.User)
             .OrderByDescending(uc => uc.Progress)
             .ThenByDescending(uc => uc.CompletedTasks)

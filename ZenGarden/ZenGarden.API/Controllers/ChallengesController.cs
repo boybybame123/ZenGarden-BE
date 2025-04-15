@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZenGarden.API.Middleware;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 
@@ -127,8 +128,8 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         return Ok(progressDto);
     }
 
-    [HttpPut("change-status/{challengeId:int}")]
     [Authorize]
+    [HttpPut("change-status/{challengeId:int}")]
     public async Task<IActionResult> ChangeStatusChallenge(int challengeId)
     {
         var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -136,5 +137,19 @@ public class ChallengesController(IChallengeService challengeService) : Controll
             return Unauthorized();
         var result = await _challengeService.ChangeStatusChallenge(userId, challengeId);
         return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("select-winner/{challengeId:int}")]
+    public async Task<IActionResult> SelectWinner(int challengeId, [FromBody] SelectWinnerDto dto)
+    {
+        var organizerId = HttpContext.GetUserId();
+        if (!organizerId.HasValue) return Unauthorized();
+
+        var result =
+            await _challengeService.SelectChallengeWinnerAsync(organizerId.Value, challengeId, dto.WinnerUserId);
+        return result
+            ? Ok(new { message = "Winner selected successfully." })
+            : BadRequest(new { message = "Failed to select winner." });
     }
 }

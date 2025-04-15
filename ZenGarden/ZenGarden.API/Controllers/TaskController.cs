@@ -56,7 +56,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
 
     [HttpPatch("Update-Task/{taskId:int}")]
     public async Task<IActionResult> UpdateTask(
-        int taskId, [FromBody] UpdateTaskDto task)
+        int taskId, [FromForm] UpdateTaskDto task)
     {
         await _taskService.UpdateTaskAsync(taskId, task);
         return Ok(new { message = "Task updated successfully" });
@@ -82,7 +82,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPost("complete-task/{taskId:int}")]
-    public async Task<IActionResult> CompleteTask(int taskId, [FromBody] CompleteTaskDto completeTaskDto)
+    public async Task<IActionResult> CompleteTask(int taskId, [FromForm] CompleteTaskDto completeTaskDto)
     {
         var xp = await _taskService.CompleteTaskAsync(taskId, completeTaskDto);
         return Ok(new
@@ -123,5 +123,12 @@ public class TaskController(ITaskService taskService) : ControllerBase
 
         await taskService.ReorderTasksAsync(userTreeId, reorderList);
         return Ok(new { message = "reorder task successfully." });
+    }
+
+    [HttpPost("reset-weekly-priorities")]
+    public async Task<IActionResult> ResetWeeklyTaskPriorities()
+    {
+        await _taskService.WeeklyTaskPriorityResetAsync();
+        return Ok(new { message = "Weekly task priorities reset successfully." });
     }
 }
