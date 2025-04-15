@@ -8,4 +8,5 @@ public interface IChallengeRepository : IGenericRepository<Challenge>
 
     Task<Challenge?> GetByIdChallengeAsync(int id);
     Task<List<Challenge>> GetExpiredInProgressChallengesAsync(DateTime currentTime);
+    Task<List<Challenge>> GetOngoingChallengesAsync();
 }

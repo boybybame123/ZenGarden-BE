@@ -40,7 +40,8 @@ public class NotificationService(
     {
         var notification = new Notification
         {
-            Content = $"{title}: {content}",
+            Title = title,
+            Content = content,
             CreatedAt = DateTime.UtcNow
         };
 

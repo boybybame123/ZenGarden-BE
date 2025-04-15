@@ -17,4 +17,7 @@ public interface IChallengeService
     Task<string> ChangeStatusChallenge(int userId, int challengeId);
     Task<bool> SelectChallengeWinnerAsync(int organizerId, int challengeId, int winnerUserId);
     Task HandleExpiredChallengesAsync();
+    Task NotifyOngoingChallenges();
+    Task<List<ChallengeDto>> GetChallengesOngoing();
+
 }

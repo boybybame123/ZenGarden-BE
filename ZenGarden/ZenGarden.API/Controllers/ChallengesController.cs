@@ -152,4 +152,10 @@ public class ChallengesController(IChallengeService challengeService) : Controll
             ? Ok(new { message = "Winner selected successfully." })
             : BadRequest(new { message = "Failed to select winner." });
     }
+    [HttpGet("GetActiveChallenges")]
+    public async Task<IActionResult> GetActiveChallenges()
+    {
+        var activeChallenges = await _challengeService.GetChallengesOngoing();
+        return Ok(activeChallenges);
+    }
 }
