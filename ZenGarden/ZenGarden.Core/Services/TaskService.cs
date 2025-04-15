@@ -142,6 +142,7 @@ public class TaskService(
     {
         var existingTask = await taskRepository.GetByIdAsync(taskId)
                            ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ?? throw new InvalidOperationException("UserId is null.");
 
         if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
             throw new InvalidOperationException(
@@ -156,7 +157,7 @@ public class TaskService(
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
             existingTask.TaskNote = updateTaskDto.TaskNote;
 
-        existingTask.TaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult);
+        existingTask.TaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult,userid);
 
         if (updateTaskDto.TotalDuration.HasValue)
             existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
@@ -268,6 +269,10 @@ public class TaskService(
 
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+
+        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ?? throw new InvalidOperationException("UserId is null.");
+
         if (task.TaskTypeId == 4)
         {
             // Kiểm tra bắt buộc có taskNote và taskResult
@@ -279,7 +284,7 @@ public class TaskService(
 
             // Cập nhật taskNote và taskResult vào task
             task.TaskNote = completeTaskDto.TaskNote;
-            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult);
+            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult,userid);
         }
 
         if (await IsDailyTaskAlreadyCompleted(task))
@@ -552,10 +557,16 @@ public class TaskService(
             );
     }
 
-    public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl)
+
+
+
+
+
+
+    public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl, int userid)
     {
         if (taskResultFile != null)
-            return await s3Service.UploadFileAsync(taskResultFile);
+            return await s3Service.UploadFileToTaskUserFolderAsync(taskResultFile, userid);
 
         if (string.IsNullOrWhiteSpace(taskResultUrl)) return string.Empty;
         if (Uri.IsWellFormedUriString(taskResultUrl, UriKind.Absolute))

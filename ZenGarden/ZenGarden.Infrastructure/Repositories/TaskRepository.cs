@@ -175,4 +175,13 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
                         t.Status != TasksStatus.Canceled)
             .ToListAsync();
     }
+    public async Task<int?> GetUserIdByTaskIdAsync(int taskId)
+    {
+        var task = await _context.Tasks
+            .Include(t => t.UserTree)
+            .FirstOrDefaultAsync(t => t.TaskId == taskId);
+
+        return task?.UserTree?.UserId;
+    }
+    
 }
