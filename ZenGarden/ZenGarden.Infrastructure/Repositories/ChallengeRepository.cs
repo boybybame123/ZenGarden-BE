@@ -48,6 +48,13 @@ public class ChallengeRepository(ZenGardenContext context)
             .Where(c => c.Status == ChallengeStatus.Active && c.StartDate <= now && c.EndDate >= now)
             .ToListAsync();
     }
+    public async Task<List<Challenge>> GetChallengesNotStartedAsync()
+    {
+        var now = DateTime.UtcNow;
+        return await _context.Challenge
+            .Where(c => c.Status == ChallengeStatus.Active && c.StartDate > now)
+            .ToListAsync();
+    }
 
 
 

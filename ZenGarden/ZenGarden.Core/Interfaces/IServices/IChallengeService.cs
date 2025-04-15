@@ -19,5 +19,6 @@ public interface IChallengeService
     Task HandleExpiredChallengesAsync();
     Task NotifyOngoingChallenges();
     Task<List<ChallengeDto>> GetChallengesOngoing();
+    Task<List<ChallengeDto>> GetChallengesNotStarted();
 
 }

@@ -373,6 +373,10 @@ public class ChallengeService(
         var ongoingChallenges = await challengeRepository.GetOngoingChallengesAsync();
         return mapper.Map<List<ChallengeDto>>(ongoingChallenges);
     }
-
+    public async Task<List<ChallengeDto>> GetChallengesNotStarted()
+    {
+        var notStartedChallenges = await challengeRepository.GetChallengesNotStartedAsync();
+        return mapper.Map<List<ChallengeDto>>(notStartedChallenges);
+    }
 
 }
