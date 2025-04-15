@@ -25,6 +25,7 @@ public class TaskService(
     IUserChallengeService userChallengeService,
     IChallengeTaskRepository challengeTaskRepository,
     IS3Service s3Service,
+    INotificationService notificationService,
     IMapper mapper,
     IBagRepository bagRepository,
     IUseItemService useItemService,
@@ -343,6 +344,9 @@ public class TaskService(
                 await transaction.CommitAsync();
 
                 await UpdateChallengeProgress(task);
+
+
+                await notificationService.PushNotificationAsync(userid, "Task Completed", $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
             }
             catch (Exception ex)
             {
@@ -359,6 +363,10 @@ public class TaskService(
             await unitOfWork.CommitAsync();
 
             await UpdateChallengeProgress(task);
+
+            await notificationService.PushNotificationAsync(userid, "Task Completed", $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
+
+
         }
 
         return xpEarned;

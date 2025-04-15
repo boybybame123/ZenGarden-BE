@@ -12,6 +12,7 @@ public class TradeTreeService(
     ITreeRepository treeRepository,
     IUserTreeRepository userTreeRepository,
     IWalletRepository walletRepository,
+    INotificationService notificationService,
     IUnitOfWork unitOfWork)
     : ITradeTreeService
 {
@@ -70,6 +71,7 @@ public class TradeTreeService(
 
     public async Task<string> AcceptTradeAsync(int tradeId, int recipientId, int recipientTreeId)
     {
+
         // Validate trade exists and is pending
         var trade = await tradeHistoryService.GetTradeHistoryByIdAsync(tradeId)
                     ?? throw new Exception("Trade not found");
@@ -98,6 +100,10 @@ public class TradeTreeService(
         wallet.Balance -= trade.TradeFee;
         walletRepository.Update(wallet);
         await unitOfWork.CommitAsync();
+        // Notify both users
+        await notificationService.PushNotificationAsync(trade.TreeOwnerAid ?? throw new InvalidOperationException("TreeOwnerAid is null"), "Trade Accepted", "Your trade has been accepted.");
+        await notificationService.PushNotificationAsync(trade.TreeOwnerBid ?? throw new InvalidOperationException("TreeOwnerBid is null"), "Trade Accepted", "Your trade has been accepted.");
+
         return "Trade accepted successfully. Ownership has been transferred.";
     }
 

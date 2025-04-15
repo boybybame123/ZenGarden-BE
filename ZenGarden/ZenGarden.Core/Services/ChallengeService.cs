@@ -10,6 +10,7 @@ namespace ZenGarden.Core.Services;
 public class ChallengeService(
     IChallengeRepository challengeRepository,
     IUnitOfWork unitOfWork,
+    INotificationService notificationService,
     IUserChallengeRepository userChallengeRepository,
     ITaskRepository taskRepository,
     IChallengeTaskRepository challengeTaskRepository,
@@ -305,6 +306,8 @@ public class ChallengeService(
 
         await userChallengeRepository.UpdateRangeAsync(allUserChallenges);
         await unitOfWork.CommitAsync();
+
+        await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner", "Congratulations! You have been selected as the winner of the challenge.");
 
         return true;
     }
