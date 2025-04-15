@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using ZenGarden.Core.Interfaces.IServices;
@@ -7,24 +8,22 @@ namespace ZenGarden.Core.Services;
 
 public class RedisService : IRedisService, IDisposable
 {
-    private readonly IConfiguration _configuration;
     private readonly IDatabase _database;
     private readonly ILogger<RedisService> _logger;
     private readonly ConnectionMultiplexer _redis;
 
     public RedisService(IConfiguration configuration, ILogger<RedisService> logger)
     {
-        _configuration = configuration;
         _logger = logger;
 
         try
         {
             // Lấy thông tin kết nối từ appsettings.json
-            var host = _configuration["Redis:Host"];
-            var portStr = _configuration["Redis:Port"];
-            var password = _configuration["Redis:Password"];
-            var user = _configuration["Redis:User"] ?? "default";
-            var useSSL = bool.Parse(_configuration["Redis:UseSSL"] ?? "false");
+            var host = configuration["Redis:Host"];
+            var portStr = configuration["Redis:Port"];
+            var password = configuration["Redis:Password"];
+            var user = configuration["Redis:User"] ?? "default";
+            var useSsl = bool.Parse(configuration["Redis:UseSSL"] ?? "false");
 
             // Kiểm tra thông tin cấu hình
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(portStr) || string.IsNullOrEmpty(password))
@@ -40,10 +39,10 @@ public class RedisService : IRedisService, IDisposable
                 Password = password,
                 User = user,
                 AbortOnConnectFail = false,
-                ConnectTimeout = int.Parse(_configuration["Redis:ConnectTimeout"] ?? "15000"),
-                SyncTimeout = int.Parse(_configuration["Redis:SyncTimeout"] ?? "10000"),
-                Ssl = useSSL,
-                ClientName = _configuration["Redis:ClientName"] ?? "ZenGardenApp"
+                ConnectTimeout = int.Parse(configuration["Redis:ConnectTimeout"] ?? "15000"),
+                SyncTimeout = int.Parse(configuration["Redis:SyncTimeout"] ?? "10000"),
+                Ssl = useSsl,
+                ClientName = configuration["Redis:ClientName"] ?? "ZenGardenApp"
             };
 
             _logger.LogInformation("Attempting to connect to Redis at {host}:{port}", host, port);
@@ -113,31 +112,34 @@ public class RedisService : IRedisService, IDisposable
     public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> getDataFunc, TimeSpan? expiry = null)
     {
         var cached = await _database.StringGetAsync(key);
-        if (!cached.IsNullOrEmpty) 
+        if (!cached.IsNullOrEmpty)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<T>(cached);
+            var cachedString = cached.ToString();
+            return JsonSerializer.Deserialize<T>(cachedString)!;
         }
-            var data = await getDataFunc();
-            var json = System.Text.Json.JsonSerializer.Serialize(data);
-            await _database.StringSetAsync(key, json, expiry);
-            return data;
-        }
+        var data = await getDataFunc();
+        var json = JsonSerializer.Serialize(data);
+        await _database.StringSetAsync(key, json, expiry);
+        return data;
+    }
 
     public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null)
     {
-        var json = System.Text.Json.JsonSerializer.Serialize(value);
+        var json = JsonSerializer.Serialize(value);
         return await _database.StringSetAsync(key, json, expiry);
     }
 
     public async Task<T?> GetAsync<T>(string key)
     {
-        var json = await _database.StringGetAsync(key);
-        if (json.IsNullOrEmpty) return default;
-        return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+        var redisValue = await _database.StringGetAsync(key);
+        if (redisValue.IsNullOrEmpty) return default;
+        var jsonString = redisValue.ToString(); 
+        return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
     }
 
-    public void Dispose() 
+    public void Dispose()
     {
-        _redis?.Dispose();
+        _redis.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
