@@ -252,7 +252,8 @@ public class ChallengeService(
             UserId = uc.UserId,
             UserName = uc.User?.UserName ?? "Unknown",
             Progress = uc.Progress,
-            CompletedTasks = uc.CompletedTasks
+            CompletedTasks = uc.CompletedTasks,
+            IsWinner = uc.IsWinner
         }).ToList();
     }
 
@@ -282,6 +283,61 @@ public class ChallengeService(
         challengeRepository.Update(challenge);
         await unitOfWork.CommitAsync();
         return "Challenge status changed to Active";
+    }
+
+    public async Task<bool> SelectChallengeWinnerAsync(int organizerId, int challengeId, int winnerUserId)
+    {
+        var organizer = await userChallengeRepository.GetUserChallengeAsync(organizerId, challengeId);
+        if (organizer is not { ChallengeRole: UserChallengeRole.Organizer })
+            throw new UnauthorizedAccessException("Only the organizer can select the winner.");
+
+        var winner = await userChallengeRepository.GetUserChallengeAsync(winnerUserId, challengeId);
+        if (winner is not { Status: UserChallengeStatus.Completed })
+            throw new InvalidOperationException("Selected user is not a valid participant.");
+
+        var allUserChallenges = await userChallengeRepository.GetAllUsersInChallengeAsync(challengeId);
+
+        foreach (var uc in allUserChallenges)
+        {
+            uc.IsWinner = uc.UserId == winnerUserId;
+            uc.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await userChallengeRepository.UpdateRangeAsync(allUserChallenges);
+        await unitOfWork.CommitAsync();
+
+        return true;
+    }
+
+    public async Task HandleExpiredChallengesAsync()
+    {
+        var now = DateTime.UtcNow;
+
+        var challenges = await challengeRepository.GetExpiredInProgressChallengesAsync(now);
+
+        foreach (var challenge in challenges)
+        {
+            var userChallenges = await userChallengeRepository.GetAllUsersInChallengeAsync(challenge.ChallengeId);
+
+            foreach (var uc in userChallenges)
+                if (uc.ChallengeRole == UserChallengeRole.Organizer)
+                {
+                    uc.UpdatedAt = DateTime.UtcNow;
+                }
+                else if (uc is { Status: UserChallengeStatus.InProgress, Progress: < 100 })
+                {
+                    uc.Status = UserChallengeStatus.Failed;
+                    uc.UpdatedAt = DateTime.UtcNow;
+                }
+
+            challenge.Status = ChallengeStatus.Expired;
+            challenge.UpdatedAt = DateTime.UtcNow;
+
+            await userChallengeRepository.UpdateRangeAsync(userChallenges);
+            challengeRepository.Update(challenge);
+        }
+
+        await unitOfWork.CommitAsync();
     }
 
     private async Task ValidateJoinChallenge(Challenge challenge, int userId, JoinChallengeDto joinChallengeDto)

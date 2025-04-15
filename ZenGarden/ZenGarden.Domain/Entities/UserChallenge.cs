@@ -9,6 +9,7 @@ public class UserChallenge
     public int UserId { get; set; }
     public int Progress { get; set; }
     public int CompletedTasks { get; set; }
+    public bool IsWinner { get; set; }
     public UserChallengeRole ChallengeRole { get; set; } = 0;
     public UserChallengeStatus Status { get; set; }
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;

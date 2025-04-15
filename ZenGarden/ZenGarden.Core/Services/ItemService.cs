@@ -11,10 +11,10 @@ namespace ZenGarden.Core.Services;
 public class ItemService : IItemService
 {
     private readonly IItemRepository _itemRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<ItemService> _logger;
     private readonly IMapper _mapper;
     private readonly IRedisService _redisService;
-    private readonly ILogger<ItemService> _logger;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ItemService(
         IItemRepository itemRepository,
@@ -34,10 +34,7 @@ public class ItemService : IItemService
     {
         const string cacheKey = "all_items";
         var cachedItems = await _redisService.GetAsync<List<ItemDto>>(cacheKey);
-        if (cachedItems != null)
-        {
-            return cachedItems;
-        }
+        if (cachedItems != null) return cachedItems;
 
         var items = await _itemRepository.GetAllItemAsync();
         var itemDtos = _mapper.Map<List<ItemDto>>(items);
@@ -50,10 +47,7 @@ public class ItemService : IItemService
     {
         var cacheKey = $"item_{itemId}";
         var cachedItem = await _redisService.GetAsync<Item>(cacheKey);
-        if (cachedItem != null)
-        {
-            return cachedItem;
-        }
+        if (cachedItem != null) return cachedItem;
 
         var item = await _itemRepository.GetItemByIdAsync(itemId);
         if (item == null)

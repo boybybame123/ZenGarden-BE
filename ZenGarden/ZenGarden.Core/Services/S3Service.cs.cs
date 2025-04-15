@@ -77,6 +77,19 @@ public class S3Service : IS3Service
             .ToList();
     }
 
+    public async Task<string> UploadFileToTaskUserFolderAsync(IFormFile file, int userId)
+    {
+        if (userId <= 0)
+            throw new ArgumentException("User ID must be a positive integer");
+
+        var folderPath = $"Task/{userId}"; // Task cố định
+        return await UploadFileInternalAsync(file, folderPath);
+    }
+
+
+
+
+
     public async Task<Stream> DownloadFileAsync(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
@@ -159,4 +172,10 @@ public class S3Service : IS3Service
 
         return $"{_baseUrl}/{key}";
     }
+
+
+
+
+
+
 }
