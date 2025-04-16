@@ -18,10 +18,5 @@ public class NotificationController(
         return Ok("Đã gửi realtime");
     }
 
-    [HttpGet("send-to-user/{userId}")]
-    public async Task<IActionResult> SendMessageToUser(string userId)
-    {
-        await realtimeBackgroundService.NotifyUserOnLogin(userId);
-        return Ok("Đã gửi realtime đến user");
-    }
+
 }

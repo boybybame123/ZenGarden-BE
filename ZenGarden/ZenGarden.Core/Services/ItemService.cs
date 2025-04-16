@@ -43,10 +43,10 @@ public class ItemService : IItemService
         return itemDtos;
     }
 
-    public async Task<Item?> GetItemByIdAsync(int itemId)
+    public async Task<ItemDto?> GetItemByIdAsync(int itemId)
     {
         var cacheKey = $"item_{itemId}";
-        var cachedItem = await _redisService.GetAsync<Item>(cacheKey);
+        var cachedItem = await _redisService.GetAsync<ItemDto>(cacheKey);
         if (cachedItem != null) return cachedItem;
 
         var item = await _itemRepository.GetItemByIdAsync(itemId);
@@ -56,8 +56,9 @@ public class ItemService : IItemService
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
         }
 
-        await _redisService.SetAsync(cacheKey, item, TimeSpan.FromMinutes(30));
-        return item;
+        var itemDto = _mapper.Map<ItemDto>(item);
+        await _redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(30));
+        return itemDto;
     }
 
     public async Task CreateItemAsync(CreateItemDto item)
@@ -75,21 +76,21 @@ public class ItemService : IItemService
 
     public async Task<Item> UpdateItemAsync(UpdateItemDto item)
     {
-        var updateItem = await GetItemByIdAsync(item.ItemId);
-        if (updateItem == null)
+        var existingItem = await _itemRepository.GetItemByIdAsync(item.ItemId);
+        if (existingItem == null)
         {
             _logger.LogWarning("Item with ID {ItemId} not found.", item.ItemId);
             throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
         }
 
-        updateItem.Name = item.Name ?? updateItem.Name;
-        updateItem.Type = item.Type;
-        updateItem.Rarity = item.Rarity ?? updateItem.Rarity;
-        updateItem.Cost = item.Cost ?? updateItem.Cost;
-        updateItem.Status = item.Status;
-        updateItem.UpdatedAt = DateTime.Now;
+        existingItem.Name = item.Name ?? existingItem.Name;
+        existingItem.Type = item.Type;
+        existingItem.Rarity = item.Rarity ?? existingItem.Rarity;
+        existingItem.Cost = item.Cost ?? existingItem.Cost;
+        existingItem.Status = item.Status;
+        existingItem.UpdatedAt = DateTime.Now;
 
-        _itemRepository.Update(updateItem);
+        _itemRepository.Update(existingItem);
         if (await _unitOfWork.CommitAsync() == 0)
         {
             _logger.LogError("Failed to update item.");
@@ -97,19 +98,21 @@ public class ItemService : IItemService
         }
 
         await InvalidateCache();
-        return updateItem;
+        return existingItem;
     }
 
     public async Task ActiveItem(int itemId)
     {
-        var item = await GetItemByIdAsync(itemId);
-        if (item == null)
+        var itemDto = await GetItemByIdAsync(itemId);
+        if (itemDto == null)
         {
             _logger.LogWarning("Item with ID {ItemId} not found.", itemId);
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
         }
 
+        var item = _mapper.Map<Item>(itemDto);
         item.Status = ItemStatus.Active;
+        item.UpdatedAt = DateTime.Now;
         _itemRepository.Update(item);
         if (await _unitOfWork.CommitAsync() == 0)
         {
@@ -122,13 +125,14 @@ public class ItemService : IItemService
 
     public async Task DeleteItemAsync(int itemId)
     {
-        var item = await GetItemByIdAsync(itemId);
-        if (item == null)
+        var itemDto = await GetItemByIdAsync(itemId);
+        if (itemDto == null)
         {
             _logger.LogWarning("Item with ID {ItemId} not found.", itemId);
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
         }
 
+        var item = _mapper.Map<Item>(itemDto);
         item.Status = ItemStatus.Inactive;
         _itemRepository.Update(item);
         if (await _unitOfWork.CommitAsync() == 0)
