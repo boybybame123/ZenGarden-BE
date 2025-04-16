@@ -15,8 +15,11 @@ public class ItemDto
     public decimal? Cost { get; set; }
 
 
+
     public ItemStatus Status { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } 
 
     public virtual ItemDetailDto? ItemDetail { get; set; }
 }
