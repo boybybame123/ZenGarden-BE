@@ -146,7 +146,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         if (!organizerId.HasValue) return Unauthorized();
 
         var result =
-            await _challengeService.SelectChallengeWinnerAsync(organizerId.Value, challengeId, dto.WinnerUserId);
+            await _challengeService.SelectChallengeWinnersAsync(organizerId.Value, challengeId, dto);
         return result
             ? Ok(new { message = "Winner selected successfully." })
             : BadRequest(new { message = "Failed to select winner." });

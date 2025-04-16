@@ -148,7 +148,6 @@ public class ChallengeService(
         }
     }
 
-
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
     {
         const string cacheKey = "all_challenges";
@@ -396,44 +395,60 @@ public class ChallengeService(
         return "Challenge status changed to Active";
     }
 
-    public async Task<bool> SelectChallengeWinnerAsync(int organizerId, int challengeId, int winnerUserId)
+    public async Task<bool> SelectChallengeWinnersAsync(int organizerId, int challengeId, SelectWinnerDto dto)
     {
-        var challenge = await challengeRepository.GetByIdAsync(challengeId);
-        if (challenge == null)
-            throw new KeyNotFoundException("Challenge not found.");
+        var challenge = await challengeRepository.GetByIdAsync(challengeId)
+                        ?? throw new KeyNotFoundException("Challenge not found.");
+
         var organizer = await userChallengeRepository.GetUserChallengeAsync(organizerId, challengeId);
         if (organizer is not { ChallengeRole: UserChallengeRole.Organizer })
-            throw new UnauthorizedAccessException("Only the organizer can select the winner.");
+            throw new UnauthorizedAccessException("Only the organizer can select the winners.");
 
-        var winner = await userChallengeRepository.GetUserChallengeAsync(winnerUserId, challengeId);
-        if (winner is not { Status: UserChallengeStatus.Completed })
-            throw new InvalidOperationException("Selected user is not a valid participant.");
+        if (dto.Winners.Count == 0)
+            throw new InvalidOperationException("No winners provided.");
 
         var allUserChallenges = await userChallengeRepository.GetAllUsersInChallengeAsync(challengeId);
+        var winnerIds = dto.Winners.Select(w => w.UserId).ToHashSet();
+        var completedUserIds = await userChallengeRepository.GetCompletedUserIdsAsync(challengeId);
+
+        if (!winnerIds.IsSubsetOf(completedUserIds))
+            throw new InvalidOperationException("One or more winners have not completed the challenge.");
 
         foreach (var uc in allUserChallenges)
         {
-            uc.IsWinner = uc.UserId == winnerUserId;
+            uc.IsWinner = winnerIds.Contains(uc.UserId);
             uc.UpdatedAt = DateTime.UtcNow;
         }
 
         await userChallengeRepository.UpdateRangeAsync(allUserChallenges);
 
-        var winnerWallet = await walletRepository.GetByUserIdAsync(winnerUserId);
-        if (winnerWallet == null)
-            throw new InvalidOperationException("Winner's wallet not found.");
+        var totalReward = challenge.Reward;
+        var winnerCount = dto.Winners.Count;
+        var rewardPerWinner = totalReward / winnerCount;
+        var remainder = totalReward % winnerCount;
 
-        winnerWallet.Balance += challenge.Reward;  
-        winnerWallet.UpdatedAt = DateTime.UtcNow;
+        for (var i = 0; i < dto.Winners.Count; i++)
+        {
+            var winner = dto.Winners[i];
+            var wallet = await walletRepository.GetByUserIdAsync(winner.UserId)
+                         ?? throw new InvalidOperationException($"Wallet not found for user {winner.UserId}");
 
-        walletRepository.Update(winnerWallet);
+            var reward = rewardPerWinner + (i < remainder ? 1 : 0);
+
+            wallet.Balance += reward;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            walletRepository.Update(wallet);
+
+            await notificationService.PushNotificationAsync(
+                winner.UserId,
+                "Challenge Winner",
+                $"Congratulations! You've won the challenge and received {reward} ZenCoin.\n" +
+                $"🏆 Reason: {winner.Reason}"
+            );
+        }
 
         await unitOfWork.CommitAsync();
         await ClearChallengeCachesAsync(challengeId);
-
-        // Send notification to winner
-        await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner",
-            "Congratulations! You have been selected as the winner of the challenge and your reward has been added to your wallet.");
 
         return true;
     }
