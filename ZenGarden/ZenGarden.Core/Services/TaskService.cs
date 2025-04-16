@@ -317,14 +317,12 @@ public class TaskService(
 
         if (task.TaskTypeId == 4)
         {
-            // Kiểm tra bắt buộc có taskNote và taskResult
             if (string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
                 throw new InvalidOperationException("TaskNote is required for challenge tasks.");
 
             if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
-            // Cập nhật taskNote và taskResult vào task
             task.TaskNote = completeTaskDto.TaskNote;
             task.TaskResult =
                 await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
@@ -717,18 +715,15 @@ public class TaskService(
         const int maxTaskPerUser = 20;
         var errors = new List<ValidationFailure>();
 
-        // 1. FluentValidation cơ bản
         var validationResult = await createTaskValidator.ValidateAsync(dto);
         errors.AddRange(validationResult.Errors);
 
-        // 2. Kiểm tra TaskType
         var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
         if (taskType == null)
             errors.Add(new ValidationFailure("TaskTypeId", $"TaskType not found. TaskTypeId = {dto.TaskTypeId}"));
 
         switch (dto.UserTreeId)
         {
-            // 3. Kiểm tra UserTree + giới hạn số lượng task
             case > 0 when await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value) is { } userTree:
             {
                 var userId = userTree.UserId;
@@ -779,7 +774,6 @@ public class TaskService(
             return errors;
         }
 
-        // Kiểm tra WorkDuration
         if (dto.WorkDuration.HasValue && method is { MinDuration: not null, MaxDuration: not null })
         {
             if (dto.WorkDuration.Value < method.MinDuration.Value)
@@ -790,7 +784,6 @@ public class TaskService(
                     $"Work duration cannot exceed {method.MaxDuration.Value} minutes for the selected focus method."));
         }
 
-        // Kiểm tra BreakTime
         if (!dto.BreakTime.HasValue || method is not { MinBreak: not null, MaxBreak: not null }) return errors;
         if (dto.BreakTime.Value < method.MinBreak.Value)
             errors.Add(new ValidationFailure("BreakTime",
