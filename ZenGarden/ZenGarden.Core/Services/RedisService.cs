@@ -136,10 +136,27 @@ public class RedisService : IRedisService, IDisposable
         var jsonString = redisValue.ToString(); 
         return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
     }
+    
+    public async Task RemoveAsync(string key)
+    {
+        await _database.KeyDeleteAsync(key);
+    }
 
     public void Dispose()
     {
         _redis.Dispose();
         GC.SuppressFinalize(this);
+    }
+    
+    public async Task RemoveByPatternAsync(string pattern)
+    {
+        var server = _redis.GetServer(_redis.GetEndPoints().First());
+    
+        var keys = server.Keys(pattern: pattern);
+    
+        foreach (var key in keys)
+        {
+            await _redis.GetDatabase().KeyDeleteAsync(key);
+        }
     }
 }

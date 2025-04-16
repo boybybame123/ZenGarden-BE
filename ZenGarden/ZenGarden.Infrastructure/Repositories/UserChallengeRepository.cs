@@ -44,4 +44,10 @@ public class UserChallengeRepository(ZenGardenContext context)
             .Include(uc => uc.Challenge)
             .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == challengeId);
     }
+    
+    public async Task<int> CountParticipantsAsync(int challengeId)
+    {
+        return await _context.UserChallenges
+            .CountAsync(uc => uc.ChallengeId == challengeId && uc.ChallengeRole == UserChallengeRole.Participant && uc.Status == UserChallengeStatus.InProgress);
+    }
 }
