@@ -82,9 +82,9 @@ public class UseItemService(
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
 
-        
-        await notificationService.PushNotificationAsync(userId, "Use Item", $"You have successfully used {item.Item.Name} item");
 
+        await notificationService.PushNotificationAsync(userId, "Use Item",
+            $"You have successfully used {item.Item.Name} item");
 
 
         return "Use Item success";

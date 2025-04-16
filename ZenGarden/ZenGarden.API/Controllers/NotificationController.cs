@@ -7,7 +7,9 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class NotificationController(IHubContext<NotificationHub> hubContext,RealtimeBackgroundService realtimeBackgroundService ) : ControllerBase
+public class NotificationController(
+    IHubContext<NotificationHub> hubContext,
+    RealtimeBackgroundService realtimeBackgroundService) : ControllerBase
 {
     [HttpGet("send")]
     public async Task<IActionResult> SendMessage()
@@ -15,6 +17,7 @@ public class NotificationController(IHubContext<NotificationHub> hubContext,Real
         await hubContext.Clients.All.SendAsync("ReceiveMessage", "Hello từ API Server!");
         return Ok("Đã gửi realtime");
     }
+
     [HttpGet("send-to-user/{userId}")]
     public async Task<IActionResult> SendMessageToUser(string userId)
     {

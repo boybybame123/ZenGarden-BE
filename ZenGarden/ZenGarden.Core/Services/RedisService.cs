@@ -117,6 +117,7 @@ public class RedisService : IRedisService, IDisposable
             var cachedString = cached.ToString();
             return JsonSerializer.Deserialize<T>(cachedString)!;
         }
+
         var data = await getDataFunc();
         var json = JsonSerializer.Serialize(data);
         await _database.StringSetAsync(key, json, expiry);
@@ -133,10 +134,10 @@ public class RedisService : IRedisService, IDisposable
     {
         var redisValue = await _database.StringGetAsync(key);
         if (redisValue.IsNullOrEmpty) return default;
-        var jsonString = redisValue.ToString(); 
+        var jsonString = redisValue.ToString();
         return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
     }
-    
+
     public async Task RemoveAsync(string key)
     {
         await _database.KeyDeleteAsync(key);
@@ -147,16 +148,13 @@ public class RedisService : IRedisService, IDisposable
         _redis.Dispose();
         GC.SuppressFinalize(this);
     }
-    
+
     public async Task RemoveByPatternAsync(string pattern)
     {
         var server = _redis.GetServer(_redis.GetEndPoints().First());
-    
+
         var keys = server.Keys(pattern: pattern);
-    
-        foreach (var key in keys)
-        {
-            await _redis.GetDatabase().KeyDeleteAsync(key);
-        }
+
+        foreach (var key in keys) await _redis.GetDatabase().KeyDeleteAsync(key);
     }
 }

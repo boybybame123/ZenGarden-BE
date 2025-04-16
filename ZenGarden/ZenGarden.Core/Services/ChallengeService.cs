@@ -1,5 +1,5 @@
-﻿using AutoMapper;
-using System.Text.Json;
+﻿using System.Text.Json;
+using AutoMapper;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -40,7 +40,7 @@ public class ChallengeService(
             wallet.UpdatedAt = DateTime.UtcNow;
             walletRepository.Update(wallet);
         }
-        
+
         if (dto.MaxParticipants is > 100)
             throw new InvalidOperationException("Maximum participants cannot exceed 100.");
 
@@ -87,7 +87,7 @@ public class ChallengeService(
     {
         var challenge = await challengeRepository.GetByIdAsync(challengeId);
         if (challenge is null) return false;
-        
+
         var participantCount = await userChallengeRepository.CountParticipantsAsync(challengeId);
         if (challenge.MaxParticipants.HasValue && participantCount >= challenge.MaxParticipants.Value)
             throw new InvalidOperationException("Challenge has reached the maximum number of participants.");
@@ -218,7 +218,7 @@ public class ChallengeService(
 
         if (challengeDto.MaxParticipants.HasValue)
             existingChallenge.MaxParticipants = challengeDto.MaxParticipants.Value;
-        
+
         if (challengeDto.ChallengeTypeId.HasValue)
             existingChallenge.ChallengeTypeId = challengeDto.ChallengeTypeId.Value;
 
@@ -357,13 +357,13 @@ public class ChallengeService(
 
         var userChallenge = await userChallengeRepository.GetUserProgressAsync(userId, challengeId);
         var result = userChallenge == null ? null : mapper.Map<UserChallengeProgressDto>(userChallenge);
-    
+
         if (result != null)
         {
             var serialized = JsonSerializer.Serialize(result);
             await redisService.SetStringAsync(cacheKey, serialized, TimeSpan.FromMinutes(5));
         }
-    
+
         return result;
     }
 
@@ -413,7 +413,8 @@ public class ChallengeService(
         await ClearChallengeCachesAsync(challengeId);
 
 
-        await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner", "Congratulations! You have been selected as the winner of the challenge.");
+        await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner",
+            "Congratulations! You have been selected as the winner of the challenge.");
 
         return true;
     }
@@ -445,24 +446,10 @@ public class ChallengeService(
             await userChallengeRepository.UpdateRangeAsync(userChallenges);
             challengeRepository.Update(challenge);
             await ClearChallengeCachesAsync(challenge.ChallengeId);
-
         }
+
         await unitOfWork.CommitAsync();
     }
-
-    private async Task ValidateJoinChallenge(Challenge challenge, int userId, JoinChallengeDto joinChallengeDto)
-    {
-        if (challenge.Status == ChallengeStatus.Canceled)
-            throw new InvalidOperationException("This challenge has been canceled and cannot be joined.");
-
-        if (await userChallengeRepository.GetUserChallengeAsync(userId, challenge.ChallengeId) != null)
-            throw new InvalidOperationException("You have already joined this challenge!");
-
-        var userTree = await userTreeRepository.GetByIdAsync(joinChallengeDto.UserTreeId);
-        if (userTree == null || userTree.UserId != userId)
-            throw new ArgumentException("Invalid tree selection!");
-    }
-
 
 
     public async Task NotifyOngoingChallenges()
@@ -498,7 +485,7 @@ public class ChallengeService(
 
         // Nếu không có trong cache, tạo mới và lưu vào cache
         await NotifyOngoingChallenges();
-    
+
         // Lấy lại dữ liệu đã được cập nhật trong cache
         cached = await redisService.GetStringAsync("active_challenges");
         var freshData = JsonSerializer.Deserialize<List<ChallengeDto>>(cached);
@@ -524,6 +511,20 @@ public class ChallengeService(
 
         return mapped;
     }
+
+    private async Task ValidateJoinChallenge(Challenge challenge, int userId, JoinChallengeDto joinChallengeDto)
+    {
+        if (challenge.Status == ChallengeStatus.Canceled)
+            throw new InvalidOperationException("This challenge has been canceled and cannot be joined.");
+
+        if (await userChallengeRepository.GetUserChallengeAsync(userId, challenge.ChallengeId) != null)
+            throw new InvalidOperationException("You have already joined this challenge!");
+
+        var userTree = await userTreeRepository.GetByIdAsync(joinChallengeDto.UserTreeId);
+        if (userTree == null || userTree.UserId != userId)
+            throw new ArgumentException("Invalid tree selection!");
+    }
+
     private async Task ClearChallengeCachesAsync(int challengeId)
     {
         await redisService.RemoveAsync($"challenge_rankings_{challengeId}");
