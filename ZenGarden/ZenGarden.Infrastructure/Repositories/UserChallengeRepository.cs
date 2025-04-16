@@ -52,4 +52,14 @@ public class UserChallengeRepository(ZenGardenContext context)
                 uc.ChallengeId == challengeId && uc.ChallengeRole == UserChallengeRole.Participant &&
                 uc.Status == UserChallengeStatus.InProgress);
     }
+
+    public async Task<HashSet<int>> GetCompletedUserIdsAsync(int challengeId)
+    {
+        var list = await _context.UserChallenges
+            .Where(uc => uc.ChallengeId == challengeId && uc.Status == UserChallengeStatus.Completed)
+            .Select(uc => uc.UserId)
+            .ToListAsync();
+
+        return [..list];
+    }
 }

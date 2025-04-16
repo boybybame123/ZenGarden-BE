@@ -29,6 +29,8 @@ public class MappingProfile : Profile
         CreateMap<Challenge, ChallengeDto>().ReverseMap();
         CreateMap<FocusMethod, FocusMethodDto>()
             .ForMember(dest => dest.FocusMethodName, opt => opt.MapFrom(src => src.Name));
+        CreateMap<FocusMethod, FocusMethodWithReasonDto>()
+            .IncludeBase<FocusMethod, FocusMethodDto>();
         CreateMap<UserTree, UserTreeDto>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName))
             .ForMember(dest => dest.TreeStatus, opt => opt.MapFrom(src => src.TreeStatus.ToString()))

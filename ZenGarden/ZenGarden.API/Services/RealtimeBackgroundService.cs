@@ -1,8 +1,5 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using ZenGarden.API.Hubs;
-using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Services;
 
@@ -53,6 +50,4 @@ public class RealtimeBackgroundService : BackgroundService
             _logger.LogError(ex, "Error while sending real-time message at {Time}", DateTime.UtcNow);
         }
     }
-
- 
 }

@@ -17,6 +17,4 @@ public class NotificationController(
         await hubContext.Clients.All.SendAsync("ReceiveMessage", "Hello từ API Server!");
         return Ok("Đã gửi realtime");
     }
-
-
 }

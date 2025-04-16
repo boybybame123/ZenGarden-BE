@@ -56,7 +56,7 @@ public class FocusMethodRepository(ZenGardenContext context)
             .FirstOrDefaultAsync();
     }
 
-    private int LevenshteinDistance(string s1, string s2)
+    private static int LevenshteinDistance(string s1, string s2)
     {
         if (s1 == s2) return 0;
         if (s1.Length == 0) return s2.Length;
