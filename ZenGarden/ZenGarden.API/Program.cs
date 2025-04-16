@@ -99,7 +99,7 @@ public partial class Program
 
         builder.Services.AddScoped<IRedisService, RedisService>();
         builder.Services.AddScoped<PaymentService>();
-       
+
 
         builder.Services.AddScoped<ZenGardenContext>();
 
