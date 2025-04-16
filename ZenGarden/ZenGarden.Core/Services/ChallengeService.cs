@@ -1,5 +1,5 @@
-﻿using AutoMapper;
-using System.Text.Json;
+﻿using System.Text.Json;
+using AutoMapper;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -40,6 +40,9 @@ public class ChallengeService(
             wallet.UpdatedAt = DateTime.UtcNow;
             walletRepository.Update(wallet);
         }
+
+        if (dto.MaxParticipants is > 100)
+            throw new InvalidOperationException("Maximum participants cannot exceed 100.");
 
         var challenge = mapper.Map<Challenge>(dto);
         challenge.CreatedAt = DateTime.UtcNow;
@@ -85,6 +88,11 @@ public class ChallengeService(
         var challenge = await challengeRepository.GetByIdAsync(challengeId);
         if (challenge is null) return false;
 
+        var participantCount = await userChallengeRepository.CountParticipantsAsync(challengeId);
+        if (challenge.MaxParticipants.HasValue && participantCount >= challenge.MaxParticipants.Value)
+            throw new InvalidOperationException("Challenge has reached the maximum number of participants.");
+
+
         await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
 
         await using var transaction = await unitOfWork.BeginTransactionAsync();
@@ -128,6 +136,8 @@ public class ChallengeService(
 
             await unitOfWork.CommitAsync();
             await transaction.CommitAsync();
+            await NotifyOngoingChallenges();
+            await ClearChallengeCachesAsync(challengeId);
             return true;
         }
         catch
@@ -140,27 +150,85 @@ public class ChallengeService(
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
     {
+        const string cacheKey = "all_challenges";
+        var cached = await redisService.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cached))
+        {
+            var cachedChallenges = JsonSerializer.Deserialize<List<ChallengeDto>>(cached);
+            if (cachedChallenges != null) return cachedChallenges;
+        }
+
         var challenges = await challengeRepository.GetChallengeAll();
-        return mapper.Map<List<ChallengeDto>>(challenges);
+        var result = mapper.Map<List<ChallengeDto>>(challenges);
+
+        if (result == null) return result!;
+        var serialized = JsonSerializer.Serialize(result);
+        await redisService.SetStringAsync(cacheKey, serialized, TimeSpan.FromMinutes(5));
+
+        return result;
     }
 
     public async Task<ChallengeDto> GetChallengeByIdAsync(int challengeId)
     {
+        var cacheKey = $"challenge_{challengeId}";
+        var cached = await redisService.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cached))
+        {
+            var cachedChallenge = JsonSerializer.Deserialize<ChallengeDto>(cached);
+            if (cachedChallenge != null) return cachedChallenge;
+        }
+
         var challenge = await challengeRepository.GetByIdChallengeAsync(challengeId);
-        return mapper.Map<ChallengeDto>(challenge);
+        var result = mapper.Map<ChallengeDto>(challenge);
+
+        if (result == null) return result!;
+        var serialized = JsonSerializer.Serialize(result);
+        await redisService.SetStringAsync(cacheKey, serialized, TimeSpan.FromMinutes(5));
+
+        return result;
     }
 
-    public async Task UpdateChallengeAsync(UpdateChallengeDto challenge)
+    public async Task UpdateChallengeAsync(UpdateChallengeDto challengeDto)
     {
-        var existingChallenge = await challengeRepository.GetByIdAsync(challenge.ChallengeId);
+        var existingChallenge = await challengeRepository.GetByIdAsync(challengeDto.ChallengeId);
         if (existingChallenge == null)
             throw new KeyNotFoundException("Challenge not found.");
 
-        mapper.Map(challenge, existingChallenge);
+        var now = DateTime.UtcNow;
+
+        if (existingChallenge.StartDate <= now && existingChallenge.EndDate >= now)
+            throw new InvalidOperationException("Challenge is ongoing and cannot be updated.");
+
+        if (!string.IsNullOrEmpty(challengeDto.ChallengeName))
+            existingChallenge.ChallengeName = challengeDto.ChallengeName;
+
+        if (!string.IsNullOrEmpty(challengeDto.Description))
+            existingChallenge.Description = challengeDto.Description;
+
+        if (challengeDto.Reward.HasValue)
+            existingChallenge.Reward = challengeDto.Reward.Value;
+
+        if (challengeDto.StartDate.HasValue)
+            existingChallenge.StartDate = challengeDto.StartDate.Value;
+
+        if (challengeDto.EndDate.HasValue)
+            existingChallenge.EndDate = challengeDto.EndDate.Value;
+
+        if (challengeDto.MaxParticipants.HasValue)
+            existingChallenge.MaxParticipants = challengeDto.MaxParticipants.Value;
+
+        if (challengeDto.ChallengeTypeId.HasValue)
+            existingChallenge.ChallengeTypeId = challengeDto.ChallengeTypeId.Value;
+
+        existingChallenge.UpdatedAt = DateTime.UtcNow;
 
         challengeRepository.Update(existingChallenge);
+        await ClearChallengeCachesAsync(challengeDto.ChallengeId);
         await unitOfWork.CommitAsync();
     }
+
 
     public async Task<bool> LeaveChallengeAsync(int userId, int challengeId)
     {
@@ -194,6 +262,7 @@ public class ChallengeService(
         userChallengeRepository.Update(userChallenge);
         await unitOfWork.CommitAsync();
         await transaction.CommitAsync();
+        await ClearChallengeCachesAsync(challengeId);
         return true;
     }
 
@@ -236,6 +305,7 @@ public class ChallengeService(
 
             await unitOfWork.CommitAsync();
             await transaction.CommitAsync();
+            await ClearChallengeCachesAsync(challengeId);
 
             return true;
         }
@@ -248,9 +318,18 @@ public class ChallengeService(
 
     public async Task<List<UserChallengeRankingDto>> GetChallengeRankingsAsync(int challengeId)
     {
+        var cacheKey = $"challenge_rankings_{challengeId}";
+        var cached = await redisService.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cached))
+        {
+            var cachedList = JsonSerializer.Deserialize<List<UserChallengeRankingDto>>(cached);
+            if (cachedList != null) return cachedList;
+        }
+
         var userChallenges = await userChallengeRepository.GetRankedUserChallengesAsync(challengeId);
 
-        return userChallenges.Select(uc => new UserChallengeRankingDto
+        var dtoList = userChallenges.Select(uc => new UserChallengeRankingDto
         {
             UserId = uc.UserId,
             UserName = uc.User?.UserName ?? "Unknown",
@@ -258,12 +337,34 @@ public class ChallengeService(
             CompletedTasks = uc.CompletedTasks,
             IsWinner = uc.IsWinner
         }).ToList();
+
+        var serialized = JsonSerializer.Serialize(dtoList);
+        await redisService.SetStringAsync(cacheKey, serialized, TimeSpan.FromMinutes(5)); // TTL 5 phút
+
+        return dtoList;
     }
 
     public async Task<UserChallengeProgressDto?> GetUserChallengeProgressAsync(int userId, int challengeId)
     {
+        var cacheKey = $"user_challenge_progress_{userId}_{challengeId}";
+        var cached = await redisService.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cached))
+        {
+            var progress = JsonSerializer.Deserialize<UserChallengeProgressDto>(cached);
+            if (progress != null) return progress;
+        }
+
         var userChallenge = await userChallengeRepository.GetUserProgressAsync(userId, challengeId);
-        return userChallenge == null ? null : mapper.Map<UserChallengeProgressDto>(userChallenge);
+        var result = userChallenge == null ? null : mapper.Map<UserChallengeProgressDto>(userChallenge);
+
+        if (result != null)
+        {
+            var serialized = JsonSerializer.Serialize(result);
+            await redisService.SetStringAsync(cacheKey, serialized, TimeSpan.FromMinutes(5));
+        }
+
+        return result;
     }
 
     public async Task<string> ChangeStatusChallenge(int userId, int challengeId)
@@ -284,6 +385,7 @@ public class ChallengeService(
         challenge.UpdatedAt = DateTime.UtcNow;
 
         challengeRepository.Update(challenge);
+        await ClearChallengeCachesAsync(challengeId);
         await unitOfWork.CommitAsync();
         return "Challenge status changed to Active";
     }
@@ -308,8 +410,11 @@ public class ChallengeService(
 
         await userChallengeRepository.UpdateRangeAsync(allUserChallenges);
         await unitOfWork.CommitAsync();
+        await ClearChallengeCachesAsync(challengeId);
 
-        await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner", "Congratulations! You have been selected as the winner of the challenge.");
+
+        await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner",
+            "Congratulations! You have been selected as the winner of the challenge.");
 
         return true;
     }
@@ -340,9 +445,71 @@ public class ChallengeService(
 
             await userChallengeRepository.UpdateRangeAsync(userChallenges);
             challengeRepository.Update(challenge);
+            await ClearChallengeCachesAsync(challenge.ChallengeId);
         }
 
         await unitOfWork.CommitAsync();
+    }
+
+
+    public async Task NotifyOngoingChallenges()
+    {
+        var ongoingChallenges = await challengeRepository.GetOngoingChallengesAsync();
+        var dtoList = new List<ChallengeDto>();
+
+        foreach (var challenge in ongoingChallenges)
+        {
+            var dto = mapper.Map<ChallengeDto>(challenge);
+
+            // ✅ Đếm số người đang tham gia challenge
+            dto.CurrentParticipants = await userChallengeRepository.CountParticipantsAsync(challenge.ChallengeId);
+
+            dtoList.Add(dto);
+        }
+
+        // ✅ Lưu vào Redis, set TTL khoảng 5 phút (có thể điều chỉnh)
+        var serialized = JsonSerializer.Serialize(dtoList);
+        await redisService.SetStringAsync("active_challenges", serialized, TimeSpan.FromMinutes(5));
+    }
+
+
+    public async Task<List<ChallengeDto>> GetChallengesOngoing()
+    {
+        var cached = await redisService.GetStringAsync("active_challenges");
+
+        if (!string.IsNullOrEmpty(cached))
+        {
+            var dtoList = JsonSerializer.Deserialize<List<ChallengeDto>>(cached);
+            if (dtoList != null) return dtoList;
+        }
+
+        // Nếu không có trong cache, tạo mới và lưu vào cache
+        await NotifyOngoingChallenges();
+
+        // Lấy lại dữ liệu đã được cập nhật trong cache
+        cached = await redisService.GetStringAsync("active_challenges");
+        var freshData = JsonSerializer.Deserialize<List<ChallengeDto>>(cached);
+        return freshData ?? [];
+    }
+
+    public async Task<List<ChallengeDto>> GetChallengesNotStarted()
+    {
+        const string cacheKey = "not_started_challenges";
+        var cached = await redisService.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cached))
+        {
+            var dtoList = JsonSerializer.Deserialize<List<ChallengeDto>>(cached);
+            if (dtoList != null) return dtoList;
+        }
+
+        var notStartedChallenges = await challengeRepository.GetChallengesNotStartedAsync();
+        var mapped = mapper.Map<List<ChallengeDto>>(notStartedChallenges);
+
+        var serialized = JsonSerializer.Serialize(mapped);
+        await redisService.SetStringAsync(cacheKey, serialized, TimeSpan.FromMinutes(5));
+
+        return mapped;
     }
 
     private async Task ValidateJoinChallenge(Challenge challenge, int userId, JoinChallengeDto joinChallengeDto)
@@ -358,25 +525,10 @@ public class ChallengeService(
             throw new ArgumentException("Invalid tree selection!");
     }
 
-
-
-    public async Task NotifyOngoingChallenges()
+    private async Task ClearChallengeCachesAsync(int challengeId)
     {
-        var ongoingChallenges = await challengeRepository.GetOngoingChallengesAsync();
-        var ongoingChallengesDto = mapper.Map<List<ChallengeDto>>(ongoingChallenges);
-        var serializedChallenges = JsonSerializer.Serialize(ongoingChallengesDto);
-        await redisService.SetStringAsync("active_challenges", serializedChallenges, TimeSpan.FromMinutes(10));
+        await redisService.RemoveAsync($"challenge_rankings_{challengeId}");
+        await redisService.RemoveAsync("active_challenges");
+        await redisService.RemoveAsync("not_started_challenges");
     }
-
-    public async Task<List<ChallengeDto>> GetChallengesOngoing()
-    {
-        var ongoingChallenges = await challengeRepository.GetOngoingChallengesAsync();
-        return mapper.Map<List<ChallengeDto>>(ongoingChallenges);
-    }
-    public async Task<List<ChallengeDto>> GetChallengesNotStarted()
-    {
-        var notStartedChallenges = await challengeRepository.GetChallengesNotStartedAsync();
-        return mapper.Map<List<ChallengeDto>>(notStartedChallenges);
-    }
-
 }

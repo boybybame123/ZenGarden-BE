@@ -50,7 +50,6 @@ public class MappingProfile : Profile
         CreateMap<Challenge, ChallengeDto>()
             .ForMember(dest => dest.Tasks, opt => opt.MapFrom(src => src.ChallengeTasks.Select(ct => ct.Tasks)));
         CreateMap<CreateChallengeDto, Challenge>();
-        CreateMap<UpdateChallengeDto, Challenge>();
         CreateMap<TaskDto, Tasks>()
             .ForMember(dest => dest.TaskName, opt => opt.MapFrom(src => src.TaskName))
             .ForMember(dest => dest.TaskDescription, opt => opt.MapFrom(src => src.TaskDescription))
