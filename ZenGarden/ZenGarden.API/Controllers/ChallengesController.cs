@@ -64,12 +64,11 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         return Ok(new { Message = "Joined challenge successfully!" });
     }
 
-    [HttpPut("update-challenge")]
-    public async Task<IActionResult> UpdateChallenge([FromBody] UpdateChallengeDto challenge)
+    [HttpPatch("update-challenge")]
+    public async Task<IActionResult> UpdateChallenge(int challengeId, [FromBody] UpdateChallengeDto challenge)
     {
-        await _challengeService.UpdateChallengeAsync(challenge);
-
-        var i = await _challengeService.GetChallengeByIdAsync(challenge.ChallengeId);
+        await _challengeService.UpdateChallengeAsync(challengeId, challenge);
+        var i = await _challengeService.GetChallengeByIdAsync(challengeId);
         return Ok(i);
     }
 
