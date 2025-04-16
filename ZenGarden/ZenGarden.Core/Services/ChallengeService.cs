@@ -398,6 +398,9 @@ public class ChallengeService(
 
     public async Task<bool> SelectChallengeWinnerAsync(int organizerId, int challengeId, int winnerUserId)
     {
+        var challenge = await challengeRepository.GetByIdAsync(challengeId);
+        if (challenge == null)
+            throw new KeyNotFoundException("Challenge not found.");
         var organizer = await userChallengeRepository.GetUserChallengeAsync(organizerId, challengeId);
         if (organizer is not { ChallengeRole: UserChallengeRole.Organizer })
             throw new UnauthorizedAccessException("Only the organizer can select the winner.");
@@ -415,15 +418,26 @@ public class ChallengeService(
         }
 
         await userChallengeRepository.UpdateRangeAsync(allUserChallenges);
+
+        var winnerWallet = await walletRepository.GetByUserIdAsync(winnerUserId);
+        if (winnerWallet == null)
+            throw new InvalidOperationException("Winner's wallet not found.");
+
+        winnerWallet.Balance += challenge.Reward;  
+        winnerWallet.UpdatedAt = DateTime.UtcNow;
+
+        walletRepository.Update(winnerWallet);
+
         await unitOfWork.CommitAsync();
         await ClearChallengeCachesAsync(challengeId);
 
-
+        // Send notification to winner
         await notificationService.PushNotificationAsync(winnerUserId, "Challenge Winner",
-            "Congratulations! You have been selected as the winner of the challenge.");
+            "Congratulations! You have been selected as the winner of the challenge and your reward has been added to your wallet.");
 
         return true;
     }
+
 
     public async Task HandleExpiredChallengesAsync()
     {
