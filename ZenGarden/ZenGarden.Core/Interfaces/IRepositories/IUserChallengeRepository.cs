@@ -8,4 +8,5 @@ public interface IUserChallengeRepository : IGenericRepository<UserChallenge>
     Task<List<UserChallenge>> GetAllUsersInChallengeAsync(int challengeId);
     Task<List<UserChallenge>> GetRankedUserChallengesAsync(int challengeId);
     Task<UserChallenge?> GetUserProgressAsync(int userId, int challengeId);
+    Task<int> CountParticipantsAsync(int challengeId);
 }

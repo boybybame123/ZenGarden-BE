@@ -6,6 +6,7 @@ public class CreateChallengeDto
     public string ChallengeName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public int Reward { get; set; }
+    public int? MaxParticipants { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 }

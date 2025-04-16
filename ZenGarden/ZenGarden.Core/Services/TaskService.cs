@@ -29,10 +29,20 @@ public class TaskService(
     IMapper mapper,
     IBagRepository bagRepository,
     IUseItemService useItemService,
+    IRedisService redisService,
     IValidator<CreateTaskDto> createTaskValidator) : ITaskService
 {
+    private const string TaskCacheKeyPrefix = "task:";
+    private const string UserTasksCacheKeyPrefix = "user:tasks:";
+    private const string TreeTasksCacheKeyPrefix = "tree:tasks:";
+    private const string AllTasksCacheKey = "all:tasks";
+    private static readonly TimeSpan DefaultCacheExpiry = TimeSpan.FromMinutes(15);
+
     public async Task<List<TaskDto>> GetAllTaskAsync()
     {
+        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(AllTasksCacheKey);
+        if (cachedTasks != null) return cachedTasks;
+
         var tasks = await taskRepository.GetAllWithDetailsAsync();
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
 
@@ -45,12 +55,18 @@ public class TaskService(
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
+        await redisService.SetAsync(AllTasksCacheKey, taskDto, DefaultCacheExpiry);
+
         return taskDto;
     }
 
-
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
+        // Try to get from cache first
+        var cacheKey = $"{TaskCacheKeyPrefix}{taskId}";
+        var cachedTask = await redisService.GetAsync<TaskDto>(cacheKey);
+        if (cachedTask != null) return cachedTask;
+
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId);
         if (task == null) throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
@@ -60,11 +76,19 @@ public class TaskService(
         var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
         taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
+        // Cache the result
+        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+
         return taskDto;
     }
 
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
+        // Try to get from cache first
+        var cacheKey = $"{UserTasksCacheKeyPrefix}{userId}";
+        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        if (cachedTasks != null) return cachedTasks;
+
         var tasks = await taskRepository.GetTasksByUserIdAsync(userId);
         if (tasks == null || tasks.Count == 0)
             throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
@@ -79,11 +103,19 @@ public class TaskService(
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
+        // Cache the result
+        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+
         return taskDto;
     }
 
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
+        // Try to get from cache first
+        var cacheKey = $"{TreeTasksCacheKeyPrefix}{userTreeId}";
+        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        if (cachedTasks != null) return cachedTasks;
+
         var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId);
         if (tasks == null || tasks.Count == 0)
             throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
@@ -97,6 +129,9 @@ public class TaskService(
             dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
+
+        // Cache the result
+        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
 
         return taskDto;
     }
@@ -136,6 +171,7 @@ public class TaskService(
 
         await taskRepository.CreateAsync(newTask);
         await unitOfWork.CommitAsync();
+        await InvalidateTaskCaches(newTask);
         return mapper.Map<TaskDto>(newTask);
     }
 
@@ -143,7 +179,8 @@ public class TaskService(
     {
         var existingTask = await taskRepository.GetByIdAsync(taskId)
                            ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ?? throw new InvalidOperationException("UserId is null.");
+        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
+                     throw new InvalidOperationException("UserId is null.");
 
         if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
             throw new InvalidOperationException(
@@ -158,7 +195,8 @@ public class TaskService(
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
             existingTask.TaskNote = updateTaskDto.TaskNote;
 
-        existingTask.TaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult,userid);
+        existingTask.TaskResult =
+            await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userid);
 
         if (updateTaskDto.TotalDuration.HasValue)
             existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
@@ -201,6 +239,7 @@ public class TaskService(
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update task.");
+        await InvalidateTaskCaches(existingTask);
     }
 
 
@@ -209,7 +248,7 @@ public class TaskService(
         var task = await taskRepository.GetByIdAsync(taskId);
         if (task == null)
             throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-
+        await InvalidateTaskCaches(task);
         await taskRepository.RemoveAsync(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete task.");
@@ -262,6 +301,7 @@ public class TaskService(
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
+        await InvalidateTaskCaches(task);
     }
 
     public async Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
@@ -272,7 +312,8 @@ public class TaskService(
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
 
-        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ?? throw new InvalidOperationException("UserId is null.");
+        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
+                     throw new InvalidOperationException("UserId is null.");
 
         if (task.TaskTypeId == 4)
         {
@@ -285,7 +326,8 @@ public class TaskService(
 
             // Cập nhật taskNote và taskResult vào task
             task.TaskNote = completeTaskDto.TaskNote;
-            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult,userid);
+            task.TaskResult =
+                await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
         }
 
         if (await IsDailyTaskAlreadyCompleted(task))
@@ -346,7 +388,9 @@ public class TaskService(
                 await UpdateChallengeProgress(task);
 
 
-                await notificationService.PushNotificationAsync(userid, "Task Completed", $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
+                await notificationService.PushNotificationAsync(userid, "Task Completed",
+                    $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
+                await InvalidateTaskCaches(task);
             }
             catch (Exception ex)
             {
@@ -364,9 +408,10 @@ public class TaskService(
 
             await UpdateChallengeProgress(task);
 
-            await notificationService.PushNotificationAsync(userid, "Task Completed", $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
+            await notificationService.PushNotificationAsync(userid, "Task Completed",
+                $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
 
-
+            await InvalidateTaskCaches(task);
         }
 
         return xpEarned;
@@ -381,10 +426,20 @@ public class TaskService(
         {
             task.Status = TasksStatus.Overdue;
             task.UpdatedAt = DateTime.UtcNow;
+            if (task.UserTree?.UserId != null)
+                await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{task.UserTree.UserId}");
+
+            if (task.UserTreeId != null)
+                await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
+            await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
         }
 
         if (overdueTasks.Count != 0)
             await unitOfWork.CommitAsync();
+
+        await redisService.RemoveAsync(AllTasksCacheKey);
+        await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
+        await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
     }
 
     public async Task<double> CalculateTaskXpAsync(int taskId)
@@ -431,6 +486,7 @@ public class TaskService(
         taskRepository.Update(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to pause the task.");
+        await InvalidateTaskCaches(task);
     }
 
 
@@ -440,28 +496,82 @@ public class TaskService(
         if (thresholdTime == default) throw new ArgumentException("Threshold time cannot be default or null.");
 
         var inProgressTasks = await taskRepository.GetTasksInProgressBeforeAsync(thresholdTime);
+        var affectedUserIds = new HashSet<int>();
+        var affectedTreeIds = new HashSet<int>();
+
         foreach (var task in inProgressTasks)
         {
             task.Status = TasksStatus.Paused;
             task.PausedAt = DateTime.UtcNow;
             taskRepository.Update(task);
+
+            // Collect affected user and tree IDs
+            if (task.UserTree?.UserId != null)
+                affectedUserIds.Add(task.UserTree.UserId.Value);
+
+            if (task.UserTreeId != null)
+                affectedTreeIds.Add(task.UserTreeId.Value);
+
+            // Invalidate individual task cache
+            await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
         }
 
         if (inProgressTasks.Count > 0)
             await unitOfWork.CommitAsync();
+
+        // Invalidate all task cache
+        await redisService.RemoveAsync(AllTasksCacheKey);
+
+        // Invalidate specific user and tree caches
+        foreach (var userId in affectedUserIds)
+            await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{userId}");
+
+        foreach (var treeId in affectedTreeIds)
+            await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{treeId}");
+
+        // To be extra safe, also invalidate all user and tree caches
+        await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
+        await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
     }
 
     public async Task ResetDailyTasksAsync()
     {
         var dailyTasks = await taskRepository.GetDailyTasksAsync();
+        var affectedUserIds = new HashSet<int>();
+        var affectedTreeIds = new HashSet<int>();
+
         foreach (var task in dailyTasks)
         {
             task.CompletedAt = null;
             task.Status = TasksStatus.NotStarted;
+
+            // Collect affected user and tree IDs
+            if (task.UserTree?.UserId != null)
+                affectedUserIds.Add(task.UserTree.UserId.Value);
+
+            if (task.UserTreeId != null)
+                affectedTreeIds.Add(task.UserTreeId.Value);
+
+            // Invalidate individual task cache
+            await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
         }
 
         await taskRepository.UpdateRangeAsync(dailyTasks);
         await unitOfWork.CommitAsync();
+
+        // Invalidate all task cache
+        await redisService.RemoveAsync(AllTasksCacheKey);
+
+        // Invalidate specific user and tree caches
+        foreach (var userId in affectedUserIds)
+            await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{userId}");
+
+        foreach (var treeId in affectedTreeIds)
+            await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{treeId}");
+
+        // To be extra safe, also invalidate all user and tree caches
+        await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
+        await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
     }
 
     public async Task ReorderTasksAsync(int userTreeId, List<ReorderTaskDto> reorderList)
@@ -471,9 +581,8 @@ public class TaskService(
 
         var taskIds = reorderList.Select(x => x.TaskId).ToList();
 
-        // Lấy tất cả task để kiểm tra
         var tasks = await taskRepository.GetTasksByIdsAsync(taskIds);
-        tasks = tasks.Where(t => t.TaskTypeId == 2 || t.TaskTypeId == 3).ToList();
+        tasks = tasks.Where(t => t.TaskTypeId is 2 or 3).ToList();
 
         if (tasks.Count != reorderList.Count)
             throw new KeyNotFoundException("Some tasks not found.");
@@ -498,28 +607,54 @@ public class TaskService(
 
         await taskRepository.UpdateRangeAsync(tasks);
         await unitOfWork.CommitAsync();
+        await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{userTreeId}");
+        await redisService.RemoveAsync(AllTasksCacheKey);
+
+        foreach (var taskId in taskIds) await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{taskId}");
     }
 
     public async Task WeeklyTaskPriorityResetAsync()
     {
         var allUserTrees = await userTreeRepository.GetAllActiveUserTreesAsync();
+        var affectedUserIds = new HashSet<int>();
 
         foreach (var userTree in allUserTrees)
         {
+            if (userTree.UserId.HasValue)
+                affectedUserIds.Add(userTree.UserId.Value);
+
             var activeTasks = await taskRepository.GetActiveTasksByUserTreeIdAsync(userTree.UserTreeId);
 
-            // Sắp xếp lại tasks theo priority hiện tại
+            // Sort tasks by current priority
             var orderedTasks = activeTasks
                 .OrderBy(t => t.Priority)
                 .ToList();
 
-            // Gán lại priority từ 1 đến n
-            for (var i = 0; i < orderedTasks.Count; i++) orderedTasks[i].Priority = i + 1;
+            // Reassign priorities from 1 to n
+            for (var i = 0; i < orderedTasks.Count; i++)
+                orderedTasks[i].Priority = i + 1;
 
-            if (orderedTasks.Count != 0) await taskRepository.UpdateRangeAsync(orderedTasks);
+            if (orderedTasks.Count != 0)
+                await taskRepository.UpdateRangeAsync(orderedTasks);
+
+            // Invalidate tree-specific cache
+            await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{userTree.UserTreeId}");
+
+            // Invalidate individual task caches
+            foreach (var task in orderedTasks) await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
         }
 
         await unitOfWork.CommitAsync();
+
+        // Invalidate all task cache
+        await redisService.RemoveAsync(AllTasksCacheKey);
+
+        // Invalidate user-specific caches
+        foreach (var userId in affectedUserIds)
+            await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{userId}");
+
+        // To be extra safe, also invalidate all user caches
+        await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
     }
 
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
@@ -565,13 +700,7 @@ public class TaskService(
             );
     }
 
-
-
-
-
-
-
-    public async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl, int userid)
+    private async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl, int userid)
     {
         if (taskResultFile != null)
             return await s3Service.UploadFileToTaskUserFolderAsync(taskResultFile, userid);
@@ -583,7 +712,7 @@ public class TaskService(
     }
 
 
-    public async Task ValidateTaskDto(CreateTaskDto dto)
+    private async Task ValidateTaskDto(CreateTaskDto dto)
     {
         const int maxTaskPerUser = 20;
         var errors = new List<ValidationFailure>();
@@ -784,5 +913,22 @@ public class TaskService(
         var bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
         await useItemService.UseItemXpBoostTree(userId);
         return baseXp + bonusXp;
+    }
+
+    private async Task InvalidateTaskCaches(Tasks task)
+    {
+        // Invalidate individual task cache
+        await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
+
+        // Invalidate all tasks cache
+        await redisService.RemoveAsync(AllTasksCacheKey);
+
+        // Invalidate user-specific cache if applicable
+        if (task.UserTree?.UserId != null)
+            await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{task.UserTree.UserId}");
+
+        // Invalidate tree-specific cache if applicable
+        if (task.UserTreeId != null)
+            await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
     }
 }

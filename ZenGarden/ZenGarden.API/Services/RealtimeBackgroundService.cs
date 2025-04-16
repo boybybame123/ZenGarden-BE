@@ -1,19 +1,16 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using ZenGarden.API.Hubs;
 using ZenGarden.Core.Interfaces.IServices;
-using ZenGarden.Core.Services;
 using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Services;
 
 public class RealtimeBackgroundService : BackgroundService
 {
+    private readonly IConfiguration _configuration;
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<RealtimeBackgroundService> _logger;
-
-    private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
 
     public RealtimeBackgroundService(
@@ -98,8 +95,6 @@ public class RealtimeBackgroundService : BackgroundService
         // Ghi log chi tiết
         _logger.LogInformation("Broadcasted ongoing challenges:\n{Challenges}\nTime: {Time}",
             string.Join("\n", detailedList), DateTime.UtcNow);
-
-
     }
 
     private async Task DelayExecution(int delayTime, CancellationToken stoppingToken)
@@ -124,24 +119,24 @@ public class RealtimeBackgroundService : BackgroundService
                 var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
 
 
-                await SendActiveChallengesToUser(userId, redisService,challengeService);
+                await SendActiveChallengesToUser(userId, redisService, challengeService);
                 await SendRealTimeMessage(CancellationToken.None); // Send real-time message to the user
-              
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while notifying user {UserId} of active challenges at {Time}", userId, DateTime.UtcNow);
+            _logger.LogError(ex, "Error while notifying user {UserId} of active challenges at {Time}", userId,
+                DateTime.UtcNow);
         }
     }
 
-    private async Task SendActiveChallengesToUser(string userId, IRedisService redisService, IChallengeService challengeService)
+    private async Task SendActiveChallengesToUser(string userId, IRedisService redisService,
+        IChallengeService challengeService)
     {
         await challengeService.NotifyOngoingChallenges();
         var activeChallengesJson = await redisService.GetStringAsync("active_challenges");
 
         if (!string.IsNullOrEmpty(activeChallengesJson))
-        {
             try
             {
                 var challenges = JsonSerializer.Deserialize<List<ChallengeDto>>(activeChallengesJson,
@@ -160,13 +155,13 @@ public class RealtimeBackgroundService : BackgroundService
                 var message = "**Các thử thách đang diễn ra:**\n" + string.Join("\n", formattedList);
 
                 await _hubContext.Clients.User(userId).SendAsync("ReceiveMessage", message);
-                _logger.LogInformation("Sent formatted active challenges to user {UserId} at {Time}", userId, DateTime.UtcNow);
+                _logger.LogInformation("Sent formatted active challenges to user {UserId} at {Time}", userId,
+                    DateTime.UtcNow);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error parsing active challenges for user {UserId} at {Time}", userId, DateTime.UtcNow);
+                _logger.LogError(ex, "Error parsing active challenges for user {UserId} at {Time}", userId,
+                    DateTime.UtcNow);
             }
-        }
     }
-
 }

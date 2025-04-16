@@ -87,9 +87,6 @@ public class S3Service : IS3Service
     }
 
 
-
-
-
     public async Task<Stream> DownloadFileAsync(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
@@ -172,11 +169,4 @@ public class S3Service : IS3Service
 
         return $"{_baseUrl}/{key}";
     }
-
-
-
-
-
-
-
 }
