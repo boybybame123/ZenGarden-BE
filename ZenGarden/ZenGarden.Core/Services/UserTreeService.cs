@@ -294,6 +294,12 @@ public class UserTreeService(
         return userTrees;
     }
 
+    public async Task<List<UserTree>> GetActiveUserTreeAsync(int userId)
+    {
+        var userTrees = await userTreeRepository.GetActiveUserTreeAsync(userId);
+        return userTrees;
+    }
+
     private async Task<int?> AssignRandomFinalTreeIdAsync()
     {
         var treeIds = await treeRepository.GetAllTreeIdsAsync();

@@ -16,4 +16,5 @@ public interface IUserTreeService
     Task UpdateSpecificTreeHealthAsync(int userTreeId);
     Task<List<UserTree>> ListUserTreeByOwner(int ownerId);
     Task<List<UserTree>> GetAllUserTreesHavingMaxLevelByOwnerIdAsync(int userId);
+    Task<List<UserTree>> GetActiveUserTreeAsync(int userId);
 }
