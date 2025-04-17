@@ -73,18 +73,16 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
 
     public async Task<List<UserTree>> GetActiveUserTreeAsync(int userId)
     {
-        var userTrees = await _context.UserTree
+        return await _context.UserTree
             .Where(ut => ut.UserId == userId)
             .Include(ut => ut.Tasks)
+            .Include(ut => ut.TreeXpConfig)
+            .Include(ut => ut.FinalTree)
+            .Include(ut => ut.User)
+            .Include(ut => ut.TreeOwner)
             .ToListAsync();
-
-        foreach (var userTree in userTrees)
-            userTree.Tasks = userTree.Tasks
-                .Where(t => t.Status is TasksStatus.InProgress or TasksStatus.Paused)
-                .ToList();
-
-        return userTrees;
     }
+
 
     public async Task<List<UserTree>> GetAllMaxLevelUserTreesAsync()
     {
