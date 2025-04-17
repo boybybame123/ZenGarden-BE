@@ -47,7 +47,7 @@ public partial class FocusMethodService : IFocusMethodService
         try
         {
             var prompt =
-                $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method that would be most effective for this task. \nYou are free to invent a new method or reuse an existing one if it's the best fit.\n\nReturn the result in exactly this format (in a single response):\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier\nReason: <short reason why this method is suitable>";
+                $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method that would be most effective for this task. \nYou are free to invent a new method or reuse an existing one if it's the best fit.\n\nReturn the result in exactly this format (in a single response):\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description\nReason: <short reason why this method is suitable>";
 
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
@@ -67,6 +67,7 @@ public partial class FocusMethodService : IFocusMethodService
             var newMethod = new FocusMethod
             {
                 Name = suggestedMethodName,
+                Description = parts.Length > 8 ? parts[8] : "",
                 MinDuration = ExtractNumber(parts[1], 15),
                 MaxDuration = ExtractNumber(parts[2], 120),
                 MinBreak = ExtractNumber(parts[3], 5),
@@ -92,6 +93,7 @@ public partial class FocusMethodService : IFocusMethodService
                 existing.DefaultDuration = newMethod.DefaultDuration;
                 existing.DefaultBreak = newMethod.DefaultBreak;
                 existing.XpMultiplier = newMethod.XpMultiplier;
+                existing.Description = newMethod.Description;
                 existing.IsActive = true;
 
                 _focusMethodRepository.Update(existing);

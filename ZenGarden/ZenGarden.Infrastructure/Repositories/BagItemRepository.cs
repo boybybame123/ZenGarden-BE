@@ -33,23 +33,6 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
     }
 
 
-    public async Task CreateRangeAsync(IEnumerable<BagItem> items)
-    {
-        await _context.BagItem.AddRangeAsync(items);
-    }
-
-    public async Task<bool> HasEquippedXpBoostTreeAsync(int bagId)
-    {
-        return await _context.BagItem
-            .Include(bi => bi.Item) // Ensure Item is loaded
-            .AnyAsync(bi =>
-                bi.BagId == bagId &&
-                bi.isEquipped &&
-                bi.Item != null &&
-                bi.Item.Type == ItemType.xp_boostTree);
-    }
-
-
     public async Task UnequipByBagIdAndItemTypeAsync(int bagId, ItemType itemType)
     {
         var itemsToUpdate = await _context.BagItem
@@ -67,4 +50,19 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
     }
 
 
+    public async Task CreateRangeAsync(IEnumerable<BagItem> items)
+    {
+        await _context.BagItem.AddRangeAsync(items);
+    }
+
+    public async Task<bool> HasEquippedXpBoostTreeAsync(int bagId)
+    {
+        return await _context.BagItem
+            .Include(bi => bi.Item) // Ensure Item is loaded
+            .AnyAsync(bi =>
+                bi.BagId == bagId &&
+                bi.isEquipped &&
+                bi.Item != null &&
+                bi.Item.Type == ItemType.xp_boostTree);
+    }
 }
