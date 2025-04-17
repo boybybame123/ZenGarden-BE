@@ -24,53 +24,57 @@ public class UseItemService(
         if (bag.UserId != userId)
             throw new UnauthorizedAccessException("User not authorized to use this item");
 
-        var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(item.ItemId!.Value);
-        if (itemDetail == null)
-            throw new KeyNotFoundException("Item detail not found");
-
-        if (item.Item == null)
-
-
-            throw new KeyNotFoundException("Item details not found");
-
-        var userConfig = await userConfigRepository.GetByIdAsync(userId);
-        if (userConfig == null)
-            throw new KeyNotFoundException("User config not found");
-
-
-        await bagItemRepository.UnequipByBagIdAndItemTypeAsync(bag.BagId, item.Item.Type);
-
-
-        // ✅ Apply item vào UserConfig
-        switch (item.Item.Type)
+        if (item.ItemId != null)
         {
-            case ItemType.Background:
-                userConfig.BackgroundConfig = itemDetail.MediaUrl;
+            var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(item.ItemId.Value);
+            if (itemDetail == null)
+                throw new KeyNotFoundException("Item detail not found");
 
-                break;
-            case ItemType.Music:
-                userConfig.SoundConfig = itemDetail.MediaUrl;
+            if (item.Item == null)
 
-                break;
-            case ItemType.Avatar:
-                userConfig.ImageUrl = itemDetail.MediaUrl;
 
-                break;
-            case ItemType.xp_boostTree:
+                throw new KeyNotFoundException("Item details not found");
 
-                break;
-            case ItemType.Xp_protect:
+            var userConfig = await userConfigRepository.GetByIdAsync(userId);
+            if (userConfig == null)
+                throw new KeyNotFoundException("User config not found");
 
-                break;
-            default:
-                return "item not rule";
+
+            await bagItemRepository.UnequipByBagIdAndItemTypeAsync(bag.BagId, item.Item.Type);
+
+
+            // ✅ Apply item vào UserConfig
+            switch (item.Item.Type)
+            {
+                case ItemType.Background:
+                    userConfig.BackgroundConfig = itemDetail.MediaUrl;
+
+                    break;
+                case ItemType.Music:
+                    userConfig.SoundConfig = itemDetail.MediaUrl;
+
+                    break;
+                case ItemType.Avatar:
+                    userConfig.ImageUrl = itemDetail.MediaUrl;
+
+                    break;
+                case ItemType.XpBoostTree:
+
+                    break;
+                case ItemType.XpProtect:
+
+                    break;
+                default:
+                    return "item not rule";
+            }
+
+
+            item.isEquipped = true;
+            userConfig.UpdatedAt = DateTime.UtcNow;
+
+            userConfigRepository.Update(userConfig);
         }
 
-
-        item.isEquipped = true;
-        userConfig.UpdatedAt = DateTime.UtcNow;
-
-        userConfigRepository.Update(userConfig);
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
 
@@ -84,7 +88,7 @@ public class UseItemService(
 
     public async Task UseItemXpBoostTree(int userId)
     {
-        var itemBag = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
+        var itemBag = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
         if (itemBag == null || itemBag.Quantity <= 0)
             return;
 
@@ -107,7 +111,7 @@ public class UseItemService(
 
     public async Task UseItemXpProtect(int userId)
     {
-        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
+        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.XpProtect);
         var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
         if (itemBag == null)
             throw new KeyNotFoundException("Item not found");

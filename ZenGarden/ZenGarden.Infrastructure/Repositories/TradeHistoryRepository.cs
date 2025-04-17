@@ -6,14 +6,10 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TradeHistoryRepository : GenericRepository<TradeHistory>, ITradeHistoryRepository
+public class TradeHistoryRepository(ZenGardenContext context)
+    : GenericRepository<TradeHistory>(context), ITradeHistoryRepository
 {
-    private readonly ZenGardenContext _context;
-
-    public TradeHistoryRepository(ZenGardenContext context) : base(context)
-    {
-        _context = context;
-    }
+    private readonly ZenGardenContext _context = context;
 
     public async Task<bool> IsTreeInPendingTradeAsync(int userTreeId)
     {
@@ -22,10 +18,10 @@ public class TradeHistoryRepository : GenericRepository<TradeHistory>, ITradeHis
                            && t.Status == TradeStatus.Pending);
     }
 
-    public async Task<List<TradeHistory>> GetAllTradeHistoriesbyStatutsAsync(int Statuts)
+    public async Task<List<TradeHistory>> GetAllTradeHistoriesbyStatutsAsync(int status)
     {
         return await _context.TradeHistory
-            .Where(th => th.Status == (TradeStatus)Statuts)
+            .Where(th => th.Status == (TradeStatus)status)
             .ToListAsync();
     }
 

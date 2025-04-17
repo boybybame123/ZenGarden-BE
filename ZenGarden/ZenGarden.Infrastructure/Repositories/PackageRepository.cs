@@ -4,9 +4,4 @@ using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class PackageRepository : GenericRepository<Packages>, IPackageRepository
-{
-    public PackageRepository(ZenGardenContext context) : base(context)
-    {
-    }
-}
+public class PackageRepository(ZenGardenContext context) : GenericRepository<Packages>(context), IPackageRepository;

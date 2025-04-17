@@ -24,7 +24,7 @@ public class BagRepository(ZenGardenContext context) : GenericRepository<Bag>(co
             .AnyAsync(bi =>
                 bi.isEquipped == true &&
                 bi.Item != null &&
-                bi.Item.Type == ItemType.xp_boostTree);
+                bi.Item.Type == ItemType.XpBoostTree);
     }
 
     public async Task<int> GetItemByHavingUse(int userId, ItemType itemType)

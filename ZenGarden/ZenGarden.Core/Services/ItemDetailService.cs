@@ -69,8 +69,8 @@ public class ItemDetailService(
     {
         return type switch
         {
-            ItemType.Xp_protect => "Farming",
-            ItemType.xp_boostTree => "Farming",
+            ItemType.XpProtect => "Farming",
+            ItemType.XpBoostTree => "Farming",
             ItemType.Avatar => "avatar",
             ItemType.Background => "background",
             ItemType.Music => "music",
