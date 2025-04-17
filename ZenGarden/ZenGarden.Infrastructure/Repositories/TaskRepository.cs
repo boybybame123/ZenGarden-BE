@@ -143,17 +143,14 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
 
     public async Task<int> GetNextPriorityForTreeAsync(int userTreeId)
     {
-        var tasks = await _context.Tasks
-            .Where(t => t.UserTreeId == userTreeId &&
-                        (t.Status == TasksStatus.NotStarted ||
-                         t.Status == TasksStatus.InProgress ||
-                         t.Status == TasksStatus.Paused))
-            .ToListAsync();
-
-        var maxPriority = tasks
+        var allTasks = await _context.Tasks
+            .Where(t => t.UserTreeId == userTreeId)
             .Select(t => t.Priority)
+            .ToListAsync();
+        var maxPriority = allTasks
+            .Where(p => p.HasValue)
+            .DefaultIfEmpty(0)
             .Max() ?? 0;
-
         return maxPriority + 1;
     }
 

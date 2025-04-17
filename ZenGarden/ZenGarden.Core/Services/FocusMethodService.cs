@@ -57,8 +57,8 @@ public partial class FocusMethodService : IFocusMethodService
             if (lines.Length < 2 || !lines[1].StartsWith("Reason:", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException($"Invalid AI response format: {aiResponse}");
 
-            var parts = lines[0].Split('-').Select(p => p.Trim()).ToArray();
-            if (parts.Length != 8)
+            var parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
+            if (parts.Length != 9)
                 throw new InvalidDataException($"Invalid method format: {lines[0]}");
 
             var reason = lines[1]["Reason:".Length..].Trim();
@@ -67,7 +67,6 @@ public partial class FocusMethodService : IFocusMethodService
             var newMethod = new FocusMethod
             {
                 Name = suggestedMethodName,
-                Description = parts.Length > 8 ? parts[8] : "",
                 MinDuration = ExtractNumber(parts[1], 15),
                 MaxDuration = ExtractNumber(parts[2], 120),
                 MinBreak = ExtractNumber(parts[3], 5),
@@ -75,6 +74,7 @@ public partial class FocusMethodService : IFocusMethodService
                 DefaultDuration = ExtractNumber(parts[5], 45),
                 DefaultBreak = ExtractNumber(parts[6], 10),
                 XpMultiplier = ExtractDouble(parts[7], 1.0),
+                Description = parts.Length > 8 ? parts[8] : "",
                 IsActive = true
             };
 
