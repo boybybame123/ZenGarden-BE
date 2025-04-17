@@ -48,4 +48,23 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
                 bi.Item != null &&
                 bi.Item.Type == ItemType.xp_boostTree);
     }
+
+
+    public async Task UnequipByBagIdAndItemTypeAsync(int bagId, ItemType itemType)
+    {
+        var itemsToUpdate = await _context.BagItem
+            .Include(b => b.Item)
+            .Where(b => b.BagId == bagId && b.Item.Type == itemType && b.isEquipped)
+            .ToListAsync();
+
+        foreach (var item in itemsToUpdate)
+        {
+            item.isEquipped = false;
+            item.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+
 }
