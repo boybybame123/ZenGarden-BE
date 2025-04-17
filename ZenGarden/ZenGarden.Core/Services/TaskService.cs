@@ -899,7 +899,7 @@ public class TaskService(
     {
         var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
 
-        var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
+        var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
         if (equippedItem == null ||
             !double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) ||
             !(effectPercent > 0)) return baseXp;

@@ -63,6 +63,6 @@ public class BagItemRepository(ZenGardenContext context) : GenericRepository<Bag
                 bi.BagId == bagId &&
                 bi.isEquipped &&
                 bi.Item != null &&
-                bi.Item.Type == ItemType.xp_boostTree);
+                bi.Item.Type == ItemType.XpBoostTree);
     }
 }

@@ -252,7 +252,7 @@ public class UserTreeService(
 
         var daysSinceLastCheckIn = (currentDate - lastUpdatedDate).Days;
         var userId = userTree.UserId ?? throw new InvalidOperationException("UserId is null.");
-        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
+        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.XpProtect);
         var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
 
         if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1)) daysSinceLastCheckIn -= 1;

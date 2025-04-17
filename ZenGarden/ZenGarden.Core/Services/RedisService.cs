@@ -75,7 +75,8 @@ public class RedisService : IRedisService, IDisposable
 
     public async Task<string> GetStringAsync(string key)
     {
-        return (await _database.StringGetAsync(key))!;
+        var result = await _database.StringGetAsync(key);
+        return result.IsNullOrEmpty ? string.Empty : result.ToString();
     }
 
     public async Task<bool> SetStringAsync(string key, string value, TimeSpan? expiry = null)
@@ -115,7 +116,8 @@ public class RedisService : IRedisService, IDisposable
         if (!cached.IsNullOrEmpty)
         {
             var cachedString = cached.ToString();
-            return JsonSerializer.Deserialize<T>(cachedString)!;
+            return JsonSerializer.Deserialize<T>(cachedString)
+                   ?? throw new InvalidOperationException("Failed to deserialize cached data");
         }
 
         var data = await getDataFunc();

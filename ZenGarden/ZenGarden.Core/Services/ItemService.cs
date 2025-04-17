@@ -8,66 +8,52 @@ using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
 
-public class ItemService : IItemService
+public class ItemService(
+    IItemRepository itemRepository,
+    IUnitOfWork unitOfWork,
+    IMapper mapper,
+    IRedisService redisService,
+    ILogger<ItemService> logger)
+    : IItemService
 {
-    private readonly IItemRepository _itemRepository;
-    private readonly ILogger<ItemService> _logger;
-    private readonly IMapper _mapper;
-    private readonly IRedisService _redisService;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public ItemService(
-        IItemRepository itemRepository,
-        IUnitOfWork unitOfWork,
-        IMapper mapper,
-        IRedisService redisService,
-        ILogger<ItemService> logger)
-    {
-        _itemRepository = itemRepository;
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-        _redisService = redisService;
-        _logger = logger;
-    }
-
     public async Task<List<ItemDto>> GetAllItemsAsync()
     {
         const string cacheKey = "all_items";
-        var cachedItems = await _redisService.GetAsync<List<ItemDto>>(cacheKey);
+        var cachedItems = await redisService.GetAsync<List<ItemDto>>(cacheKey);
         if (cachedItems != null) return cachedItems;
 
-        var items = await _itemRepository.GetAllItemAsync();
-        var itemDtos = _mapper.Map<List<ItemDto>>(items);
+        var items = await itemRepository.GetAllItemAsync();
+        var itemDto = mapper.Map<List<ItemDto>>(items);
 
-        await _redisService.SetAsync(cacheKey, itemDtos, TimeSpan.FromMinutes(30));
-        return itemDtos;
+        await redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(30));
+        return itemDto;
     }
 
     public async Task<ItemDto?> GetItemByIdAsync(int itemId)
     {
         var cacheKey = $"item_{itemId}";
-        var cachedItem = await _redisService.GetAsync<ItemDto>(cacheKey);
+        var cachedItem = await redisService.GetAsync<ItemDto>(cacheKey);
         if (cachedItem != null) return cachedItem;
 
-        var item = await _itemRepository.GetItemByIdAsync(itemId);
+        var item = await itemRepository.GetItemByIdAsync(itemId);
         if (item == null)
         {
-            _logger.LogWarning("Item with ID {ItemId} not found.", itemId);
+            logger.LogWarning("Item with ID {ItemId} not found.", itemId);
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
         }
 
-        var itemDto = _mapper.Map<ItemDto>(item);
-        await _redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(30));
+        var itemDto = mapper.Map<ItemDto>(item);
+        await redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(30));
         return itemDto;
     }
 
     public async Task CreateItemAsync(CreateItemDto item)
     {
-        var newItem = _mapper.Map<Item>(item);
-        await _itemRepository.CreateAsync(newItem);
-        if (await _unitOfWork.CommitAsync() == 0)
+        var newItem = mapper.Map<Item>(item);
+        await itemRepository.CreateAsync(newItem);
+        if (await unitOfWork.CommitAsync() == 0)
         {
-            _logger.LogError("Failed to create item.");
+            logger.LogError("Failed to create item.");
             throw new InvalidOperationException("Failed to create item.");
         }
 
@@ -76,10 +62,10 @@ public class ItemService : IItemService
 
     public async Task<Item> UpdateItemAsync(UpdateItemDto item)
     {
-        var existingItem = await _itemRepository.GetItemByIdAsync(item.ItemId);
+        var existingItem = await itemRepository.GetItemByIdAsync(item.ItemId);
         if (existingItem == null)
         {
-            _logger.LogWarning("Item with ID {ItemId} not found.", item.ItemId);
+            logger.LogWarning("Item with ID {ItemId} not found.", item.ItemId);
             throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
         }
 
@@ -90,10 +76,10 @@ public class ItemService : IItemService
         existingItem.Status = item.Status;
         existingItem.UpdatedAt = DateTime.Now;
 
-        _itemRepository.Update(existingItem);
-        if (await _unitOfWork.CommitAsync() == 0)
+        itemRepository.Update(existingItem);
+        if (await unitOfWork.CommitAsync() == 0)
         {
-            _logger.LogError("Failed to update item.");
+            logger.LogError("Failed to update item.");
             throw new InvalidOperationException("Failed to update item.");
         }
 
@@ -106,17 +92,17 @@ public class ItemService : IItemService
         var itemDto = await GetItemByIdAsync(itemId);
         if (itemDto == null)
         {
-            _logger.LogWarning("Item with ID {ItemId} not found.", itemId);
+            logger.LogWarning("Item with ID {ItemId} not found.", itemId);
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
         }
 
-        var item = _mapper.Map<Item>(itemDto);
+        var item = mapper.Map<Item>(itemDto);
         item.Status = ItemStatus.Active;
         item.UpdatedAt = DateTime.Now;
-        _itemRepository.Update(item);
-        if (await _unitOfWork.CommitAsync() == 0)
+        itemRepository.Update(item);
+        if (await unitOfWork.CommitAsync() == 0)
         {
-            _logger.LogError("Failed to activate item.");
+            logger.LogError("Failed to activate item.");
             throw new InvalidOperationException("Failed to activate item.");
         }
 
@@ -128,16 +114,16 @@ public class ItemService : IItemService
         var itemDto = await GetItemByIdAsync(itemId);
         if (itemDto == null)
         {
-            _logger.LogWarning("Item with ID {ItemId} not found.", itemId);
+            logger.LogWarning("Item with ID {ItemId} not found.", itemId);
             throw new KeyNotFoundException($"Item with ID {itemId} not found.");
         }
 
-        var item = _mapper.Map<Item>(itemDto);
+        var item = mapper.Map<Item>(itemDto);
         item.Status = ItemStatus.Inactive;
-        _itemRepository.Update(item);
-        if (await _unitOfWork.CommitAsync() == 0)
+        itemRepository.Update(item);
+        if (await unitOfWork.CommitAsync() == 0)
         {
-            _logger.LogError("Failed to delete item.");
+            logger.LogError("Failed to delete item.");
             throw new InvalidOperationException("Failed to delete item.");
         }
 
@@ -146,6 +132,6 @@ public class ItemService : IItemService
 
     private async Task InvalidateCache()
     {
-        await _redisService.DeleteKeyAsync("all_items");
+        await redisService.DeleteKeyAsync("all_items");
     }
 }
