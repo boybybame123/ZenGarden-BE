@@ -62,7 +62,7 @@ public class TaskService(
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
-        // Try to get from cache first
+        // Try to get from the cache first
         var cacheKey = $"{TaskCacheKeyPrefix}{taskId}";
         var cachedTask = await redisService.GetAsync<TaskDto>(cacheKey);
         if (cachedTask != null) return cachedTask;
@@ -84,7 +84,7 @@ public class TaskService(
 
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
-        // Try to get from cache first
+        // Try to get from the cache first
         var cacheKey = $"{UserTasksCacheKeyPrefix}{userId}";
         var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
         if (cachedTasks != null) return cachedTasks;
@@ -111,7 +111,7 @@ public class TaskService(
 
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
-        // Try to get from cache first
+        // Try to get from the cache first
         var cacheKey = $"{TreeTasksCacheKeyPrefix}{userTreeId}";
         var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
         if (cachedTasks != null) return cachedTasks;
