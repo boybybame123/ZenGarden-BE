@@ -38,7 +38,6 @@ public class UseItemService(
             throw new KeyNotFoundException("User config not found");
 
 
-
         await bagItemRepository.UnequipByBagIdAndItemTypeAsync(bag.BagId, item.Item.Type);
 
 
@@ -47,27 +46,25 @@ public class UseItemService(
         {
             case ItemType.Background:
                 userConfig.BackgroundConfig = itemDetail.MediaUrl;
-                
+
                 break;
             case ItemType.Music:
                 userConfig.SoundConfig = itemDetail.MediaUrl;
-           
+
                 break;
             case ItemType.Avatar:
                 userConfig.ImageUrl = itemDetail.MediaUrl;
-                
+
                 break;
             case ItemType.xp_boostTree:
-               
+
                 break;
             case ItemType.Xp_protect:
-               
+
                 break;
             default:
                 return "item not rule";
         }
-
-
 
 
         item.isEquipped = true;
