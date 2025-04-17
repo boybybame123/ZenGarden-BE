@@ -2,32 +2,34 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Domain.Entities;
 
 public partial class Item
 {
+
     public int ItemId { get; set; }
 
     public string Name { get; set; }
 
-    public string Type { get; set; }
+    public ItemType Type { get; set; }
 
     public string Rarity { get; set; }
 
     public decimal? Cost { get; set; }
 
-    public bool? Limited { get; set; }
+    
 
-    public DateTime? CreatedAt { get; set; }
+    public ItemStatus Status { get; set; }
 
-    public virtual ICollection<Bagitem> Bagitem { get; set; } = new List<Bagitem>();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public virtual ICollection<Dailyreward> Dailyreward { get; set; } = new List<Dailyreward>();
+    public virtual ICollection<BagItem> BagItem { get; set; } = new List<BagItem>();
+    
+    public virtual ItemDetail ItemDetail { get; set; }
 
-    public virtual Itemdetail Itemdetail { get; set; }
+    public virtual ICollection<PurchaseHistory> PurchaseHistory { get; set; } = new List<PurchaseHistory>();
 
-    public virtual ICollection<Purchasehistory> Purchasehistory { get; set; } = new List<Purchasehistory>();
-
-    public virtual ICollection<Workspaceitem> Workspaceitem { get; set; } = new List<Workspaceitem>();
 }

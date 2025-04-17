@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 using ZenGarden.Shared.Helpers;
 
@@ -10,41 +12,26 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 {
     private readonly ZenGardenContext _context = context;
 
-    public async Task<Users?> ValidateUserAsync(string? email, string? phone, string? password)
-    {
-        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
-            throw new ArgumentException("Email or phone must be provided."); 
-
-        if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("Password cannot be empty.");
-
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u =>
-                (!string.IsNullOrEmpty(email) && (u.Email).Equals(email, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(phone) && (u.Phone) == phone));
-
-        if (user == null || string.IsNullOrEmpty(user.Password))
-        {
-            return null;
-        }
-
-        var isPasswordValid = PasswordHasher.VerifyPassword(password, user.Password);
-        return !isPasswordValid ? null : user;
-    }
-    
     public async Task<Users?> GetByEmailAsync(string email)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
-    
-    public async Task<Users?> GetByPhoneAsync(string phone)
+
+    public async Task<Users?> GetByPhoneAsync(string? phone)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
     }
-    
+
     public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+        var users = await _context.Users
+            .Where(u => u.RefreshTokenHash != null)
+            .ToListAsync();
+
+        return users.FirstOrDefault(u =>
+            u.RefreshTokenHash != null && PasswordHasher.VerifyPassword(refreshToken, u.RefreshTokenHash));
     }
 
     public async Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate)
@@ -52,14 +39,65 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
         var user = await _context.Users.FindAsync(userId);
         if (user == null) throw new KeyNotFoundException("User not found");
 
-        user.RefreshToken = refreshToken;
+        user.RefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
         user.RefreshTokenExpiry = expiryDate;
 
         await _context.SaveChangesAsync();
     }
-    
+
+    public async Task<Users?> GetByIdAsync(int userId)
+    {
+        return await _context.Users
+            .Include(u => u.Role)
+            .Include(u => u.UserExperience)
+            .Include(u => u.Bag)
+            .Include(u => u.Wallet)
+            .Include(u => u.UserConfig)
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+    }
+
     public async Task<Roles?> GetRoleByIdAsync(int roleId)
     {
         return await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId);
+    }
+
+    public async Task<FilterResult<Users>> GetAllAsync(UserFilterDto filter)
+    {
+        IQueryable<Users> query = _context.Users.Include(x => x.Role);
+
+        // Search theo UserName
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+            query = query.Where(x => x.UserName.ToString().Contains(filter.Search));
+
+        // Filter theo Status
+        if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<UserStatus>(filter.Status, out var status))
+            query = query.Where(x => x.Status == status);
+
+        // Filter theo FullName, Phone, Email
+        if (!string.IsNullOrWhiteSpace(filter.FullName))
+            query = query.Where(x => x.UserName.Contains(filter.FullName));
+
+        if (!string.IsNullOrWhiteSpace(filter.Phone))
+            query = query.Where(x => x.Phone.Contains(filter.Phone));
+
+        if (!string.IsNullOrWhiteSpace(filter.Email))
+            query = query.Where(x => x.Email.Contains(filter.Email));
+
+        // Sort
+        query = filter.UserByDescending ? query.OrderByDescending(x => x.CreatedAt) : query.OrderBy(x => x.CreatedAt);
+
+        // Tổng số bản ghi (trước khi phân trang)
+        var totalCount = await query.CountAsync();
+
+        // Pagination
+        var skip = (filter.PageNumber - 1) * 10;
+        var users = await query.Skip(skip).Take(10).ToListAsync();
+
+        return new FilterResult<Users>(users, totalCount);
+    }
+
+    public async Task<bool> ExistsByUserNameAsync(string userName)
+    {
+        return await _context.Users.AnyAsync(u => u.UserName.ToLower() == userName.ToLower());
     }
 }

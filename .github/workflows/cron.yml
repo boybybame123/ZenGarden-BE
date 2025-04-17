@@ -1,0 +1,13 @@
+name: Run Overdue Task Job
+
+on:
+  schedule:
+    - cron: "0 * * * *" # Chạy mỗi giờ
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  run-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call API to update overdue tasks
+        run: curl -X POST https://zengarden-be.onrender.com/api/task/update-overdue

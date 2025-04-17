@@ -2,20 +2,21 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ZenGarden.Domain.Entities;
 
 public partial class Wallet
 {
-    public int WalletId { get; set; }
-
-    public int? UserId { get; set; }
-
-    public decimal? Balance { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
-
+    public  int WalletId { get; set; }
+    public int UserId { get; set; }
+    public decimal? Balance { get; set; } = 0;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string Currency { get; set; } = "VND"; 
+    public bool IsLocked { get; set; } = false;
+    public DateTime? LastTransactionAt { get; set; }
     public virtual ICollection<Transactions> Transactions { get; set; } = new List<Transactions>();
-
     public virtual Users User { get; set; }
 }

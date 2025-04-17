@@ -2,22 +2,21 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ZenGarden.Domain.Entities;
 
 public partial class Bag
 {
     public int BagId { get; set; }
+    public int UserId { get; set; }
 
-    public int? UserId { get; set; }
+    public int? Capacity { get; set; } = 100;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public int? Capacity { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
-
-    public virtual ICollection<Bagitem> Bagitem { get; set; } = new List<Bagitem>();
+    public virtual ICollection<BagItem> BagItem { get; set; } = new List<BagItem>();
 
     public virtual Users User { get; set; }
 }
