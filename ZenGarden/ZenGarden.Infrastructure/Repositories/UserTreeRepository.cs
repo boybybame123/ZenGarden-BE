@@ -76,7 +76,6 @@ public class UserTreeRepository(ZenGardenContext context) : GenericRepository<Us
         var userTrees = await _context.UserTree
             .Where(ut => ut.UserId == userId)
             .Include(ut => ut.Tasks)
-            .Where(ut => ut.Tasks.Any(t => t.Status == TasksStatus.InProgress || t.Status == TasksStatus.Paused))
             .ToListAsync();
 
         foreach (var userTree in userTrees)
