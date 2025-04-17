@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using ZenGarden.API.Hubs;
-using ZenGarden.API.Services;
 
 namespace ZenGarden.API.Controllers;
 
