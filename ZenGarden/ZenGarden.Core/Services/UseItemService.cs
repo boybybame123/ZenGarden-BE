@@ -39,7 +39,7 @@ public class UseItemService(
 
 
 
-        await bagItemRepository.UnequipByBagIdAndItemTypeAsync(userId, item.Item.Type);
+        await bagItemRepository.UnequipByBagIdAndItemTypeAsync(bag.BagId, item.Item.Type);
 
 
         // ✅ Apply item vào UserConfig
