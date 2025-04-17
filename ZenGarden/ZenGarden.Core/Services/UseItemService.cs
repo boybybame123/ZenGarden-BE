@@ -38,41 +38,36 @@ public class UseItemService(
             throw new KeyNotFoundException("User config not found");
 
 
-        int flag;
+
+        await bagItemRepository.UnequipByBagIdAndItemTypeAsync(userId, item.Item.Type);
+
+
         // ✅ Apply item vào UserConfig
         switch (item.Item.Type)
         {
             case ItemType.Background:
                 userConfig.BackgroundConfig = itemDetail.MediaUrl;
-                flag = await bagRepository.GetItemByHavingUse(userId, ItemType.Background);
+                
                 break;
             case ItemType.Music:
                 userConfig.SoundConfig = itemDetail.MediaUrl;
-                flag = await bagRepository.GetItemByHavingUse(userId, ItemType.Music);
+           
                 break;
             case ItemType.Avatar:
                 userConfig.ImageUrl = itemDetail.MediaUrl;
-                flag = await bagRepository.GetItemByHavingUse(userId, ItemType.Avatar);
+                
                 break;
             case ItemType.xp_boostTree:
-                flag = await bagRepository.GetItemByHavingUse(userId, ItemType.xp_boostTree);
+               
                 break;
             case ItemType.Xp_protect:
-                flag = await bagRepository.GetItemByHavingUse(userId, ItemType.Xp_protect);
+               
                 break;
             default:
                 return "item not rule";
         }
 
-        if (flag > 0)
-        {
-            var itemOld = await bagItemRepository.GetByIdAsync(flag);
-            if (itemOld != null)
-            {
-                itemOld.isEquipped = false;
-                bagItemRepository.Update(itemOld);
-            }
-        }
+
 
 
         item.isEquipped = true;
