@@ -215,6 +215,15 @@ public class TaskService(
 
         if (updateTaskDto.BreakTime.HasValue)
             existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+        
+        if (updateTaskDto is { StartDate: not null, EndDate: not null })
+        {
+            if (updateTaskDto.StartDate > updateTaskDto.EndDate)
+            {
+                throw new InvalidOperationException(
+                    $"StartDate cannot be after EndDate. StartDate: {updateTaskDto.StartDate:u}, EndDate: {updateTaskDto.EndDate:u}");
+            }
+        }
 
         if (updateTaskDto.StartDate.HasValue)
             existingTask.StartDate = updateTaskDto.StartDate.Value;
@@ -261,9 +270,12 @@ public class TaskService(
 
         var now = DateTime.UtcNow;
         if (now < task.StartDate)
-            throw new InvalidOperationException("Task has not started yet.");
+            throw new InvalidOperationException(
+                $"Task has not started yet. Current time: {now:u}, StartDate: {task.StartDate:u}");
+
         if (now > task.EndDate)
-            throw new InvalidOperationException("Task deadline has passed.");
+            throw new InvalidOperationException(
+                $"Task deadline has passed. Current time: {now:u}, EndDate: {task.EndDate:u}");
 
         if (task.Status == TasksStatus.InProgress)
             throw new InvalidOperationException("Task is already in progress.");
@@ -356,7 +368,6 @@ public class TaskService(
                     baseXp *= decayMultiplier;
                 }
 
-
                 xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
 
                 if (xpEarned > 0 && task.UserTree != null)
@@ -384,7 +395,6 @@ public class TaskService(
                 await transaction.CommitAsync();
 
                 await UpdateChallengeProgress(task);
-
 
                 await notificationService.PushNotificationAsync(userid, "Task Completed",
                     $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
@@ -831,8 +841,9 @@ public class TaskService(
             throw new InvalidOperationException("Task must have a start time to be completed.");
 
         if (task.TotalDuration.HasValue &&
-            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
-            throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
+            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value - 1))
+            throw new InvalidOperationException("Task cannot be completed more than 1 minute before the required duration.");
+        
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
