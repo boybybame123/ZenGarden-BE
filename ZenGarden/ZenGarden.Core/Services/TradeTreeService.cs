@@ -75,7 +75,7 @@ public class TradeTreeService(
         var trade = await tradeHistoryService.GetTradeHistoryByIdAsync(tradeId)
                     ?? throw new Exception("Trade not found");
 
-        if (trade.TreeOwnerBid == recipientId)
+        if (trade.TreeOwnerAid == recipientId)
             throw new Exception("You are already the owner of this trade");
 
 
