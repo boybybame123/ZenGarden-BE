@@ -10,7 +10,8 @@ public class UseItemService(
     IItemDetailRepository itemDetailRepository,
     IBagRepository bagRepository,
     INotificationService notificationService,
-    IUnitOfWork unitOfWork
+    IUnitOfWork unitOfWork,
+    IRedisService redisService
 ) : IUseItemService
 {
     public async Task<string> UseItemAsync(int userId, int itembagId)
@@ -77,7 +78,8 @@ public class UseItemService(
 
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
-
+        var cacheKey = $"BagItems_{item.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
 
         await notificationService.PushNotificationAsync(userId, "Use Item",
             $"You have successfully used {item.Item.Name} item");
