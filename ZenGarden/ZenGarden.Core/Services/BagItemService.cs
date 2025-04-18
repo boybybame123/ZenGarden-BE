@@ -23,7 +23,9 @@ public class BagItemService : IBagItemService
 
     public async Task<List<BagItemDto>?> GetListItemsByBagIdAsync(int bagId)
     {
+
         var cacheKey = $"BagItems_{bagId}";
+
         var cachedBagItems = await _redisService.GetAsync<List<BagItemDto>>(cacheKey);
 
         if (cachedBagItems != null) return cachedBagItems;
