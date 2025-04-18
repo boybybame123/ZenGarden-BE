@@ -42,31 +42,28 @@ public partial class FocusMethodService : IFocusMethodService
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
     }
 
-    public async Task<FocusMethodDto> SuggestFocusMethodAsync(SuggestFocusMethodDto dto)
+    public async Task<FocusMethodWithReasonDto> SuggestFocusMethodAsync(SuggestFocusMethodDto dto)
     {
         try
         {
-            var availableMethodNames = await _focusMethodRepository.GetMethodNamesAsync();
-            var isDatabaseEmpty = availableMethodNames.Count == 0;
-
-            var prompt = isDatabaseEmpty
-                ? $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method optimized for this task. Return the result in exactly this format:\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier.\n\nXpMultiplier should be between 1.0 (low impact) and 2.0 (high impact). All values are in minutes. Do not explain, just return the result."
-                : $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nChoose the most suitable focus method from the list: {string.Join(", ", availableMethodNames)}.\nIf none are suitable, suggest one. Return the result in exactly this format:\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier.\n\nXpMultiplier should be between 1.0 (low impact) and 2.0 (high impact). All values are in minutes. Do not explain, just return the result.";
+            var prompt =
+                $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method that would be most effective for this task. \nYou are free to invent a new method or reuse an existing one if it's the best fit.\n\nReturn the result in exactly this format (in a single response):\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description\nReason: <short reason why this method is suitable>";
 
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
                 throw new InvalidOperationException("OpenAI returned an empty response.");
 
-            var parts = aiResponse.Split('-').Select(p => p.Trim()).ToArray();
-            if (parts.Length != 8)
+            var lines = aiResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length < 2 || !lines[1].StartsWith("Reason:", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException($"Invalid AI response format: {aiResponse}");
 
+            var parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
+            if (parts.Length != 9)
+                throw new InvalidDataException($"Invalid method format: {lines[0]}");
+
+            var reason = lines[1]["Reason:".Length..].Trim();
+
             var suggestedMethodName = parts[0];
-
-            var closestMatch = await _focusMethodRepository.SearchBySimilarityAsync(suggestedMethodName);
-            if (closestMatch != null) return _mapper.Map<FocusMethodDto>(closestMatch);
-
-
             var newMethod = new FocusMethod
             {
                 Name = suggestedMethodName,
@@ -77,12 +74,38 @@ public partial class FocusMethodService : IFocusMethodService
                 DefaultDuration = ExtractNumber(parts[5], 45),
                 DefaultBreak = ExtractNumber(parts[6], 10),
                 XpMultiplier = ExtractDouble(parts[7], 1.0),
+                Description = parts.Length > 8 ? parts[8] : "",
                 IsActive = true
             };
 
-            await _focusMethodRepository.CreateAsync(newMethod);
+            var existing = await _focusMethodRepository.GetByNameAsync(suggestedMethodName);
+
+            if (existing == null)
+            {
+                await _focusMethodRepository.CreateAsync(newMethod);
+            }
+            else
+            {
+                existing.MinDuration = newMethod.MinDuration;
+                existing.MaxDuration = newMethod.MaxDuration;
+                existing.MinBreak = newMethod.MinBreak;
+                existing.MaxBreak = newMethod.MaxBreak;
+                existing.DefaultDuration = newMethod.DefaultDuration;
+                existing.DefaultBreak = newMethod.DefaultBreak;
+                existing.XpMultiplier = newMethod.XpMultiplier;
+                existing.Description = newMethod.Description;
+                existing.IsActive = true;
+
+                _focusMethodRepository.Update(existing);
+            }
+
             await _unitOfWork.CommitAsync();
-            return _mapper.Map<FocusMethodDto>(newMethod);
+
+            var resultMethod = existing ?? newMethod;
+
+            var resultDto = _mapper.Map<FocusMethodWithReasonDto>(resultMethod);
+            resultDto.Reason = reason;
+            return resultDto;
         }
         catch (HttpRequestException ex)
         {
@@ -103,6 +126,7 @@ public partial class FocusMethodService : IFocusMethodService
             throw new InvalidOperationException("An unexpected error occurred.", ex);
         }
     }
+
 
     private async Task<string?> CallOpenAiApi(string prompt)
     {

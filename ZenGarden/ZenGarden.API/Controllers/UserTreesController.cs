@@ -65,4 +65,11 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         var userTrees = await userTreeService.GetAllUserTreesHavingMaxLevelByOwnerIdAsync(userId);
         return Ok(userTrees);
     }
+
+    [HttpGet("GetActiveUserTree/{userId:int}")]
+    public async Task<IActionResult> GetActiveUserTree(int userId)
+    {
+        var userTrees = await userTreeService.GetActiveUserTreeAsync(userId);
+        return Ok(userTrees);
+    }
 }

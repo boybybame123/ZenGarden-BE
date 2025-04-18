@@ -70,7 +70,7 @@ public class PurchaseService(
         if (item.Cost == null || wallet.Balance < item.Cost.Value)
             throw new PurchaseException("Insufficient balance.");
 
-        if (itemDetail.MonthlyPurchaseLimit is int limit && limit > 0)
+        if (itemDetail.MonthlyPurchaseLimit is { } limit and > 0)
         {
             var now = DateTime.UtcNow;
             var startOfMonth = new DateTime(now.Year, now.Month, 1);
@@ -91,7 +91,7 @@ public class PurchaseService(
 
     private async Task ProcessPayment(Wallet wallet, Item item)
     {
-        wallet.Balance -= item.Cost!.Value;
+        if (item.Cost != null) wallet.Balance -= item.Cost.Value;
         wallet.UpdatedAt = DateTime.UtcNow;
         walletRepo.Update(wallet);
         await unitOfWork.CommitAsync();
@@ -143,14 +143,15 @@ public class PurchaseService(
 
     private async Task RecordPurchaseHistory(int userId, int itemId, Item item)
     {
-        await purchaseHistoryRepo.CreateAsync(new PurchaseHistory
-        {
-            UserId = userId,
-            ItemId = itemId,
-            TotalPrice = item.Cost!.Value,
-            CreatedAt = DateTime.UtcNow,
-            Status = PurchaseHistoryStatus.Approved
-        });
+        if (item.Cost != null)
+            await purchaseHistoryRepo.CreateAsync(new PurchaseHistory
+            {
+                UserId = userId,
+                ItemId = itemId,
+                TotalPrice = item.Cost.Value,
+                CreatedAt = DateTime.UtcNow,
+                Status = PurchaseHistoryStatus.Approved
+            });
     }
 
     private async Task SendNotification(int userId)

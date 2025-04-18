@@ -40,6 +40,8 @@ public class XpConfigService(
                 TaskTypeId = taskTypeId,
                 BaseXp = newBaseXp,
                 XpMultiplier = 1,
+                PriorityDecayRate = 0.1,
+                MinDecayMultiplier = 0.3,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

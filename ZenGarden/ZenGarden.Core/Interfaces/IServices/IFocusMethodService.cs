@@ -4,5 +4,5 @@ namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IFocusMethodService
 {
-    Task<FocusMethodDto> SuggestFocusMethodAsync(SuggestFocusMethodDto dto);
+    Task<FocusMethodWithReasonDto> SuggestFocusMethodAsync(SuggestFocusMethodDto dto);
 }

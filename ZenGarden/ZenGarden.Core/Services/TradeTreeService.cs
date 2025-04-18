@@ -37,7 +37,7 @@ public class TradeTreeService(
             _ = await userTreeRepository.GetByIdAsync(tradeDto.requesterTreeId)
                 ?? throw new Exception("Your tree does not exist");
 
-            // Deduct trade fee from owner's wallet
+            // Deduct trade fee from the owner's wallet
             var wallet = await walletRepository.GetByUserIdAsync(tradeDto.requesterId)
                          ?? throw new Exception("Wallet not found");
 
@@ -88,7 +88,7 @@ public class TradeTreeService(
         // Validate requester's tree
         var requesterTree = await ValidateRequesterTreeForAcceptance(trade);
 
-        // Deduct trade fee from recipient's wallet
+        // Deduct trade fee from the recipient's wallet
         var wallet = await walletRepository.GetByUserIdAsync(recipientId)
                      ?? throw new Exception("Wallet not found");
 

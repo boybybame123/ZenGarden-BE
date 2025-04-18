@@ -64,12 +64,11 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         return Ok(new { Message = "Joined challenge successfully!" });
     }
 
-    [HttpPut("update-challenge")]
-    public async Task<IActionResult> UpdateChallenge([FromBody] UpdateChallengeDto challenge)
+    [HttpPatch("update-challenge")]
+    public async Task<IActionResult> UpdateChallenge(int challengeId, [FromBody] UpdateChallengeDto challenge)
     {
-        await _challengeService.UpdateChallengeAsync(challenge);
-
-        var i = await _challengeService.GetChallengeByIdAsync(challenge.ChallengeId);
+        await _challengeService.UpdateChallengeAsync(challengeId, challenge);
+        var i = await _challengeService.GetChallengeByIdAsync(challengeId);
         return Ok(i);
     }
 
@@ -147,7 +146,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         if (!organizerId.HasValue) return Unauthorized();
 
         var result =
-            await _challengeService.SelectChallengeWinnerAsync(organizerId.Value, challengeId, dto.WinnerUserId);
+            await _challengeService.SelectChallengeWinnersAsync(organizerId.Value, challengeId, dto);
         return result
             ? Ok(new { message = "Winner selected successfully." })
             : BadRequest(new { message = "Failed to select winner." });
