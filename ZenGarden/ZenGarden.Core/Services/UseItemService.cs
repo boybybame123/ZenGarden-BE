@@ -10,7 +10,8 @@ public class UseItemService(
     IItemDetailRepository itemDetailRepository,
     IBagRepository bagRepository,
     INotificationService notificationService,
-    IUnitOfWork unitOfWork
+    IUnitOfWork unitOfWork,
+    IRedisService redisService
 ) : IUseItemService
 {
     public async Task<string> UseItemAsync(int userId, int itembagId)
@@ -77,7 +78,8 @@ public class UseItemService(
 
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
-
+        var cacheKey = $"BagItems_{item.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
 
         await notificationService.PushNotificationAsync(userId, "Use Item",
             $"You have successfully used {item.Item.Name} item");
@@ -96,6 +98,8 @@ public class UseItemService(
         itemBag.UpdatedAt = DateTime.UtcNow;
         bagItemRepository.Update(itemBag);
         await unitOfWork.CommitAsync();
+        var cacheKey = $"BagItems_{itemBag.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
     }
 
     public async Task Cancel(int bagItemId)
@@ -107,6 +111,8 @@ public class UseItemService(
         item.UpdatedAt = DateTime.UtcNow;
         bagItemRepository.Update(item);
         await unitOfWork.CommitAsync();
+        var cacheKey = $"BagItems_{item.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
     }
 
     public async Task UseItemXpProtect(int userId)
@@ -121,5 +127,7 @@ public class UseItemService(
         itemBag.UpdatedAt = DateTime.UtcNow;
         bagItemRepository.Update(itemBag);
         await unitOfWork.CommitAsync();
+        var cacheKey = $"BagItems_{itemBag.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
     }
 }
