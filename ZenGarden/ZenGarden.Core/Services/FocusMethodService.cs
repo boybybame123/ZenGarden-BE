@@ -46,23 +46,40 @@ public partial class FocusMethodService : IFocusMethodService
     {
         try
         {
-            var prompt =
-                $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method that would be most effective for this task. \nYou are free to invent a new method or reuse an existing one if it's the best fit.\n\nReturn the result in exactly this format (in a single response):\n\nName - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description\nReason: <short reason why this method is suitable>";
-
+            var prompt = 
+                $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method that would be most effective for this task.\n\nYou are free to invent a new method or reuse an existing one if it's the best fit.\n\nReturn the result in EXACTLY the following two-part format:\n\n1. First line: Name - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description\n\n2. Second part (on new lines): Reason: [explain in 1-3 sentences why this method is suitable for this task]\n\nExample response format:\nPomodoro Plus - 25 - 45 - 5 - 15 - 30 - 10 - 1.2 - Enhanced Pomodoro technique with flexible time periods\nReason: This method is ideal for the task because it provides structured time management while allowing flexibility. The moderate work periods match the cognitive demands of the task while regular breaks prevent burnout.";
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
                 throw new InvalidOperationException("OpenAI returned an empty response.");
 
             var lines = aiResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            if (lines.Length < 2 || !lines[1].StartsWith("Reason:", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException($"Invalid AI response format: {aiResponse}");
+            
+            string reason;
+            if (lines.Length > 1)
+            {
+                var remainingLines = lines.Skip(1).ToArray();
+    
+                var firstReasonLine = remainingLines[0].Trim();
+                if (firstReasonLine.StartsWith("Reason:", StringComparison.OrdinalIgnoreCase))
+                {
+                    remainingLines[0] = firstReasonLine.Substring("Reason:".Length).Trim();
+                }
+    
+                reason = string.Join(" ", remainingLines).Trim();
+            }
+            else
+            {
+                reason = $"This method is recommended by AI based on the characteristics of the task '{dto.TaskName}'.";
+            }
 
+            if (string.IsNullOrWhiteSpace(reason))
+                reason = $"This method is recommended by AI based on the characteristics of the task '{dto.TaskName}'.";
+
+            
             var parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
             if (parts.Length != 9)
                 throw new InvalidDataException($"Invalid method format: {lines[0]}");
-
-            var reason = lines[1]["Reason:".Length..].Trim();
-
+            
             var suggestedMethodName = parts[0];
             var newMethod = new FocusMethod
             {
@@ -151,7 +168,7 @@ public partial class FocusMethodService : IFocusMethodService
                     {
                         new { role = "user", content = prompt }
                     },
-                    max_tokens = 100
+                    max_tokens = 200
                 };
 
                 var jsonPayload = JsonSerializer.Serialize(requestBody);
