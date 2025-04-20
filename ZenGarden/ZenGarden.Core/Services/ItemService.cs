@@ -59,7 +59,7 @@ public class ItemService(
             logger.LogError("Failed to create item.");
             throw new InvalidOperationException("Failed to create item.");
         }
-        await notificationService.PushNotificationToAllAsync("New Item Created", $"Item {item.Name} has been created.");
+        await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been created.");
         await InvalidateCache();
     }
 
