@@ -9,6 +9,8 @@ public class UserXpLogService(
     IUserXpLogRepository userXpLogRepository,
     IUserExperienceRepository userExperienceRepository,
     INotificationService notificationService,
+    IUserXpConfigRepository userXpConfigRepository,
+    IUseItemService useItemService,
     IUnitOfWork unitOfWork)
     : IUserXpLogService
 {
@@ -73,6 +75,7 @@ public class UserXpLogService(
         userExp.StreakDays = consecutiveDays;
         userExp.UpdatedAt = DateTime.UtcNow;
         userExperienceRepository.Update(userExp);
+        await CheckLevelUpAsync(userId);
 
         var log = new UserXpLog
         {
@@ -117,6 +120,7 @@ public class UserXpLogService(
         userExp.TotalXp += amount;
         userExp.UpdatedAt = DateTime.UtcNow;
         userExperienceRepository.Update(userExp);
+        await CheckLevelUpAsync(userId);
 
         await userXpLogRepository.CreateAsync(new UserXpLog
         {
@@ -141,5 +145,38 @@ public class UserXpLogService(
             XpSourceType.DailyLogin => 10,
             _ => 0
         };
+    }
+    
+    private async Task CheckLevelUpAsync(int userId)
+    {
+        var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
+        if (userExp == null) return;
+
+        var allLevels = await userXpConfigRepository.GetAllAsync();
+        var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
+
+        int currentLevel = 0;
+        foreach (var level in sortedLevels)
+        {
+            if (userExp.TotalXp >= level.XpThreshold)
+                currentLevel = level.LevelId;
+            else
+                break;
+        }
+
+        if (userExp.LevelId != currentLevel)
+        {
+            userExp.LevelId = currentLevel;
+            userExperienceRepository.Update(userExp);
+
+            await notificationService.PushNotificationAsync(userId, "Level Up!",
+                $"Congratulations! You've reached level {currentLevel}!");
+
+            await unitOfWork.CommitAsync();
+            if (currentLevel % 5 == 0)
+            {
+                await useItemService.GiftRandomItemFromListAsync(userId);
+            }
+        }
     }
 }
