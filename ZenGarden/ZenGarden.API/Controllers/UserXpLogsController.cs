@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZenGarden.API.Middleware;
 using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.API.Controllers;
@@ -40,5 +41,15 @@ public class UserXpLogsController(IUserXpLogService userXpLogService)
             return BadRequest(new { message = "Already checked in today." });
 
         return Ok(new { message = "Check-in successful!", xpEarned });
+    }
+    
+    [Authorize]
+    [HttpGet("streak")]
+    public async Task<IActionResult> GetCurrentStreak()
+    {
+        var userId = HttpContext.GetUserId();
+        if (!userId.HasValue) return Unauthorized();
+        var streak = await userXpLogService.GetCurrentStreakAsync(userId.Value);
+        return Ok(new { streak });
     }
 }
