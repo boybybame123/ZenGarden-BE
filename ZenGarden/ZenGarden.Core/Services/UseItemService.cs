@@ -1,5 +1,6 @@
 ﻿using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Services;
@@ -7,6 +8,7 @@ namespace ZenGarden.Core.Services;
 public class UseItemService(
     IUserConfigRepository userConfigRepository,
     IBagItemRepository bagItemRepository,
+    IItemRepository itemRepository,
     IItemDetailRepository itemDetailRepository,
     IBagRepository bagRepository,
     INotificationService notificationService,
@@ -130,4 +132,70 @@ public class UseItemService(
         var cacheKey = $"BagItems_{itemBag.BagId}";
         await redisService.DeleteKeyAsync(cacheKey);
     }
+
+    public async Task<string> GiftRandomItemFromListAsync(int userId)
+    {
+        // Get the list of giftable items  
+        var giftableItems = await itemRepository.GetListItemGift();
+        if (giftableItems == null || !giftableItems.Any())
+            throw new InvalidOperationException("No giftable items available");
+
+        // Randomly select an item from the list  
+        var random = new Random();
+        var randomItem = giftableItems[random.Next(giftableItems.Count)];
+
+        // Check if the user has a bag  
+        var bag = await bagRepository.GetByUserIdAsync(userId);
+        if (bag == null)
+            throw new KeyNotFoundException("User bag not found");
+
+        // Check if the item already exists in the bag  
+        var existingBagItem = await bagItemRepository.GetByBagAndItemAsync(bag.BagId, randomItem.ItemId);
+        if (existingBagItem != null)
+        {
+            // Increment the quantity if the item already exists  
+            existingBagItem.Quantity = existingBagItem.Quantity + 1;
+            existingBagItem.UpdatedAt = DateTime.UtcNow;
+            bagItemRepository.Update(existingBagItem);
+            await unitOfWork.CommitAsync();
+        }
+        else
+        {
+            // Create a new BagItem for the selected item  
+            var newBagItem = new BagItem
+            {
+                BagId = bag.BagId,
+                ItemId = randomItem.ItemId,
+                Quantity = 1,
+                isEquipped = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            // Add the item to the user's bag  
+            await bagItemRepository.CreateAsync(newBagItem);
+        }
+
+        await unitOfWork.CommitAsync();
+
+        // Invalidate the cache  
+        var cacheKey = $"BagItems_{bag.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
+
+        // Notify the user  
+        await notificationService.PushNotificationAsync(userId, "Gift Item",
+            $"You have received a random item: {randomItem.Name}");
+
+        return $"Gifted {randomItem.Name} to user {userId}";
+    } 
+
+
+
+
+
+
+
+
+
+
 }
