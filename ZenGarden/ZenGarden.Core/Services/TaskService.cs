@@ -30,6 +30,7 @@ public class TaskService(
     IBagRepository bagRepository,
     IUseItemService useItemService,
     IRedisService redisService,
+    IUserXpLogService userXpLogService,
     IValidator<CreateTaskDto> createTaskValidator) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
@@ -62,7 +63,7 @@ public class TaskService(
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
-        // Try to get from cache first
+        // Try to get from the cache first
         var cacheKey = $"{TaskCacheKeyPrefix}{taskId}";
         var cachedTask = await redisService.GetAsync<TaskDto>(cacheKey);
         if (cachedTask != null) return cachedTask;
@@ -84,7 +85,7 @@ public class TaskService(
 
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
-        // Try to get from cache first
+        // Try to get from the cache first
         var cacheKey = $"{UserTasksCacheKeyPrefix}{userId}";
         var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
         if (cachedTasks != null) return cachedTasks;
@@ -111,7 +112,7 @@ public class TaskService(
 
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
-        // Try to get from cache first
+        // Try to get from the cache first
         var cacheKey = $"{TreeTasksCacheKeyPrefix}{userTreeId}";
         var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
         if (cachedTasks != null) return cachedTasks;
@@ -215,6 +216,15 @@ public class TaskService(
 
         if (updateTaskDto.BreakTime.HasValue)
             existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+        
+        if (updateTaskDto is { StartDate: not null, EndDate: not null })
+        {
+            if (updateTaskDto.StartDate > updateTaskDto.EndDate)
+            {
+                throw new InvalidOperationException(
+                    $"StartDate cannot be after EndDate. StartDate: {updateTaskDto.StartDate:u}, EndDate: {updateTaskDto.EndDate:u}");
+            }
+        }
 
         if (updateTaskDto.StartDate.HasValue)
             existingTask.StartDate = updateTaskDto.StartDate.Value;
@@ -261,9 +271,12 @@ public class TaskService(
 
         var now = DateTime.UtcNow;
         if (now < task.StartDate)
-            throw new InvalidOperationException("Task has not started yet.");
+            throw new InvalidOperationException(
+                $"Task has not started yet. Current time: {now:u}, StartDate: {task.StartDate:u}");
+
         if (now > task.EndDate)
-            throw new InvalidOperationException("Task deadline has passed.");
+            throw new InvalidOperationException(
+                $"Task deadline has passed. Current time: {now:u}, EndDate: {task.EndDate:u}");
 
         if (task.Status == TasksStatus.InProgress)
             throw new InvalidOperationException("Task is already in progress.");
@@ -301,6 +314,7 @@ public class TaskService(
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
+        await userXpLogService.AddXpForStartTaskAsync(userId);
         await InvalidateTaskCaches(task);
     }
 
@@ -356,7 +370,6 @@ public class TaskService(
                     baseXp *= decayMultiplier;
                 }
 
-
                 xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
 
                 if (xpEarned > 0 && task.UserTree != null)
@@ -384,7 +397,6 @@ public class TaskService(
                 await transaction.CommitAsync();
 
                 await UpdateChallengeProgress(task);
-
 
                 await notificationService.PushNotificationAsync(userid, "Task Completed",
                     $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
@@ -831,8 +843,9 @@ public class TaskService(
             throw new InvalidOperationException("Task must have a start time to be completed.");
 
         if (task.TotalDuration.HasValue &&
-            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value))
-            throw new InvalidOperationException("Task cannot be completed before the required duration has passed.");
+            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value - 1))
+            throw new InvalidOperationException("Task cannot be completed more than 1 minute before the required duration.");
+        
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
@@ -899,7 +912,7 @@ public class TaskService(
     {
         var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
 
-        var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.xp_boostTree);
+        var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
         if (equippedItem == null ||
             !double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) ||
             !(effectPercent > 0)) return baseXp;

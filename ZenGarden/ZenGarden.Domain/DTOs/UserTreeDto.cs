@@ -18,6 +18,7 @@ public class UserTreeDto
     public int? FinalTreeId { get; set; }
     public string? FinalTreeName { get; set; }
     public string? FinalTreeRarity { get; set; }
+    public List<TaskDto> Tasks { get; set; } = [];
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

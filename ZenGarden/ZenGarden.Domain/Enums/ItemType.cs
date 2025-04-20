@@ -2,8 +2,8 @@
 
 public enum ItemType
 {
-    Xp_protect,
-    xp_boostTree,
+    XpProtect,
+    XpBoostTree,
     Avatar,
     Background,
     Music

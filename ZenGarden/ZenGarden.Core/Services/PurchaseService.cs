@@ -1,4 +1,5 @@
-﻿using ZenGarden.Core.Interfaces.IRepositories;
+﻿using Stripe;
+using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -13,7 +14,9 @@ public class PurchaseService(
     INotificationService notificationService,
     IUnitOfWork unitOfWork,
     IItemDetailRepository itemDetailRepo,
-    IPurchaseHistoryRepository purchaseHistoryRepo)
+    IPurchaseHistoryRepository purchaseHistoryRepo,
+    IRedisService redisService
+    )
     : IPurchaseService
 {
     public async Task<string> PurchaseItem(int userId, int itemId)
@@ -55,7 +58,7 @@ public class PurchaseService(
     private async Task<(Wallet wallet, Item item)> ValidatePurchaseConditions(int userId, int itemId)
     {
         var wallet = await walletRepo.GetByUserIdAsync(userId)
-                     ?? throw new PurchaseException("Wallet not found.");
+                     ?? throw new PurchaseException("Userid not found.");
 
         var item = await itemRepo.GetByIdAsync(itemId)
                    ?? throw new PurchaseException("Item not found.");
@@ -67,7 +70,7 @@ public class PurchaseService(
         if (item.Cost == null || wallet.Balance < item.Cost.Value)
             throw new PurchaseException("Insufficient balance.");
 
-        if (itemDetail.MonthlyPurchaseLimit is int limit && limit > 0)
+        if (itemDetail.MonthlyPurchaseLimit is { } limit and > 0)
         {
             var now = DateTime.UtcNow;
             var startOfMonth = new DateTime(now.Year, now.Month, 1);
@@ -88,7 +91,7 @@ public class PurchaseService(
 
     private async Task ProcessPayment(Wallet wallet, Item item)
     {
-        wallet.Balance -= item.Cost!.Value;
+        if (item.Cost != null) wallet.Balance -= item.Cost.Value;
         wallet.UpdatedAt = DateTime.UtcNow;
         walletRepo.Update(wallet);
         await unitOfWork.CommitAsync();
@@ -106,6 +109,8 @@ public class PurchaseService(
             bagItem.UpdatedAt = DateTime.UtcNow;
             bagItemRepo.Update(bagItem);
             await unitOfWork.CommitAsync();
+            var cacheKey = $"BagItems_{bagItem.BagId}";
+            await redisService.RemoveAsync(cacheKey);
         }
         else
         {
@@ -118,6 +123,8 @@ public class PurchaseService(
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
+            var cacheKey = $"BagItems_{bag.BagId}";
+            await redisService.RemoveAsync(cacheKey);
         }
 
         if (item.ItemDetail != null)
@@ -126,18 +133,25 @@ public class PurchaseService(
             itemDetailRepo.Update(item.ItemDetail);
             await unitOfWork.CommitAsync();
         }
+
+
+
+
+
+
     }
 
     private async Task RecordPurchaseHistory(int userId, int itemId, Item item)
     {
-        await purchaseHistoryRepo.CreateAsync(new PurchaseHistory
-        {
-            UserId = userId,
-            ItemId = itemId,
-            TotalPrice = item.Cost!.Value,
-            CreatedAt = DateTime.UtcNow,
-            Status = PurchaseHistoryStatus.Approved
-        });
+        if (item.Cost != null)
+            await purchaseHistoryRepo.CreateAsync(new PurchaseHistory
+            {
+                UserId = userId,
+                ItemId = itemId,
+                TotalPrice = item.Cost.Value,
+                CreatedAt = DateTime.UtcNow,
+                Status = PurchaseHistoryStatus.Approved
+            });
     }
 
     private async Task SendNotification(int userId)

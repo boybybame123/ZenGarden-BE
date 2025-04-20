@@ -11,4 +11,5 @@ public interface IUserTreeRepository : IGenericRepository<UserTree>
     Task<List<UserTree>> GetUserTreeByOwnerIdAsync(int ownerId);
     Task<List<UserTree>> GetAllActiveUserTreesAsync();
     Task<List<UserTree>> GetAllUserTreesHavingMaxLevelByOwnerIdAsync(int userId);
+    Task<List<UserTree>> GetActiveUserTreeAsync(int userId);
 }
