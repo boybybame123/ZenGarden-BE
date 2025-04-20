@@ -22,7 +22,7 @@ public class UserXpLogService(
 
     public async Task<(double xpEarned, string notificationMessage)> CheckInAndGetXpAsync(int userId)
     {
-        const int xpBase = 10;
+        var xpBase = GetXpAmountBySource(XpSourceType.DailyLogin);
         const double streakBonusRate = 0.1;
         const int maxStreakDays = 7;
 
@@ -94,5 +94,52 @@ public class UserXpLogService(
     {
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
         return userExp?.StreakDays ?? 0;
+    }
+    
+    public async Task<double> AddXpForStartTaskAsync(int userId)
+    {
+        var amount = GetXpAmountBySource(XpSourceType.StartTask);
+
+        var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
+
+        if (userExp == null)
+        {
+            userExp = new UserExperience
+            {
+                UserId = userId,
+                TotalXp = 0,
+                StreakDays = 0,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await userExperienceRepository.CreateAsync(userExp);
+        }
+
+        userExp.TotalXp += amount;
+        userExp.UpdatedAt = DateTime.UtcNow;
+        userExperienceRepository.Update(userExp);
+
+        await userXpLogRepository.CreateAsync(new UserXpLog
+        {
+            UserId = userId,
+            XpAmount = amount,
+            XpSource = XpSourceType.StartTask,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await notificationService.PushNotificationAsync(userId, "XP Earned", $"You've earned {amount:F0} XP for starting a task!");
+
+        await unitOfWork.CommitAsync();
+
+        return amount;
+    }
+    
+    private static double GetXpAmountBySource(XpSourceType source)
+    {
+        return source switch
+        {
+            XpSourceType.StartTask => 5,
+            XpSourceType.DailyLogin => 10,
+            _ => 0
+        };
     }
 }
