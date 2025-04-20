@@ -30,6 +30,7 @@ public class TaskService(
     IBagRepository bagRepository,
     IUseItemService useItemService,
     IRedisService redisService,
+    IUserXpLogService userXpLogService,
     IValidator<CreateTaskDto> createTaskValidator) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
@@ -313,6 +314,7 @@ public class TaskService(
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
+        await userXpLogService.AddXpForStartTaskAsync(userId);
         await InvalidateTaskCaches(task);
     }
 
