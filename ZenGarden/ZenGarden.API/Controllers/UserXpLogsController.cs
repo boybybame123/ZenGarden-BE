@@ -32,15 +32,16 @@ public class UserXpLogsController(IUserXpLogService userXpLogService)
     [HttpPost("claim-daily-xp")]
     public async Task<IActionResult> CheckInUser()
     {
-        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
-            return Unauthorized(new { error = "Invalid or missing user ID." });
+        var userId = HttpContext.GetUserId();
+        if (!userId.HasValue) return Unauthorized();
 
-        var xpEarned = await userXpLogService.CheckInAndGetXpAsync(userId);
-        if (xpEarned == 0)
-            return BadRequest(new { message = "Already checked in today." });
-
-        return Ok(new { message = "Check-in successful!", xpEarned });
+        var (xp, message) = await userXpLogService.CheckInAndGetXpAsync(userId.Value);
+        return Ok(new
+        {
+            Success = xp > 0,
+            XpEarned = xp,
+            Message = message
+        });
     }
     
     [Authorize]
