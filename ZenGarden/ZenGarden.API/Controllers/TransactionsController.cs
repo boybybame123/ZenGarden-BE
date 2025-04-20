@@ -24,4 +24,21 @@ public class TransactionsController(ITransactionsService transactionsService) : 
             return StatusCode(500, ex.Message);
         }
     }
+    [HttpGet]
+    public async Task<IActionResult> Transactions()
+    {
+        try
+        {
+            var transactions = await transactionsService.GetTransactionsAsync();
+            return Ok(transactions);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
 }
