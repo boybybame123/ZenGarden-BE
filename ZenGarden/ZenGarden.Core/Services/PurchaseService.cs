@@ -156,7 +156,7 @@ public class PurchaseService(
 
     private async Task SendNotification(int userId, Item item)
     {
-        await notificationService.PushNotificationAsync(userId, "Item", $"Purchase successful item {item.Name}");
+        await notificationService.PushNotificationAsync(userId, "Marketplace", $"Purchase successful item {item.Name}");
     }
 }
 
