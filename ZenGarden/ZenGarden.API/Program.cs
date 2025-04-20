@@ -96,7 +96,7 @@ public partial class Program
         builder.Services.AddScoped<ITransactionsService, TransactionsService>();
         builder.Services.AddScoped<IBagItemService, BagItemService>();
         builder.Services.AddScoped<IBagItemService, BagItemService>();
-
+        builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         builder.Services.AddScoped<IRedisService, RedisService>();
         builder.Services.AddScoped<PaymentService>();
 
@@ -105,7 +105,7 @@ public partial class Program
 
         // SignalR và realtime
         builder.Services.AddSignalR();
-        builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+        
         builder.Services.AddSingleton<RealtimeBackgroundService>();
         builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
 
