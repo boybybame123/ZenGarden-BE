@@ -12,6 +12,7 @@ public class ItemService(
     IItemRepository itemRepository,
     IUnitOfWork unitOfWork,
     IMapper mapper,
+    INotificationService notificationService,
     IRedisService redisService,
     ILogger<ItemService> logger)
     : IItemService
@@ -58,7 +59,7 @@ public class ItemService(
             logger.LogError("Failed to create item.");
             throw new InvalidOperationException("Failed to create item.");
         }
-
+        await notificationService.PushNotificationToAllAsync("New Item Created", $"Item {item.Name} has been created.");
         await InvalidateCache();
     }
 
