@@ -6,4 +6,5 @@ public interface IItemRepository : IGenericRepository<Item>
 {
     Task<List<Item>> GetAllItemAsync();
     Task<Item?> GetItemByIdAsync(int id);
+    Task<List<Item>> GetListItemGift();
 }
