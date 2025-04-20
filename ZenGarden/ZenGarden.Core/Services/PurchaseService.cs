@@ -38,7 +38,7 @@ public class PurchaseService(
             await RecordPurchaseHistory(userId, itemId, item);
 
             // 5. Send notification
-            await SendNotification(userId);
+            await SendNotification(userId,item);
 
             await unitOfWork.CommitTransactionAsync();
             return "Purchase successful.";
@@ -154,9 +154,9 @@ public class PurchaseService(
             });
     }
 
-    private async Task SendNotification(int userId)
+    private async Task SendNotification(int userId, Item item)
     {
-        await notificationService.PushNotificationAsync(userId, "Item", "Purchase successful.");
+        await notificationService.PushNotificationAsync(userId, "Marketplace", $"Purchase successful item {item.Name}");
     }
 }
 
