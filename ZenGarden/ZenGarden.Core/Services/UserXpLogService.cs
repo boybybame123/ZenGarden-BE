@@ -87,4 +87,10 @@ public class UserXpLogService(
 
         return xpEarned;
     }
+    
+    public async Task<int> GetCurrentStreakAsync(int userId)
+    {
+        var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
+        return userExp?.StreakDays ?? 0;
+    }
 }

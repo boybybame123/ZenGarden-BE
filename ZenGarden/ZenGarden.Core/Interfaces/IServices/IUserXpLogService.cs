@@ -4,4 +4,5 @@ public interface IUserXpLogService
 {
     Task<List<DateTime>> GetUserCheckInHistoryAsync(int userId, int month, int year);
     Task<double> CheckInAndGetXpAsync(int userId);
+    Task<int> GetCurrentStreakAsync(int userId);
 }
