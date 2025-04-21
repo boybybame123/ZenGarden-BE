@@ -663,6 +663,14 @@ public class TaskService(
         await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
     }
 
+    public async Task ForceUpdateTaskStatusAsync(int taskId, TasksStatus newStatus)
+    {
+        var task = await taskRepository.GetByIdAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        await ForceUpdateTaskStatusAsync(task, newStatus);
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)
@@ -932,5 +940,47 @@ public class TaskService(
         // Invalidate tree-specific cache if applicable
         if (task.UserTreeId != null)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
+    }
+
+    private async Task ForceUpdateTaskStatusAsync(Tasks task, TasksStatus newStatus)
+    {
+        var timestamp = DateTime.UtcNow;
+
+        switch (newStatus)
+        {
+            case TasksStatus.InProgress:
+                task.StartedAt = timestamp;
+                task.PausedAt = null;
+                break;
+            case TasksStatus.Paused:
+                task.StartedAt ??= timestamp.AddMinutes(-5);
+
+                var delta = (timestamp - task.StartedAt.Value).TotalMinutes;
+                task.AccumulatedTime = (task.AccumulatedTime ?? 0) + delta;
+                task.PausedAt = timestamp;
+                break;
+            case TasksStatus.Completed:
+                task.CompletedAt = timestamp;
+                break;
+            case TasksStatus.NotStarted:
+                // Reset các giá trị
+                task.StartedAt = null;
+                task.PausedAt = null;
+                task.CompletedAt = null;
+                break;
+            // Các trạng thái khác không cần logic đặc biệt
+            case TasksStatus.Overdue:
+            case TasksStatus.Canceled:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(newStatus), newStatus, null);
+        }
+
+        task.Status = newStatus;
+        task.UpdatedAt = timestamp;
+
+        taskRepository.Update(task);
+        await unitOfWork.CommitAsync();
+        await InvalidateTaskCaches(task);
     }
 }
