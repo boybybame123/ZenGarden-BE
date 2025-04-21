@@ -41,6 +41,8 @@ public class UserXpLogService(
             {
                 UserId = userId,
                 TotalXp = 0,
+                LevelId = 1,
+                IsMaxLevel = false,
                 StreakDays = 0,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -111,6 +113,8 @@ public class UserXpLogService(
             {
                 UserId = userId,
                 TotalXp = 0,
+                LevelId = 1,
+                IsMaxLevel = false,
                 StreakDays = 0,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -156,7 +160,7 @@ public class UserXpLogService(
         var allLevels = await userXpConfigRepository.GetAllAsync();
         var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
 
-        var currentLevel = 0;
+        var currentLevel = sortedLevels.FirstOrDefault()?.LevelId ?? 1;
         UserXpConfig? nextLevelConfig = null;
 
         foreach (var level in sortedLevels)
