@@ -13,7 +13,6 @@ public class BagItemService(
 {
     public async Task<List<BagItemDto>?> GetListItemsByBagIdAsync(int bagId)
     {
-
         var cacheKey = $"BagItems_{bagId}";
 
         var cachedBagItems = await redisService.GetAsync<List<BagItemDto>>(cacheKey);

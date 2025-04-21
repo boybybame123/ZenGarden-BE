@@ -285,7 +285,6 @@ public class UserTreeService(
     }
 
 
-
     private async Task<int?> AssignRandomFinalTreeIdAsync()
     {
         var treeIds = await treeRepository.GetAllTreeIdsAsync();
@@ -293,7 +292,7 @@ public class UserTreeService(
         var random = new Random();
         return treeIds[random.Next(treeIds.Count)];
     }
-    
+
     private async Task SetXpToNextLevelAsync(UserTree userTree, UserTreeDto dto)
     {
         var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
@@ -313,5 +312,4 @@ public class UserTreeService(
             dto.XpToNextLevel = 0;
         }
     }
-
 }
