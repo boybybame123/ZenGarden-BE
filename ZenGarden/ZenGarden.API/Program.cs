@@ -105,7 +105,7 @@ public partial class Program
 
         // SignalR và realtime
         builder.Services.AddSignalR();
-        
+
         builder.Services.AddSingleton<RealtimeBackgroundService>();
         builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
 

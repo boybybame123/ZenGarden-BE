@@ -216,15 +216,11 @@ public class TaskService(
 
         if (updateTaskDto.BreakTime.HasValue)
             existingTask.BreakTime = updateTaskDto.BreakTime.Value;
-        
+
         if (updateTaskDto is { StartDate: not null, EndDate: not null })
-        {
             if (updateTaskDto.StartDate > updateTaskDto.EndDate)
-            {
                 throw new InvalidOperationException(
                     $"StartDate cannot be after EndDate. StartDate: {updateTaskDto.StartDate:u}, EndDate: {updateTaskDto.EndDate:u}");
-            }
-        }
 
         if (updateTaskDto.StartDate.HasValue)
             existingTask.StartDate = updateTaskDto.StartDate.Value;
@@ -844,8 +840,8 @@ public class TaskService(
 
         if (task.TotalDuration.HasValue &&
             DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value - 1))
-            throw new InvalidOperationException("Task cannot be completed more than 1 minute before the required duration.");
-        
+            throw new InvalidOperationException(
+                "Task cannot be completed more than 1 minute before the required duration.");
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()

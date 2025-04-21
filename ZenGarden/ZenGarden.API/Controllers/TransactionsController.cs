@@ -24,6 +24,7 @@ public class TransactionsController(ITransactionsService transactionsService) : 
             return StatusCode(500, ex.Message);
         }
     }
+
     [HttpGet]
     public async Task<IActionResult> Transactions()
     {

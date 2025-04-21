@@ -30,10 +30,10 @@ public class NotificationService(
 
         // Gửi đến đúng user qua NotificationHub
         await hubContext.Clients.User(userId.ToString())
-            .SendAsync("ReceiveNotification",notification.Title, notification.Content, notification.CreatedAt);
+            .SendAsync("ReceiveNotification", notification.Title, notification.Content, notification.CreatedAt);
 
-        logger.LogInformation("📢 [SignalR] Sent to user {UserId}: {Title}, {Content}", userId, notification.Title, notification.Content);
-            
+        logger.LogInformation("📢 [SignalR] Sent to user {UserId}: {Title}, {Content}", userId, notification.Title,
+            notification.Content);
     }
 
     public async Task PushNotificationToAllAsync(string title, string content)
@@ -51,12 +51,13 @@ public class NotificationService(
 
         // Gửi đến tất cả user qua NotificationHub
         await hubContext.Clients.All.SendAsync(
-                   "ReceiveNotification",
-                   notification.Title,
-                   notification.Content,
-                   notification.CreatedAt
-               );
+            "ReceiveNotification",
+            notification.Title,
+            notification.Content,
+            notification.CreatedAt
+        );
 
-        logger.LogInformation("📢 [SignalR] Sent to all users:{Title}, {Content}", notification.Title, notification.Content);
+        logger.LogInformation("📢 [SignalR] Sent to all users:{Title}, {Content}", notification.Title,
+            notification.Content);
     }
 }
