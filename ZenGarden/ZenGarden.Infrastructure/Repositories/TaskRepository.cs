@@ -13,7 +13,8 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<Tasks?> GetUserTaskInProgressAsync(int userId)
     {
         return await _context.Tasks
-            .Where(t => t.UserTree.UserId == userId && t.Status == TasksStatus.InProgress)
+            .Where(t => t.UserTree.UserId == userId &&
+                        (t.Status == TasksStatus.InProgress || t.Status == TasksStatus.Paused))
             .FirstOrDefaultAsync();
     }
 

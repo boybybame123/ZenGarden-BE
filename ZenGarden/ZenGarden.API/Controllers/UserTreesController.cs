@@ -72,4 +72,11 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         var userTrees = await userTreeService.GetActiveUserTreeAsync(userId);
         return Ok(userTrees);
     }
+
+    [HttpPost("test/update-tree-health/{userTreeId}")]
+    public async Task<IActionResult> TestUpdateTreeHealth(int userTreeId)
+    {
+        await userTreeService.UpdateSpecificTreeHealthAsync(userTreeId);
+        return Ok("Update executed.");
+    }
 }
