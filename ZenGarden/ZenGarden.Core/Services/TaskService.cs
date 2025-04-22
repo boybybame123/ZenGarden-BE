@@ -173,7 +173,15 @@ public class TaskService(
         await taskRepository.CreateAsync(newTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(newTask);
-        return mapper.Map<TaskDto>(newTask);
+        var taskDto = mapper.Map<TaskDto>(newTask);
+
+        var remainingSeconds = CalculateRemainingSeconds(newTask);
+        taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+
+        var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
+        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+
+        return taskDto;
     }
 
     public async Task UpdateTaskAsync(int taskId, UpdateTaskDto updateTaskDto)

@@ -185,16 +185,16 @@ public class UserTreeService(
     public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userId)
     {
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
-        var userTreeDtos = new List<UserTreeDto>();
+        var userTreeDto = new List<UserTreeDto>();
 
         foreach (var userTree in userTrees)
         {
             var dto = mapper.Map<UserTreeDto>(userTree);
             await SetXpToNextLevelAsync(userTree, dto);
-            userTreeDtos.Add(dto);
+            userTreeDto.Add(dto);
         }
 
-        return userTreeDtos;
+        return userTreeDto;
     }
 
 

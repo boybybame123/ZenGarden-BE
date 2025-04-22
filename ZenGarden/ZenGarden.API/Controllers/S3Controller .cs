@@ -84,8 +84,6 @@ public class S3Controller(IS3Service s3Service) : ControllerBase
     public async Task<IActionResult> DownloadFileFromS3(string key)
     {
         var stream = await s3Service.DownloadFileAsync(key);
-        if (stream == null)
-            return NotFound();
         return File(stream, "application/octet-stream", key);
     }
 }
