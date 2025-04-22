@@ -173,7 +173,15 @@ public class TaskService(
         await taskRepository.CreateAsync(newTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(newTask);
-        return mapper.Map<TaskDto>(newTask);
+        var taskDto = mapper.Map<TaskDto>(newTask);
+
+        var remainingSeconds = CalculateRemainingSeconds(newTask);
+        taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+
+        var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
+        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+
+        return taskDto;
     }
 
     public async Task UpdateTaskAsync(int taskId, UpdateTaskDto updateTaskDto)
@@ -216,15 +224,11 @@ public class TaskService(
 
         if (updateTaskDto.BreakTime.HasValue)
             existingTask.BreakTime = updateTaskDto.BreakTime.Value;
-        
+
         if (updateTaskDto is { StartDate: not null, EndDate: not null })
-        {
             if (updateTaskDto.StartDate > updateTaskDto.EndDate)
-            {
                 throw new InvalidOperationException(
                     $"StartDate cannot be after EndDate. StartDate: {updateTaskDto.StartDate:u}, EndDate: {updateTaskDto.EndDate:u}");
-            }
-        }
 
         if (updateTaskDto.StartDate.HasValue)
             existingTask.StartDate = updateTaskDto.StartDate.Value;
@@ -667,6 +671,14 @@ public class TaskService(
         await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
     }
 
+    public async Task ForceUpdateTaskStatusAsync(int taskId, TasksStatus newStatus)
+    {
+        var task = await taskRepository.GetByIdAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        await ForceUpdateTaskStatusAsync(task, newStatus);
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)
@@ -844,8 +856,8 @@ public class TaskService(
 
         if (task.TotalDuration.HasValue &&
             DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value - 1))
-            throw new InvalidOperationException("Task cannot be completed more than 1 minute before the required duration.");
-        
+            throw new InvalidOperationException(
+                "Task cannot be completed more than 1 minute before the required duration.");
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
@@ -936,5 +948,47 @@ public class TaskService(
         // Invalidate tree-specific cache if applicable
         if (task.UserTreeId != null)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
+    }
+
+    private async Task ForceUpdateTaskStatusAsync(Tasks task, TasksStatus newStatus)
+    {
+        var timestamp = DateTime.UtcNow;
+
+        switch (newStatus)
+        {
+            case TasksStatus.InProgress:
+                task.StartedAt = timestamp;
+                task.PausedAt = null;
+                break;
+            case TasksStatus.Paused:
+                task.StartedAt ??= timestamp.AddMinutes(-5);
+
+                var delta = (timestamp - task.StartedAt.Value).TotalMinutes;
+                task.AccumulatedTime = (task.AccumulatedTime ?? 0) + delta;
+                task.PausedAt = timestamp;
+                break;
+            case TasksStatus.Completed:
+                task.CompletedAt = timestamp;
+                break;
+            case TasksStatus.NotStarted:
+                // Reset các giá trị
+                task.StartedAt = null;
+                task.PausedAt = null;
+                task.CompletedAt = null;
+                break;
+            // Các trạng thái khác không cần logic đặc biệt
+            case TasksStatus.Overdue:
+            case TasksStatus.Canceled:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(newStatus), newStatus, null);
+        }
+
+        task.Status = newStatus;
+        task.UpdatedAt = timestamp;
+
+        taskRepository.Update(task);
+        await unitOfWork.CommitAsync();
+        await InvalidateTaskCaches(task);
     }
 }

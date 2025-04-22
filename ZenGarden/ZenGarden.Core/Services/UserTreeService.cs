@@ -185,16 +185,16 @@ public class UserTreeService(
     public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userId)
     {
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
-        var userTreeDtos = new List<UserTreeDto>();
+        var userTreeDto = new List<UserTreeDto>();
 
         foreach (var userTree in userTrees)
         {
             var dto = mapper.Map<UserTreeDto>(userTree);
             await SetXpToNextLevelAsync(userTree, dto);
-            userTreeDtos.Add(dto);
+            userTreeDto.Add(dto);
         }
 
-        return userTreeDtos;
+        return userTreeDto;
     }
 
 
@@ -285,7 +285,6 @@ public class UserTreeService(
     }
 
 
-
     private async Task<int?> AssignRandomFinalTreeIdAsync()
     {
         var treeIds = await treeRepository.GetAllTreeIdsAsync();
@@ -293,7 +292,7 @@ public class UserTreeService(
         var random = new Random();
         return treeIds[random.Next(treeIds.Count)];
     }
-    
+
     private async Task SetXpToNextLevelAsync(UserTree userTree, UserTreeDto dto)
     {
         var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
@@ -313,5 +312,4 @@ public class UserTreeService(
             dto.XpToNextLevel = 0;
         }
     }
-
 }

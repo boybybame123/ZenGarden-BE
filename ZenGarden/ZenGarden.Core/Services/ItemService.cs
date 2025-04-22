@@ -59,6 +59,7 @@ public class ItemService(
             logger.LogError("Failed to create item.");
             throw new InvalidOperationException("Failed to create item.");
         }
+
         await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been created.");
         await InvalidateCache();
     }
@@ -85,7 +86,7 @@ public class ItemService(
             logger.LogError("Failed to update item.");
             throw new InvalidOperationException("Failed to update item.");
         }
-        
+
         var cacheKey = $"item_{item.ItemId}";
         await redisService.DeleteKeyAsync(cacheKey);
         await InvalidateCache();
@@ -133,6 +134,7 @@ public class ItemService(
             logger.LogError("Failed to delete item.");
             throw new InvalidOperationException("Failed to delete item.");
         }
+
         var cacheKey = $"item_{itemId}";
         await redisService.DeleteKeyAsync(cacheKey);
         await InvalidateCache();

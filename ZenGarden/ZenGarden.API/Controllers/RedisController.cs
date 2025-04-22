@@ -3,30 +3,23 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RedisController : ControllerBase
+public class RedisController(
+    IRedisService redisService,
+    ILogger<RedisController> logger)
+    : ControllerBase
 {
-    private readonly ILogger<RedisController> _logger;
-    private readonly IRedisService _redisService;
-
-    public RedisController(
-        IRedisService redisService,
-        ILogger<RedisController> logger)
-    {
-        _redisService = redisService;
-        _logger = logger;
-    }
-
     [HttpGet("ping")]
     public async Task<IActionResult> Ping()
     {
         try
         {
-            var isAlive = await _redisService.PingAsync();
+            var isAlive = await redisService.PingAsync();
             return Ok(new
             {
                 success = true,
@@ -36,7 +29,7 @@ public class RedisController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error pinging Redis");
+            logger.LogError(ex, "Error pinging Redis");
             return StatusCode(500, new
             {
                 success = false,
@@ -50,14 +43,7 @@ public class RedisController : ControllerBase
     {
         try
         {
-            var value = await _redisService.GetStringAsync(key);
-
-            if (value == null)
-                return NotFound(new
-                {
-                    success = false,
-                    message = "Key not found"
-                });
+            var value = await redisService.GetStringAsync(key);
 
             return Ok(new
             {
@@ -68,7 +54,7 @@ public class RedisController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error getting key {key} from Redis");
+            logger.LogError(ex, $"Error getting key {key} from Redis");
             return StatusCode(500, new
             {
                 success = false,
@@ -83,7 +69,7 @@ public class RedisController : ControllerBase
     {
         try
         {
-            var result = request is { Key: not null, Value: not null } && await _redisService.SetStringAsync(
+            var result = request is { Key: not null, Value: not null } && await redisService.SetStringAsync(
                 request.Key,
                 request.Value,
                 request.ExpiryInSeconds.HasValue
@@ -106,7 +92,7 @@ public class RedisController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error setting key {request.Key} in Redis");
+            logger.LogError(ex, $"Error setting key {request.Key} in Redis");
             return StatusCode(500, new
             {
                 success = false,
@@ -120,7 +106,7 @@ public class RedisController : ControllerBase
     {
         try
         {
-            var result = await _redisService.DeleteKeyAsync(key);
+            var result = await redisService.DeleteKeyAsync(key);
 
             if (!result)
                 return NotFound(new
@@ -138,7 +124,7 @@ public class RedisController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error deleting key {key} from Redis");
+            logger.LogError(ex, $"Error deleting key {key} from Redis");
             return StatusCode(500, new
             {
                 success = false,
@@ -152,7 +138,7 @@ public class RedisController : ControllerBase
     {
         try
         {
-            var exists = await _redisService.KeyExistsAsync(key);
+            var exists = await redisService.KeyExistsAsync(key);
             return Ok(new
             {
                 success = true,
@@ -162,7 +148,7 @@ public class RedisController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error checking existence of key {key} in Redis");
+            logger.LogError(ex, $"Error checking existence of key {key} in Redis");
             return StatusCode(500, new
             {
                 success = false,
@@ -170,13 +156,4 @@ public class RedisController : ControllerBase
             });
         }
     }
-}
-
-public class SetRedisValueRequest
-{
-    [Required] public string? Key { get; set; }
-
-    [Required] public string? Value { get; set; }
-
-    public int? ExpiryInSeconds { get; set; }
 }

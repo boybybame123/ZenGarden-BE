@@ -12,6 +12,7 @@ public class TransactionsService(ITransactionsRepository transactionsRepository)
         if (transactions == null) throw new KeyNotFoundException("No transactions found for this user.");
         return transactions;
     }
+
     public async Task<List<Transactions>> GetTransactionsAsync()
     {
         var transactions = await transactionsRepository.GetAllAsync();

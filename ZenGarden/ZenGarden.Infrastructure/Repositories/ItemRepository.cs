@@ -23,6 +23,7 @@ public class ItemRepository(ZenGardenContext context) : GenericRepository<Item>(
             .Include(u => u.ItemDetail)
             .FirstOrDefaultAsync(u => u.ItemId == id);
     }
+
     public async Task<List<Item>> GetListItemGift()
     {
         return await _context.Item
