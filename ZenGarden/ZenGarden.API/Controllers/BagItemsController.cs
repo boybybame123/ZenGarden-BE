@@ -5,15 +5,15 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class BagItemsController(IBagItemService bagitemService) : ControllerBase
+public class BagItemsController(IBagItemService bagItemService) : ControllerBase
 {
-    private readonly IBagItemService _bagitemService =
-        bagitemService ?? throw new ArgumentNullException(nameof(bagitemService));
+    private readonly IBagItemService _bagItemService =
+        bagItemService ?? throw new ArgumentNullException(nameof(bagItemService));
 
     [HttpGet("{bagId:int}")]
     public async Task<IActionResult> GetListBagItemByBagId(int bagId)
     {
-        var bag = await _bagitemService.GetListItemsByBagIdAsync(bagId);
+        var bag = await _bagItemService.GetListItemsByBagIdAsync(bagId);
         if (bag == null) return NotFound();
         return Ok(bag);
     }

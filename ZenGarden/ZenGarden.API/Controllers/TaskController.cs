@@ -131,4 +131,18 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.WeeklyTaskPriorityResetAsync();
         return Ok(new { message = "Weekly task priorities reset successfully." });
     }
+
+    [HttpPut("force-update")]
+    public async Task<IActionResult> ForceUpdateTaskStatus([FromBody] ForceUpdateTaskStatusDto dto)
+    {
+        await _taskService.ForceUpdateTaskStatusAsync(dto.TaskId, dto.NewStatus);
+        return Ok(new { message = "Task status updated successfully." });
+    }
+    
+    [HttpPut("{taskId:int}/task-type")]
+    public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto)
+    {
+        await _taskService.UpdateTaskTypeAsync(taskId, dto.NewTaskTypeId);
+        return NoContent();
+    }
 }

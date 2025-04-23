@@ -1,5 +1,4 @@
-﻿using Stripe;
-using ZenGarden.Core.Interfaces.IRepositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -16,7 +15,7 @@ public class PurchaseService(
     IItemDetailRepository itemDetailRepo,
     IPurchaseHistoryRepository purchaseHistoryRepo,
     IRedisService redisService
-    )
+)
     : IPurchaseService
 {
     public async Task<string> PurchaseItem(int userId, int itemId)
@@ -38,7 +37,7 @@ public class PurchaseService(
             await RecordPurchaseHistory(userId, itemId, item);
 
             // 5. Send notification
-            await SendNotification(userId);
+            await SendNotification(userId, item);
 
             await unitOfWork.CommitTransactionAsync();
             return "Purchase successful.";
@@ -133,12 +132,6 @@ public class PurchaseService(
             itemDetailRepo.Update(item.ItemDetail);
             await unitOfWork.CommitAsync();
         }
-
-
-
-
-
-
     }
 
     private async Task RecordPurchaseHistory(int userId, int itemId, Item item)
@@ -154,9 +147,9 @@ public class PurchaseService(
             });
     }
 
-    private async Task SendNotification(int userId)
+    private async Task SendNotification(int userId, Item item)
     {
-        await notificationService.PushNotificationAsync(userId, "Item", "Purchase successful.");
+        await notificationService.PushNotificationAsync(userId, "Marketplace", $"Purchase successful item {item.Name}");
     }
 }
 

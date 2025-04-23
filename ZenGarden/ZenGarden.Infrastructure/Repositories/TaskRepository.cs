@@ -13,7 +13,8 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<Tasks?> GetUserTaskInProgressAsync(int userId)
     {
         return await _context.Tasks
-            .Where(t => t.UserTree.UserId == userId && t.Status == TasksStatus.InProgress)
+            .Where(t => t.UserTree.UserId == userId &&
+                        (t.Status == TasksStatus.InProgress || t.Status == TasksStatus.Paused))
             .FirstOrDefaultAsync();
     }
 
@@ -58,7 +59,10 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<List<Tasks>> GetOverdueTasksAsync()
     {
         return await _context.Tasks
-            .Where(t => t.Status == TasksStatus.InProgress || t.Status == TasksStatus.Paused && t.EndDate < DateTime.UtcNow)
+            .Where(t => (t.Status == TasksStatus.InProgress || 
+                         t.Status == TasksStatus.Paused || 
+                         t.Status == TasksStatus.NotStarted) 
+                        && t.EndDate < DateTime.UtcNow)
             .ToListAsync();
     }
 

@@ -12,6 +12,7 @@ public class ItemService(
     IItemRepository itemRepository,
     IUnitOfWork unitOfWork,
     IMapper mapper,
+    INotificationService notificationService,
     IRedisService redisService,
     ILogger<ItemService> logger)
     : IItemService
@@ -25,7 +26,7 @@ public class ItemService(
         var items = await itemRepository.GetAllItemAsync();
         var itemDto = mapper.Map<List<ItemDto>>(items);
 
-        await redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(30));
+        await redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(10));
         return itemDto;
     }
 
@@ -59,6 +60,7 @@ public class ItemService(
             throw new InvalidOperationException("Failed to create item.");
         }
 
+        await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been created.");
         await InvalidateCache();
     }
 
@@ -84,7 +86,7 @@ public class ItemService(
             logger.LogError("Failed to update item.");
             throw new InvalidOperationException("Failed to update item.");
         }
-        
+
         var cacheKey = $"item_{item.ItemId}";
         await redisService.DeleteKeyAsync(cacheKey);
         await InvalidateCache();
@@ -132,6 +134,7 @@ public class ItemService(
             logger.LogError("Failed to delete item.");
             throw new InvalidOperationException("Failed to delete item.");
         }
+
         var cacheKey = $"item_{itemId}";
         await redisService.DeleteKeyAsync(cacheKey);
         await InvalidateCache();

@@ -9,6 +9,8 @@ public class UserXpLogService(
     IUserXpLogRepository userXpLogRepository,
     IUserExperienceRepository userExperienceRepository,
     INotificationService notificationService,
+    IUserXpConfigRepository userXpConfigRepository,
+    IUseItemService useItemService,
     IUnitOfWork unitOfWork)
     : IUserXpLogService
 {
@@ -39,6 +41,8 @@ public class UserXpLogService(
             {
                 UserId = userId,
                 TotalXp = 0,
+                LevelId = 1,
+                IsMaxLevel = false,
                 StreakDays = 0,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -48,8 +52,8 @@ public class UserXpLogService(
 
         var lastCheckIn = await userXpLogRepository.GetLastCheckInLogAsync(userId);
 
-        var consecutiveDays = userExp.StreakDays; 
-        var streakDays = 0; 
+        var consecutiveDays = userExp.StreakDays;
+        var streakDays = 0;
 
         if (lastCheckIn != null)
         {
@@ -63,7 +67,7 @@ public class UserXpLogService(
             };
 
             if (consecutiveDays >= 3)
-                streakDays = Math.Min(consecutiveDays - 2, maxStreakDays); 
+                streakDays = Math.Min(consecutiveDays - 2, maxStreakDays);
         }
 
         var streakMultiplier = 1 + (streakDays - 1) * streakBonusRate;
@@ -73,6 +77,7 @@ public class UserXpLogService(
         userExp.StreakDays = consecutiveDays;
         userExp.UpdatedAt = DateTime.UtcNow;
         userExperienceRepository.Update(userExp);
+        await CheckLevelUpAsync(userId);
 
         var log = new UserXpLog
         {
@@ -89,13 +94,13 @@ public class UserXpLogService(
 
         return (xpEarned, message);
     }
-    
+
     public async Task<int> GetCurrentStreakAsync(int userId)
     {
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
         return userExp?.StreakDays ?? 0;
     }
-    
+
     public async Task<double> AddXpForStartTaskAsync(int userId)
     {
         var amount = GetXpAmountBySource(XpSourceType.StartTask);
@@ -108,6 +113,8 @@ public class UserXpLogService(
             {
                 UserId = userId,
                 TotalXp = 0,
+                LevelId = 1,
+                IsMaxLevel = false,
                 StreakDays = 0,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -117,6 +124,7 @@ public class UserXpLogService(
         userExp.TotalXp += amount;
         userExp.UpdatedAt = DateTime.UtcNow;
         userExperienceRepository.Update(userExp);
+        await CheckLevelUpAsync(userId);
 
         await userXpLogRepository.CreateAsync(new UserXpLog
         {
@@ -126,13 +134,14 @@ public class UserXpLogService(
             CreatedAt = DateTime.UtcNow
         });
 
-        await notificationService.PushNotificationAsync(userId, "XP Earned", $"You've earned {amount:F0} XP for starting a task!");
+        await notificationService.PushNotificationAsync(userId, "XP Earned",
+            $"You've earned {amount:F0} XP for starting a task!");
 
         await unitOfWork.CommitAsync();
 
         return amount;
     }
-    
+
     private static double GetXpAmountBySource(XpSourceType source)
     {
         return source switch
@@ -141,5 +150,51 @@ public class UserXpLogService(
             XpSourceType.DailyLogin => 10,
             _ => 0
         };
+    }
+
+    private async Task CheckLevelUpAsync(int userId)
+    {
+        var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
+        if (userExp == null) return;
+
+        var allLevels = await userXpConfigRepository.GetAllAsync();
+        var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
+
+        var currentLevel = sortedLevels.FirstOrDefault()?.LevelId ?? 1;
+        UserXpConfig? nextLevelConfig = null;
+
+        foreach (var level in sortedLevels)
+        {
+            if (userExp.TotalXp >= level.XpThreshold)
+            {
+                var nextIndex = sortedLevels.IndexOf(level) + 1;
+                currentLevel = nextIndex < sortedLevels.Count ? sortedLevels[nextIndex].LevelId : level.LevelId;
+            }
+            else
+            {
+                nextLevelConfig = level;
+                break;
+            }
+        }
+
+        var isLevelUp = userExp.LevelId != currentLevel;
+
+        userExp.LevelId = currentLevel;
+        userExp.XpToNextLevel = nextLevelConfig != null
+            ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
+            : 0;
+        userExp.IsMaxLevel = nextLevelConfig == null;
+
+        userExperienceRepository.Update(userExp);
+        await unitOfWork.CommitAsync();
+
+        if (isLevelUp)
+        {
+            await notificationService.PushNotificationAsync(userId, "Level Up!",
+                $"Congratulations! You've reached level {currentLevel}!");
+
+            if (currentLevel % 5 == 0)
+                await useItemService.GiftRandomItemFromListAsync(userId);
+        }
     }
 }

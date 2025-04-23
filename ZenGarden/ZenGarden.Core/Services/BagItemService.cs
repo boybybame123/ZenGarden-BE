@@ -13,7 +13,6 @@ public class BagItemService(
 {
     public async Task<List<BagItemDto>?> GetListItemsByBagIdAsync(int bagId)
     {
-
         var cacheKey = $"BagItems_{bagId}";
 
         var cachedBagItems = await redisService.GetAsync<List<BagItemDto>>(cacheKey);
@@ -26,7 +25,7 @@ public class BagItemService(
             throw new KeyNotFoundException($"No items found for bag with ID {bagId}.");
 
         var bagItemDtos = mapper.Map<List<BagItemDto>>(bagItems);
-        await redisService.SetAsync(cacheKey, bagItemDtos, TimeSpan.FromHours(1));
+        await redisService.SetAsync(cacheKey, bagItemDtos, TimeSpan.FromMinutes(10));
 
         return bagItemDtos;
     }

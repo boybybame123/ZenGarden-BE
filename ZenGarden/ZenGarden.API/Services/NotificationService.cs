@@ -30,9 +30,9 @@ public class NotificationService(
 
         // Gửi đến đúng user qua NotificationHub
         await hubContext.Clients.User(userId.ToString())
-            .SendAsync("ReceiveNotification", notification.Content, notification.CreatedAt);
+            .SendAsync("ReceiveNotification", notification.Title, notification.Content, notification.CreatedAt);
 
-        logger.LogInformation("📢 [SignalR] Sent to user {UserId}: {NotificationContent}", userId,
+        logger.LogInformation("📢 [SignalR] Sent to user {UserId}: {Title}, {Content}", userId, notification.Title,
             notification.Content);
     }
 
@@ -50,9 +50,14 @@ public class NotificationService(
         logger.LogInformation("✅ Notification saved and pushed to all users");
 
         // Gửi đến tất cả user qua NotificationHub
-        await hubContext.Clients.All
-            .SendAsync("ReceiveNotification", notification.Content, notification.CreatedAt);
+        await hubContext.Clients.All.SendAsync(
+            "ReceiveNotification",
+            notification.Title,
+            notification.Content,
+            notification.CreatedAt
+        );
 
-        logger.LogInformation("📢 [SignalR] Sent to all users: {NotificationContent}", notification.Content);
+        logger.LogInformation("📢 [SignalR] Sent to all users:{Title}, {Content}", notification.Title,
+            notification.Content);
     }
 }

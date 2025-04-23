@@ -185,67 +185,105 @@ public class UserTreeService(
     public async Task<List<UserTreeDto>> GetAllUserTreesByUserIdAsync(int userId)
     {
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
-        var userTreeDtos = new List<UserTreeDto>();
+        var userTreeDto = new List<UserTreeDto>();
 
         foreach (var userTree in userTrees)
         {
             var dto = mapper.Map<UserTreeDto>(userTree);
             await SetXpToNextLevelAsync(userTree, dto);
-            userTreeDtos.Add(dto);
+            userTreeDto.Add(dto);
         }
 
-        return userTreeDtos;
+        return userTreeDto;
     }
 
 
     public async Task UpdateSpecificTreeHealthAsync(int userTreeId)
     {
         const int dailyXpDecayRate = 10;
+        var shouldProcess = true;
 
         var userTree = await userTreeRepository.GetByIdAsync(userTreeId);
-        if (userTree == null
-            || userTree.TreeStatus == TreeStatus.Withered
-            || userTree.TreeStatus == TreeStatus.MaxLevel
-            || userTree.TreeStatus == TreeStatus.Seed)
-            return;
+        if (userTree == null)
+        {
+            Console.WriteLine($"[TreeHealth] Tree ID {userTreeId} not found.");
+            shouldProcess = false;
+        }
+        else if (userTree.TreeStatus is TreeStatus.Withered or TreeStatus.MaxLevel or TreeStatus.Seed)
+        {
+            Console.WriteLine($"[TreeHealth] Tree ID {userTreeId} has status {userTree.TreeStatus}, skipping decay.");
+            shouldProcess = false;
+        }
 
-        var activeTask = await taskRepository.GetUserTaskInProgressAsync(userTreeId);
-        if (activeTask is not { Status: TasksStatus.InProgress })
-            return;
+        var activeTask = await taskRepository.GetActiveTaskByUserTreeIdAsync(userTreeId);
+        if (activeTask == null)
+        {
+            Console.WriteLine($"[TreeHealth] No active task for Tree ID {userTreeId}.");
+            shouldProcess = false;
+        }
 
-        var lastUpdatedDate = userTree.UpdatedAt.Date;
+        var lastUpdatedDate = userTree?.UpdatedAt.Date ?? DateTime.MinValue;
         var currentDate = DateTime.UtcNow.Date;
         if (currentDate <= lastUpdatedDate)
-            return;
+        {
+            Console.WriteLine($"[TreeHealth] Tree ID {userTreeId} was already updated today.");
+            shouldProcess = false;
+        }
 
         var daysSinceLastCheckIn = (currentDate - lastUpdatedDate).Days;
-        var userId = userTree.UserId ?? throw new InvalidOperationException("UserId is null.");
+        var userId = userTree?.UserId ?? -1;
+
         var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.XpProtect);
         var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
 
-        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1)) daysSinceLastCheckIn -= 1;
+        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1))
+        {
+            daysSinceLastCheckIn -= 1;
+            Console.WriteLine($"[TreeHealth] XP Protect item used, effective days reduced to {daysSinceLastCheckIn}.");
+        }
 
         if (daysSinceLastCheckIn <= 0)
-            return;
-        var xpDecay = daysSinceLastCheckIn * dailyXpDecayRate;
-        userTree.TotalXp = Math.Max(0, userTree.TotalXp - xpDecay);
-
-        if (userTree.TotalXp == 0) userTree.TreeStatus = TreeStatus.Withered;
-
-        userTree.UpdatedAt = DateTime.UtcNow;
-
-
-        var log = new TreeXpLog
         {
-            TaskId = activeTask.TaskId,
-            XpAmount = -xpDecay,
-            ActivityType = ActivityType.Decay,
-            CreatedAt = DateTime.UtcNow
-        };
-        await treeXpLogRepository.CreateAsync(log);
+            Console.WriteLine($"[TreeHealth] No effective days since last update for Tree ID {userTreeId}.");
+            shouldProcess = false;
+        }
 
-        userTreeRepository.Update(userTree);
-        await unitOfWork.CommitAsync();
+        if (shouldProcess)
+        {
+            var xpDecay = daysSinceLastCheckIn * dailyXpDecayRate;
+            if (userTree != null)
+            {
+                var oldXp = userTree.TotalXp;
+
+                userTree.TotalXp = Math.Max(0, userTree.TotalXp - xpDecay);
+                userTree.UpdatedAt = DateTime.UtcNow;
+
+                if (userTree.TotalXp == 0)
+                {
+                    userTree.TreeStatus = TreeStatus.Withered;
+                    Console.WriteLine($"[TreeHealth] Tree ID {userTreeId} has withered due to XP = 0.");
+                }
+
+                var log = new TreeXpLog
+                {
+                    TaskId = activeTask?.TaskId,
+                    XpAmount = -xpDecay,
+                    ActivityType = ActivityType.Decay,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await treeXpLogRepository.CreateAsync(log);
+
+                userTreeRepository.Update(userTree);
+                await unitOfWork.CommitAsync();
+
+                Console.WriteLine(
+                    $"[TreeHealth] Tree ID {userTreeId} XP decayed from {oldXp} to {userTree.TotalXp} (Decay: {xpDecay}).");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"[TreeHealth] Skipping XP decay for Tree ID {userTreeId} due to previous checks.");
+        }
     }
 
 
@@ -285,7 +323,6 @@ public class UserTreeService(
     }
 
 
-
     private async Task<int?> AssignRandomFinalTreeIdAsync()
     {
         var treeIds = await treeRepository.GetAllTreeIdsAsync();
@@ -293,7 +330,7 @@ public class UserTreeService(
         var random = new Random();
         return treeIds[random.Next(treeIds.Count)];
     }
-    
+
     private async Task SetXpToNextLevelAsync(UserTree userTree, UserTreeDto dto)
     {
         var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
@@ -313,5 +350,4 @@ public class UserTreeService(
             dto.XpToNextLevel = 0;
         }
     }
-
 }

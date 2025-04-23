@@ -117,22 +117,6 @@ public class UseItemService(
         await redisService.DeleteKeyAsync(cacheKey);
     }
 
-    public async Task UseItemXpProtect(int userId)
-    {
-        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.XpProtect);
-        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-        if (itemBag == null)
-            throw new KeyNotFoundException("Item not found");
-        if (itemBag.Quantity <= 0)
-            throw new InvalidOperationException("Item quantity is zero");
-        itemBag.Quantity--;
-        itemBag.UpdatedAt = DateTime.UtcNow;
-        bagItemRepository.Update(itemBag);
-        await unitOfWork.CommitAsync();
-        var cacheKey = $"BagItems_{itemBag.BagId}";
-        await redisService.DeleteKeyAsync(cacheKey);
-    }
-
     public async Task<string> GiftRandomItemFromListAsync(int userId)
     {
         // Get the list of giftable items  
@@ -187,15 +171,21 @@ public class UseItemService(
             $"You have received a random item: {randomItem.Name}");
 
         return $"Gifted {randomItem.Name} to user {userId}";
-    } 
+    }
 
-
-
-
-
-
-
-
-
-
+    public async Task UseItemXpProtect(int userId)
+    {
+        var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.XpProtect);
+        var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+        if (itemBag == null)
+            throw new KeyNotFoundException("Item not found");
+        if (itemBag.Quantity <= 0)
+            throw new InvalidOperationException("Item quantity is zero");
+        itemBag.Quantity--;
+        itemBag.UpdatedAt = DateTime.UtcNow;
+        bagItemRepository.Update(itemBag);
+        await unitOfWork.CommitAsync();
+        var cacheKey = $"BagItems_{itemBag.BagId}";
+        await redisService.DeleteKeyAsync(cacheKey);
+    }
 }

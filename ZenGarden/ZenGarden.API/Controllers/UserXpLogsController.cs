@@ -43,7 +43,7 @@ public class UserXpLogsController(IUserXpLogService userXpLogService)
             Message = message
         });
     }
-    
+
     [Authorize]
     [HttpGet("streak")]
     public async Task<IActionResult> GetCurrentStreak()

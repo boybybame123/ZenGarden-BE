@@ -392,6 +392,10 @@ public class ChallengeService(
         challengeRepository.Update(challenge);
 
         await unitOfWork.CommitAsync();
+        await notificationService.PushNotificationToAllAsync(
+            "Challenge Status Changed",
+            $"The challenge '{challenge.ChallengeName}' has been activated. Join now!"
+        );
         return "Challenge status changed to Active";
     }
 
