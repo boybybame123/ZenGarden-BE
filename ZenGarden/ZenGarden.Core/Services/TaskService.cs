@@ -210,13 +210,15 @@ public class TaskService(
         if (updateTaskDto.TotalDuration.HasValue)
             existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
 
-        if (updateTaskDto.FocusMethodId.HasValue)
+        if (updateTaskDto.TaskTypeId.HasValue || updateTaskDto.FocusMethodId.HasValue)
         {
-            _ = await focusMethodRepository.GetByIdAsync(updateTaskDto.FocusMethodId.Value)
-                ?? throw new KeyNotFoundException(
-                    $"FocusMethod with ID {updateTaskDto.FocusMethodId.Value} not found.");
+            var taskTypeId = updateTaskDto.TaskTypeId ?? existingTask.TaskTypeId;
+            var focusMethodId = updateTaskDto.FocusMethodId ?? existingTask.FocusMethodId;
 
-            existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
+            if (focusMethodId.HasValue)
+            {
+                await xpConfigService.EnsureXpConfigExists(focusMethodId.Value, taskTypeId, existingTask.TotalDuration ?? 30);
+            }
         }
 
         if (updateTaskDto.WorkDuration.HasValue)
