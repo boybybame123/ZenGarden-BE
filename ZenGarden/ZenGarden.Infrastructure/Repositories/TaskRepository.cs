@@ -58,8 +58,10 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
     public async Task<List<Tasks>> GetOverdueTasksAsync()
     {
         return await _context.Tasks
-            .Where(t => t.Status == TasksStatus.InProgress ||
-                        (t.Status == TasksStatus.Paused && t.EndDate < DateTime.UtcNow))
+            .Where(t => (t.Status == TasksStatus.InProgress || 
+                         t.Status == TasksStatus.Paused || 
+                         t.Status == TasksStatus.NotStarted) 
+                        && t.EndDate < DateTime.UtcNow)
             .ToListAsync();
     }
 
