@@ -26,7 +26,7 @@ public class ItemService(
         var items = await itemRepository.GetAllItemAsync();
         var itemDto = mapper.Map<List<ItemDto>>(items);
 
-        await redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(30));
+        await redisService.SetAsync(cacheKey, itemDto, TimeSpan.FromMinutes(10));
         return itemDto;
     }
 
