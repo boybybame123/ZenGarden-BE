@@ -294,6 +294,7 @@ public class TaskService(
         {
             task.StartedAt = DateTime.UtcNow;
             task.Status = TasksStatus.InProgress;
+            await userXpLogService.AddXpForStartTaskAsync(userId);
         }
         else if (task is { Status: TasksStatus.Paused, PausedAt: not null, StartedAt: not null })
         {
@@ -318,7 +319,6 @@ public class TaskService(
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
-        await userXpLogService.AddXpForStartTaskAsync(userId);
         await InvalidateTaskCaches(task);
     }
 
@@ -503,7 +503,46 @@ public class TaskService(
         await InvalidateTaskCaches(task);
     }
 
+    public async Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId)
+    {
+        var task = await taskRepository.GetByIdAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
+        var validTypeChanges = new[] { 2, 3 };
+
+        if (!validTypeChanges.Contains(task.TaskTypeId) || !validTypeChanges.Contains(newTaskTypeId))
+            throw new InvalidOperationException("Only switching between TaskTypeId 2 and 3 is allowed.");
+
+        var newTaskType = await taskTypeRepository.GetByIdAsync(newTaskTypeId);
+        if (newTaskType == null)
+            throw new KeyNotFoundException($"TaskType with ID {newTaskTypeId} not found.");
+
+        task.TaskTypeId = newTaskTypeId;
+        task.UpdatedAt = DateTime.UtcNow;
+        taskRepository.Update(task);
+
+        if (task is { FocusMethodId: not null, TotalDuration: not null })
+        {
+            await xpConfigService.EnsureXpConfigExists(
+                task.FocusMethodId.Value,
+                newTaskTypeId,
+                task.TotalDuration.Value
+            );
+        }
+        
+        if (task.UserTree?.UserId is { } userId)
+        {
+            await notificationService.PushNotificationAsync(
+                userId,
+                "Task Type Updated",
+                $"Your task '{task.TaskName}' has been changed to type {newTaskTypeId}."
+            );
+        }
+
+        await unitOfWork.CommitAsync();
+        await InvalidateTaskCaches(task);
+    }
+    
     public async Task AutoPauseTasksAsync()
     {
         var thresholdTime = DateTime.UtcNow.AddMinutes(-10);
