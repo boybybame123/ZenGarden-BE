@@ -164,33 +164,37 @@ public class UserXpLogService(
         UserXpConfig? nextLevelConfig = null;
 
         foreach (var level in sortedLevels)
+        {
             if (userExp.TotalXp >= level.XpThreshold)
             {
-                currentLevel = level.LevelId;
+                var nextIndex = sortedLevels.IndexOf(level) + 1;
+                currentLevel = nextIndex < sortedLevels.Count ? sortedLevels[nextIndex].LevelId : level.LevelId;
             }
             else
             {
                 nextLevelConfig = level;
                 break;
             }
-
-        if (userExp.LevelId != currentLevel)
-        {
-            userExp.LevelId = currentLevel;
-
-            await notificationService.PushNotificationAsync(userId, "Level Up!",
-                $"Congratulations! You've reached level {currentLevel}!");
-
-            if (currentLevel % 5 == 0) await useItemService.GiftRandomItemFromListAsync(userId);
         }
 
+        var isLevelUp = userExp.LevelId != currentLevel;
+
+        userExp.LevelId = currentLevel;
         userExp.XpToNextLevel = nextLevelConfig != null
             ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
             : 0;
-
         userExp.IsMaxLevel = nextLevelConfig == null;
 
         userExperienceRepository.Update(userExp);
         await unitOfWork.CommitAsync();
+
+        if (isLevelUp)
+        {
+            await notificationService.PushNotificationAsync(userId, "Level Up!",
+                $"Congratulations! You've reached level {currentLevel}!");
+
+            if (currentLevel % 5 == 0)
+                await useItemService.GiftRandomItemFromListAsync(userId);
+        }
     }
 }

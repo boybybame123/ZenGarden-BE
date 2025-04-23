@@ -294,6 +294,7 @@ public class TaskService(
         {
             task.StartedAt = DateTime.UtcNow;
             task.Status = TasksStatus.InProgress;
+            await userXpLogService.AddXpForStartTaskAsync(userId);
         }
         else if (task is { Status: TasksStatus.Paused, PausedAt: not null, StartedAt: not null })
         {
@@ -318,7 +319,6 @@ public class TaskService(
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
-        await userXpLogService.AddXpForStartTaskAsync(userId);
         await InvalidateTaskCaches(task);
     }
 
