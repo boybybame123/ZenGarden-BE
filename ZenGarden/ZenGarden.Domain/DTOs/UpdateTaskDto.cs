@@ -15,6 +15,7 @@ public class UpdateTaskDto
     public int? FocusMethodId { get; set; }
     public int? WorkDuration { get; set; }
     public int? BreakTime { get; set; }
+    public double? AccumulatedTime { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 }

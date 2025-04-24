@@ -238,6 +238,10 @@ public class TaskService(
         if (updateTaskDto.EndDate.HasValue)
             existingTask.EndDate = updateTaskDto.EndDate.Value;
 
+        if (updateTaskDto.AccumulatedTime.HasValue)
+            existingTask.AccumulatedTime = updateTaskDto.AccumulatedTime.Value;
+        
+
         if (updateTaskDto.UserTreeId.HasValue)
         {
             var newUserTree = await userTreeRepository.GetByIdAsync(updateTaskDto.UserTreeId.Value)
