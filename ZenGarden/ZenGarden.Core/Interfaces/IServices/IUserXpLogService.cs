@@ -6,4 +6,5 @@ public interface IUserXpLogService
     Task<(double xpEarned, string notificationMessage)> CheckInAndGetXpAsync(int userId);
     Task<int> GetCurrentStreakAsync(int userId);
     Task<double> AddXpForStartTaskAsync(int userId);
+    Task CheckLevelUpAsync(int userId);
 }
