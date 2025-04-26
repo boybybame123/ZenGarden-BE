@@ -1,4 +1,4 @@
-using ZenGarden.Core.Interfaces.IRepositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -182,6 +182,15 @@ public class UserXpLogService(
         }
 
         var isLevelUp = userExp.LevelId != currentLevel;
+
+        if (isLevelUp)
+        {
+           
+            if (nextLevelConfig != null)
+            {
+                userExp.TotalXp = userExp.TotalXp - nextLevelConfig.XpThreshold;
+            }
+        }
 
         userExp.LevelId = currentLevel;
         userExp.XpToNextLevel = nextLevelConfig != null
