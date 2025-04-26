@@ -161,6 +161,7 @@ public class UserXpLogService(
         var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
 
         var currentLevel = 1;
+        UserXpConfig? currentLevelConfig = null;
         UserXpConfig? nextLevelConfig = null;
 
         foreach (var level in sortedLevels)
@@ -168,6 +169,7 @@ public class UserXpLogService(
             if (userExp.TotalXp >= level.XpThreshold)
             {
                 currentLevel = level.LevelId + 1;
+                currentLevelConfig = level; // Lưu lại cấu hình cấp hiện tại
             }
             else
             {
@@ -185,10 +187,10 @@ public class UserXpLogService(
 
         if (isLevelUp)
         {
-           
-            if (nextLevelConfig != null)
+            // Trừ XpThreshold của cấp hiện tại (nếu có)
+            if (currentLevelConfig != null)
             {
-                userExp.TotalXp = userExp.TotalXp - nextLevelConfig.XpThreshold;
+                userExp.TotalXp = userExp.TotalXp - currentLevelConfig.XpThreshold;
             }
         }
 
