@@ -1,4 +1,4 @@
-using ZenGarden.Core.Interfaces.IRepositories;
+﻿using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -152,7 +152,7 @@ public class UserXpLogService(
         };
     }
 
-    private async Task CheckLevelUpAsync(int userId)
+    public async Task CheckLevelUpAsync(int userId)
     {
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
         if (userExp == null) return;
@@ -160,15 +160,16 @@ public class UserXpLogService(
         var allLevels = await userXpConfigRepository.GetAllAsync();
         var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
 
-        var currentLevel = sortedLevels.FirstOrDefault()?.LevelId ?? 1;
+        var currentLevel = 1;
+        UserXpConfig? currentLevelConfig = null;
         UserXpConfig? nextLevelConfig = null;
 
         foreach (var level in sortedLevels)
         {
             if (userExp.TotalXp >= level.XpThreshold)
             {
-                var nextIndex = sortedLevels.IndexOf(level) + 1;
-                currentLevel = nextIndex < sortedLevels.Count ? sortedLevels[nextIndex].LevelId : level.LevelId;
+                currentLevel = level.LevelId + 1;
+                currentLevelConfig = level; // Lưu lại cấu hình cấp hiện tại
             }
             else
             {
@@ -177,7 +178,21 @@ public class UserXpLogService(
             }
         }
 
+        if (nextLevelConfig == null && sortedLevels.Any())
+        {
+            currentLevel = sortedLevels.Last().LevelId + 1;
+        }
+
         var isLevelUp = userExp.LevelId != currentLevel;
+
+        if (isLevelUp)
+        {
+            // Trừ XpThreshold của cấp hiện tại (nếu có)
+            if (currentLevelConfig != null)
+            {
+                userExp.TotalXp = userExp.TotalXp - currentLevelConfig.XpThreshold;
+            }
+        }
 
         userExp.LevelId = currentLevel;
         userExp.XpToNextLevel = nextLevelConfig != null

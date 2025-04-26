@@ -53,4 +53,12 @@ public class UserXpLogsController(IUserXpLogService userXpLogService)
         var streak = await userXpLogService.GetCurrentStreakAsync(userId.Value);
         return Ok(new { streak });
     }
+    
+    [HttpPost("check-level-up/{userId:int}")]
+    public async Task<IActionResult> CheckLevelUp(int userId)
+    {
+        await userXpLogService.CheckLevelUpAsync(userId);
+        return Ok(new { message = "Level check and update completed successfully." });
+        
+    }
 }
