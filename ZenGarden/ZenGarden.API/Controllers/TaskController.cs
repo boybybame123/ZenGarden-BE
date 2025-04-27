@@ -138,7 +138,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.ForceUpdateTaskStatusAsync(dto.TaskId, dto.NewStatus);
         return Ok(new { message = "Task status updated successfully." });
     }
-    
+
     [HttpPut("{taskId:int}/task-type")]
     public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto)
     {

@@ -188,8 +188,9 @@ public class TaskService(
     {
         var existingTask = await taskRepository.GetByIdAsync(taskId)
                            ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-        var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
-                     throw new InvalidOperationException("UserId is null.");
+
+        var userId = await taskRepository.GetUserIdByTaskIdAsync(taskId)
+                     ?? throw new InvalidOperationException("UserId is null.");
 
         if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
             throw new InvalidOperationException(
@@ -204,33 +205,11 @@ public class TaskService(
         if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
             existingTask.TaskNote = updateTaskDto.TaskNote;
 
-        existingTask.TaskResult =
-            await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userid);
-
-        if (updateTaskDto.TotalDuration.HasValue)
-            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
-
-        if (updateTaskDto.TaskTypeId.HasValue || updateTaskDto.FocusMethodId.HasValue)
-        {
-            var taskTypeId = updateTaskDto.TaskTypeId ?? existingTask.TaskTypeId;
-            var focusMethodId = updateTaskDto.FocusMethodId ?? existingTask.FocusMethodId;
-
-            if (focusMethodId.HasValue)
-            {
-                await xpConfigService.EnsureXpConfigExists(focusMethodId.Value, taskTypeId, existingTask.TotalDuration ?? 30);
-            }
-        }
-
         if (updateTaskDto.WorkDuration.HasValue)
             existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
 
         if (updateTaskDto.BreakTime.HasValue)
             existingTask.BreakTime = updateTaskDto.BreakTime.Value;
-
-        if (updateTaskDto is { StartDate: not null, EndDate: not null })
-            if (updateTaskDto.StartDate > updateTaskDto.EndDate)
-                throw new InvalidOperationException(
-                    $"StartDate cannot be after EndDate. StartDate: {updateTaskDto.StartDate:u}, EndDate: {updateTaskDto.EndDate:u}");
 
         if (updateTaskDto.StartDate.HasValue)
             existingTask.StartDate = updateTaskDto.StartDate.Value;
@@ -240,7 +219,20 @@ public class TaskService(
 
         if (updateTaskDto.AccumulatedTime.HasValue)
             existingTask.AccumulatedTime = updateTaskDto.AccumulatedTime.Value;
-        
+
+        if (updateTaskDto.TotalDuration.HasValue)
+            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
+
+        if (updateTaskDto.TaskTypeId.HasValue)
+            existingTask.TaskTypeId = updateTaskDto.TaskTypeId.Value;
+
+        if (updateTaskDto.FocusMethodId.HasValue)
+            existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
+
+        if (existingTask is { StartDate: not null, EndDate: not null })
+            if (existingTask.StartDate > existingTask.EndDate)
+                throw new InvalidOperationException(
+                    $"StartDate cannot be after EndDate. StartDate: {existingTask.StartDate:u}, EndDate: {existingTask.EndDate:u}");
 
         if (updateTaskDto.UserTreeId.HasValue)
         {
@@ -254,14 +246,34 @@ public class TaskService(
             existingTask.UserTreeId = updateTaskDto.UserTreeId.Value;
         }
 
+        existingTask.TaskResult =
+            await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userId);
+
+        var needUpdateXpConfig = updateTaskDto.TotalDuration.HasValue
+                                 || updateTaskDto.TaskTypeId.HasValue
+                                 || updateTaskDto.FocusMethodId.HasValue;
+
+        if (needUpdateXpConfig)
+        {
+            var taskTypeId = existingTask.TaskTypeId;
+            var focusMethodId = existingTask.FocusMethodId;
+
+            if (focusMethodId.HasValue)
+                await xpConfigService.EnsureXpConfigExists(
+                    focusMethodId.Value,
+                    taskTypeId,
+                    existingTask.TotalDuration ?? 30
+                );
+        }
+
         existingTask.UpdatedAt = DateTime.UtcNow;
         taskRepository.Update(existingTask);
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update task.");
+
         await InvalidateTaskCaches(existingTask);
     }
-
 
     public async Task DeleteTaskAsync(int taskId)
     {
@@ -528,27 +540,23 @@ public class TaskService(
         taskRepository.Update(task);
 
         if (task is { FocusMethodId: not null, TotalDuration: not null })
-        {
             await xpConfigService.EnsureXpConfigExists(
                 task.FocusMethodId.Value,
                 newTaskTypeId,
                 task.TotalDuration.Value
             );
-        }
-        
+
         if (task.UserTree?.UserId is { } userId)
-        {
             await notificationService.PushNotificationAsync(
                 userId,
                 "Task Type Updated",
                 $"Your task '{task.TaskName}' has been changed to type {newTaskTypeId}."
             );
-        }
 
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
     }
-    
+
     public async Task AutoPauseTasksAsync()
     {
         var thresholdTime = DateTime.UtcNow.AddMinutes(-10);
