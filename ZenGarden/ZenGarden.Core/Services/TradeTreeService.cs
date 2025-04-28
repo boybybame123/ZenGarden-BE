@@ -40,7 +40,7 @@ public class TradeTreeService(
             // Deduct trade fee from the owner's wallet
             var wallet = await walletRepository.GetByUserIdAsync(tradeDto.requesterId)
                          ?? throw new Exception("Wallet not found");
-
+            if (wallet.Balance < tradeFee) return "Insufficient balance to create trade request.";
             // Create and save trade request
             var trade = new TradeHistory
             {
@@ -57,7 +57,7 @@ public class TradeTreeService(
 
             await tradeHistoryRepository.CreateAsync(trade);
             await unitOfWork.CommitAsync();
-            if (wallet.Balance < tradeFee) return "Insufficient balance to create trade request.";
+
             wallet.Balance -= tradeFee;
             walletRepository.Update(wallet);
             await unitOfWork.CommitAsync();
@@ -92,10 +92,10 @@ public class TradeTreeService(
         var wallet = await walletRepository.GetByUserIdAsync(recipientId)
                      ?? throw new Exception("Wallet not found");
 
-
+        if (wallet.Balance < trade.TradeFee) return "Insufficient balance to accept trade request.";
         // Execute the trade
         await ExecuteTrade(trade, requesterTree, recipientTree);
-        if (wallet.Balance < trade.TradeFee) return "Insufficient balance to accept trade request.";
+   
         wallet.Balance -= trade.TradeFee;
         walletRepository.Update(wallet);
         await unitOfWork.CommitAsync();
@@ -235,6 +235,13 @@ public class TradeTreeService(
 
         if (trade.Status != TradeStatus.Pending)
             throw new InvalidOperationException("Trade is not in pending status");
+
+        // Refund trade fee to the user's wallet  
+        var wallet = await walletRepository.GetByUserIdAsync(userA)
+                     ?? throw new Exception("Wallet not found");
+
+        wallet.Balance += trade.TradeFee;
+        walletRepository.Update(wallet);
 
         trade.Status = TradeStatus.Canceled;
         trade.UpdatedAt = DateTime.UtcNow;
