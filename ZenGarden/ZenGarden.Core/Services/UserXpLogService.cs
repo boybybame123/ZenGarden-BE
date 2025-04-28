@@ -142,16 +142,6 @@ public class UserXpLogService(
         return amount;
     }
 
-    private static double GetXpAmountBySource(XpSourceType source)
-    {
-        return source switch
-        {
-            XpSourceType.StartTask => 5,
-            XpSourceType.DailyLogin => 10,
-            _ => 0
-        };
-    }
-
     public async Task CheckLevelUpAsync(int userId)
     {
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
@@ -165,7 +155,6 @@ public class UserXpLogService(
         UserXpConfig? nextLevelConfig = null;
 
         foreach (var level in sortedLevels)
-        {
             if (userExp.TotalXp >= level.XpThreshold)
             {
                 currentLevel = level.LevelId + 1;
@@ -176,12 +165,8 @@ public class UserXpLogService(
                 nextLevelConfig = level;
                 break;
             }
-        }
 
-        if (nextLevelConfig == null && sortedLevels.Any())
-        {
-            currentLevel = sortedLevels.Last().LevelId + 1;
-        }
+        if (nextLevelConfig == null && sortedLevels.Any()) currentLevel = sortedLevels.Last().LevelId + 1;
 
         var isLevelUp = userExp.LevelId != currentLevel;
 
@@ -211,5 +196,15 @@ public class UserXpLogService(
             if (currentLevel % 5 == 0)
                 await useItemService.GiftRandomItemFromListAsync(userId);
         }
+    }
+
+    private static double GetXpAmountBySource(XpSourceType source)
+    {
+        return source switch
+        {
+            XpSourceType.StartTask => 5,
+            XpSourceType.DailyLogin => 10,
+            _ => 0
+        };
     }
 }

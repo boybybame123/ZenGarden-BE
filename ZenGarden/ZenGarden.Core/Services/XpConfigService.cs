@@ -16,13 +16,8 @@ public class XpConfigService(
         if (taskTypeId <= 0 || focusMethodId <= 0 || totalDuration <= 0)
             throw new ArgumentException("Invalid TaskTypeId, FocusMethodId, or TotalDuration.");
 
-        var taskTypeTask = taskTypeRepository.GetByIdAsync(taskTypeId);
-        var focusMethodTask = focusMethodRepository.GetByIdAsync(focusMethodId);
-
-        await Task.WhenAll(taskTypeTask, focusMethodTask);
-
-        var taskType = taskTypeTask.Result;
-        var focusMethod = focusMethodTask.Result;
+        var taskType = await taskTypeRepository.GetByIdAsync(taskTypeId);
+        var focusMethod = await focusMethodRepository.GetByIdAsync(focusMethodId);
 
         if (taskType == null || focusMethod == null)
             throw new KeyNotFoundException("TaskType or FocusMethod not found.");
