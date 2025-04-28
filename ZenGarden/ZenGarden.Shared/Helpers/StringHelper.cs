@@ -9,6 +9,8 @@ public static class StringHelper
 
     public static string FormatSecondsToTime(int seconds)
     {
-        return TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
+        var timeSpan = TimeSpan.FromSeconds(seconds);
+        var totalHours = (int)timeSpan.TotalHours;
+        return $"{totalHours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
     }
 }
