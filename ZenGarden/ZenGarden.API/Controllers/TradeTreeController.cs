@@ -6,7 +6,7 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class TradeTreeController(ITradeTreeService tradeTreeService) : ControllerBase
+public class TradeTreeController(ITradeTreeService tradeTreeService,IUserTreeService userTreeService) : ControllerBase
 {
     [HttpPost("trade")]
     public async Task<IActionResult> Trade([FromBody] TradeDto tradeDto)
@@ -26,6 +26,7 @@ public class TradeTreeController(ITradeTreeService tradeTreeService) : Controlle
     public async Task<IActionResult> GetTradeHistoryByStatus(int status)
     {
         var tradeHistory = await tradeTreeService.GetTradeHistoryByStatusAsync(status);
+       
         return Ok(tradeHistory);
     }
 
