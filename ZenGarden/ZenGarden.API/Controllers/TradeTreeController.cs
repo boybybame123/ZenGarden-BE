@@ -6,7 +6,7 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class TradeTreeController(ITradeTreeService tradeTreeService,IUserTreeService userTreeService) : ControllerBase
+public class TradeTreeController(ITradeTreeService tradeTreeService) : ControllerBase
 {
     [HttpPost("trade")]
     public async Task<IActionResult> Trade([FromBody] TradeDto tradeDto)
