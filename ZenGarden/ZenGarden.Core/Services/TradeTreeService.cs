@@ -216,13 +216,43 @@ public class TradeTreeService(
         return tradeHistories.ToList();
     }
 
-    public async Task<List<TradeHistory>> GetTradeHistoryByStatusAsync(int status)
+    public async Task<List<TradeHistoryDto>> GetTradeHistoryByStatusAsync(int status)
     {
         if (!Enum.IsDefined(typeof(TradeStatus), status))
             throw new ArgumentOutOfRangeException(nameof(status), "Invalid trade status");
 
         var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesbyStatutsAsync(status);
-        return tradeHistories.ToList();
+
+        var tradeHistoryDtos = new List<TradeHistoryDto>();
+
+        foreach (var trade in tradeHistories)
+        {
+            int? finalTreeId = null;
+
+            if (trade.TreeAid.HasValue)
+            {
+                var userTree = await userTreeRepository.GetByIdAsync(trade.TreeAid.Value);
+                finalTreeId = userTree?.FinalTreeId;
+            }
+
+            tradeHistoryDtos.Add(new TradeHistoryDto
+            {
+                TradeId = trade.TradeId,
+                TreeAid = trade.TreeAid,
+                DesiredTreeAID = trade.DesiredTreeAID,
+                TreeOwnerAid = trade.TreeOwnerAid,
+                TreeOwnerBid = trade.TreeOwnerBid,
+                TradeFee = trade.TradeFee,
+                RequestedAt = trade.RequestedAt,
+                CompletedAt = trade.CompletedAt,
+                CreatedAt = trade.CreatedAt,
+                UpdatedAt = trade.UpdatedAt,
+                Status = trade.Status,
+                FinalTreeId = finalTreeId // Populate FinalTreeId
+            });
+        }
+
+        return tradeHistoryDtos;
     }
 
     public async Task<TradeHistory> CancelTradeAsync(int tradeId, int userA)
