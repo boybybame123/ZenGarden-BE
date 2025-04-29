@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Entities;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -52,18 +53,20 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
-    [HttpPut("update-item")]
+    [HttpPut("update-item/{itemId}")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateItem([FromForm] UpdateItemDto item)
+    public async Task<IActionResult> UpdateItem(int itemId,  [FromForm] UpdateItemDto item)
     {
+        item.ItemId = itemId;
         var i = await _itemService.UpdateItemAsync(item);
         return Ok(i);
     }
 
 
-    [HttpPut("update-item-detail")]
-    public async Task<IActionResult> UpdateItemDetail([FromForm] UpdateItemDetailDto itemDetail)
+    [HttpPut("update-item-detail/{itemId}")]
+    public async Task<IActionResult> UpdateItemDetail(int itemId, [FromForm] UpdateItemDetailDto itemDetail)
     {
+        itemDetail.ItemId = itemId;
         var detail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
         return Ok(detail);
     }
