@@ -13,7 +13,6 @@ public class PaymentService(
     IWalletRepository walletRepository,
     INotificationService notificationService,
     IPackageRepository packageRepository,
-    IRedisService redisService,
     IUnitOfWork unitOfWork)
 {
     private readonly StripeClient _stripeClient = new(
