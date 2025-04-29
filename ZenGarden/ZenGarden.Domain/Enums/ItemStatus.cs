@@ -3,7 +3,5 @@
 public enum ItemStatus
 {
     Active,
-    Inactive,
-    Suspended,
-    Banned
+    Inactive
 }
