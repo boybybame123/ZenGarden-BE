@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Domain.Entities;
+using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
@@ -26,4 +27,13 @@ public class TransactionsRepository : GenericRepository<Transactions>, ITransact
             .Where(t => t.UserId == userId)
             .ToListAsync();
     }
+
+    public async Task<List<Transactions>?> ListPendingTransactionsAsyn()
+    {   
+        var fifteenMinutesAgo = DateTime.Now.AddMinutes(-15);
+        return await _context.Set<Transactions>()
+            .Where(t => t.CreatedAt < fifteenMinutesAgo && t.Status == TransactionStatus.Pending)
+            .ToListAsync();
+    }
+   
 }
