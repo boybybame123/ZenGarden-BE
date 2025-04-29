@@ -13,6 +13,7 @@ public class PaymentService(
     IWalletRepository walletRepository,
     INotificationService notificationService,
     IPackageRepository packageRepository,
+    IRedisService redisService,
     IUnitOfWork unitOfWork)
 {
     private readonly StripeClient _stripeClient = new(
@@ -66,8 +67,8 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl = $"https://zengarden-be.onrender.com/api/Payment/success/{paymentIntent.Id}",
-            CancelUrl = $"https://zengarden-be.onrender.com/api/Payment/cancel/{paymentIntent.Id}",
+            SuccessUrl = $"https://zengarden-be-fdre.onrender.com/api/Payment/success/{paymentIntent.Id}",
+            CancelUrl = $"https://zengarden-be-fdre.onrender.com/api/Payment/cancel/{paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
             {
                 { "user_id", request.UserId.ToString() },
@@ -100,7 +101,7 @@ public class PaymentService(
 
         await transactionRepository.CreateAsync(transaction);
         await unitOfWork.CommitAsync();
-
+   
         // 5. Return response
         return new CheckoutResponse
         {
