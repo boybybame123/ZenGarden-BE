@@ -42,4 +42,17 @@ public class TransactionsController(ITransactionsService transactionsService) : 
             return StatusCode(500, ex.Message);
         }
     }
+    [HttpPost("mark-old-pending")]
+    public async Task<IActionResult> MarkOldPendingTransactionsAsFailed()
+    {
+        try
+        {
+            await transactionsService.MarkOldPendingTransactionsAsFailedAsync();
+            return Ok("Old pending transactions marked as failed.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
 }
