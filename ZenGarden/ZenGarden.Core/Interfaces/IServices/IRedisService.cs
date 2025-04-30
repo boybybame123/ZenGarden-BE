@@ -16,4 +16,5 @@ public interface IRedisService
     Task RemoveAsync(string key);
     Task RemoveByPatternAsync(string pattern);
     void Dispose();
+
 }

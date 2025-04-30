@@ -36,10 +36,11 @@ public class PackageController(IPackagesService packagesService) : ControllerBas
         return Ok(new { message = "Package deleted successfully" });
     }
 
-    [HttpPut("update-Package")]
+    [HttpPut("update-Package/{packageId}")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdatePackage(PackageDto package)
+    public async Task<IActionResult> UpdatePackage(int packageId, PackageDto package)
     {
+        package.PackageId = packageId;
         await _packageService.UpdatePackageAsync(package);
         return Ok(new { message = "Package updated successfully" });
     }

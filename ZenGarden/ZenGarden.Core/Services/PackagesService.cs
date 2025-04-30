@@ -18,6 +18,7 @@ public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork
 
     public async Task<Packages?> GetPackageByIdAsync(int packageId)
     {
+        
         return await packagesRepository.GetByIdAsync(packageId)
                ?? throw new KeyNotFoundException($"Package with ID {packageId} not found.");
     }
@@ -30,7 +31,7 @@ public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork
             throw new KeyNotFoundException($"Package with ID {package.PackageId} not found.");
 
         mapper.Map(package, updatePackage);
-
+        updatePackage.UpdatedAt = DateTime.Now;
         packagesRepository.Update(updatePackage);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update Package.");
@@ -50,7 +51,8 @@ public class PackagesService(IPackagesRepository packagesRepository, IUnitOfWork
     public async Task<Packages?> CreatePackageAsync(PackageDto package)
     {
         var createPackage = mapper.Map<Packages>(package);
-
+        createPackage.CreatedAt = DateTime.Now;
+        createPackage.UpdatedAt = DateTime.Now;
         await packagesRepository.CreateAsync(createPackage);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to create Package.");

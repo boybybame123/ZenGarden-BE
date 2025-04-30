@@ -38,6 +38,8 @@ public class UserTreeService(
     }
 
 
+
+
     public async Task AddAsync(CreateUserTreeDto createUserTreeDto)
     {
         var userTree = mapper.Map<UserTree>(createUserTreeDto);
@@ -349,5 +351,16 @@ public class UserTreeService(
         {
             dto.XpToNextLevel = 0;
         }
+    }
+
+    public async Task<UserTreeDto> GetUserTreeByIdAsync(int userTreeId)
+    {
+        var userTree = await userTreeRepository.GetByIdAsync(userTreeId)
+                       ?? throw new KeyNotFoundException("UserTree not found");
+
+        var userTreeDto = mapper.Map<UserTreeDto>(userTree);
+        
+
+        return userTreeDto;
     }
 }

@@ -144,60 +144,72 @@ public class UserXpLogService(
 
     public async Task CheckLevelUpAsync(int userId)
     {
+        // Retrieve the user's experience data
         var userExp = await userExperienceRepository.GetByUserIdAsync(userId);
         if (userExp == null) return;
 
+        // Fetch and sort all level configurations by XP threshold
         var allLevels = await userXpConfigRepository.GetAllAsync();
         var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
 
-        var currentLevel = 1;
-        UserXpConfig? currentLevelConfig = null;
-        UserXpConfig? nextLevelConfig = null;
+        // Initialize variables for current and next level
+        var currentLevel = userExp.LevelId;
+        UserXpConfig? currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel);
+        UserXpConfig? nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
 
-        foreach (var level in sortedLevels)
-            if (userExp.TotalXp >= level.XpThreshold)
+        // Check if the user has leveled up
+        while (nextLevelConfig != null && userExp.TotalXp >= nextLevelConfig.XpThreshold)
+        {
+            // Subtract the XP threshold of the current level
+            if (currentLevelConfig != null)
             {
-                currentLevel = level.LevelId + 1;
-                currentLevelConfig = level; // Lưu lại cấu hình cấp hiện tại
-            }
-            else
-            {
-                nextLevelConfig = level;
-                break;
+                userExp.TotalXp -= currentLevelConfig.XpThreshold;
             }
 
-        if (nextLevelConfig == null && sortedLevels.Any()) currentLevel = sortedLevels.Last().LevelId + 1;
+            // Move to the next level
+            currentLevel++;
+            currentLevelConfig = nextLevelConfig;
+            nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
+        }
 
+        // Determine if the user leveled up
         var isLevelUp = userExp.LevelId != currentLevel;
 
         if (isLevelUp)
         {
-            // Trừ XpThreshold của cấp hiện tại (nếu có)
-            if (currentLevelConfig != null)
-            {
-                userExp.TotalXp = userExp.TotalXp - currentLevelConfig.XpThreshold;
-            }
-        }
+            // Update the user's level, XP to the next level, and max-level status
+            userExp.LevelId = currentLevel;
+            userExp.XpToNextLevel = nextLevelConfig != null
+                ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
+                : 0;
+            userExp.IsMaxLevel = nextLevelConfig == null;
 
-        userExp.LevelId = currentLevel;
-        userExp.XpToNextLevel = nextLevelConfig != null
-            ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
-            : 0;
-        userExp.IsMaxLevel = nextLevelConfig == null;
+            // Save the updated user experience data
+            userExperienceRepository.Update(userExp);
+            await unitOfWork.CommitAsync();
 
-        userExperienceRepository.Update(userExp);
-        await unitOfWork.CommitAsync();
-
-        if (isLevelUp)
-        {
+            // Notify the user of the level-up
             await notificationService.PushNotificationAsync(userId, "Level Up!",
                 $"Congratulations! You've reached level {currentLevel}!");
 
+            // Reward the user if the new level is a multiple of 5
             if (currentLevel % 5 == 0)
+            {
                 await useItemService.GiftRandomItemFromListAsync(userId);
+            }
+        }
+        else
+        {
+            // Update XP to the next level and max-level status if no level-up occurred
+            userExp.XpToNextLevel = nextLevelConfig != null
+                ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
+                : 0;
+            userExp.IsMaxLevel = nextLevelConfig == null;
+
+            userExperienceRepository.Update(userExp);
+            await unitOfWork.CommitAsync();
         }
     }
-
     private static double GetXpAmountBySource(XpSourceType source)
     {
         return source switch

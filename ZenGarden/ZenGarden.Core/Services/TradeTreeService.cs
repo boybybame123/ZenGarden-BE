@@ -40,7 +40,7 @@ public class TradeTreeService(
             // Deduct trade fee from the owner's wallet
             var wallet = await walletRepository.GetByUserIdAsync(tradeDto.requesterId)
                          ?? throw new Exception("Wallet not found");
-
+            if (wallet.Balance < tradeFee) return "Insufficient balance to create trade request.";
             // Create and save trade request
             var trade = new TradeHistory
             {
@@ -57,7 +57,7 @@ public class TradeTreeService(
 
             await tradeHistoryRepository.CreateAsync(trade);
             await unitOfWork.CommitAsync();
-            if (wallet.Balance < tradeFee) return "Insufficient balance to create trade request.";
+
             wallet.Balance -= tradeFee;
             walletRepository.Update(wallet);
             await unitOfWork.CommitAsync();
@@ -92,10 +92,10 @@ public class TradeTreeService(
         var wallet = await walletRepository.GetByUserIdAsync(recipientId)
                      ?? throw new Exception("Wallet not found");
 
-
+        if (wallet.Balance < trade.TradeFee) return "Insufficient balance to accept trade request.";
         // Execute the trade
         await ExecuteTrade(trade, requesterTree, recipientTree);
-        if (wallet.Balance < trade.TradeFee) return "Insufficient balance to accept trade request.";
+   
         wallet.Balance -= trade.TradeFee;
         walletRepository.Update(wallet);
         await unitOfWork.CommitAsync();
@@ -216,13 +216,43 @@ public class TradeTreeService(
         return tradeHistories.ToList();
     }
 
-    public async Task<List<TradeHistory>> GetTradeHistoryByStatusAsync(int status)
+    public async Task<List<TradeHistoryDto>> GetTradeHistoryByStatusAsync(int status)
     {
         if (!Enum.IsDefined(typeof(TradeStatus), status))
             throw new ArgumentOutOfRangeException(nameof(status), "Invalid trade status");
 
         var tradeHistories = await tradeHistoryRepository.GetAllTradeHistoriesbyStatutsAsync(status);
-        return tradeHistories.ToList();
+
+        var tradeHistoryDtos = new List<TradeHistoryDto>();
+
+        foreach (var trade in tradeHistories)
+        {
+            int? finalTreeId = null;
+
+            if (trade.TreeAid.HasValue)
+            {
+                var userTree = await userTreeRepository.GetByIdAsync(trade.TreeAid.Value);
+                finalTreeId = userTree?.FinalTreeId;
+            }
+
+            tradeHistoryDtos.Add(new TradeHistoryDto
+            {
+                TradeId = trade.TradeId,
+                TreeAid = trade.TreeAid,
+                DesiredTreeAID = trade.DesiredTreeAID,
+                TreeOwnerAid = trade.TreeOwnerAid,
+                TreeOwnerBid = trade.TreeOwnerBid,
+                TradeFee = trade.TradeFee,
+                RequestedAt = trade.RequestedAt,
+                CompletedAt = trade.CompletedAt,
+                CreatedAt = trade.CreatedAt,
+                UpdatedAt = trade.UpdatedAt,
+                Status = trade.Status,
+                FinalTreeId = finalTreeId // Populate FinalTreeId
+            });
+        }
+
+        return tradeHistoryDtos;
     }
 
     public async Task<TradeHistory> CancelTradeAsync(int tradeId, int userA)
@@ -235,6 +265,13 @@ public class TradeTreeService(
 
         if (trade.Status != TradeStatus.Pending)
             throw new InvalidOperationException("Trade is not in pending status");
+
+        // Refund trade fee to the user's wallet  
+        var wallet = await walletRepository.GetByUserIdAsync(userA)
+                     ?? throw new Exception("Wallet not found");
+
+        wallet.Balance += trade.TradeFee;
+        walletRepository.Update(wallet);
 
         trade.Status = TradeStatus.Canceled;
         trade.UpdatedAt = DateTime.UtcNow;
