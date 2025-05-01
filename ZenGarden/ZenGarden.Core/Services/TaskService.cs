@@ -611,6 +611,11 @@ public class TaskService(
         {
             task.CompletedAt = null;
             task.Status = TasksStatus.NotStarted;
+            task.StartedAt = null;
+            task.PausedAt = null;
+            task.AccumulatedTime = 0;
+            task.StartDate = DateTime.UtcNow;
+            task.EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1);
 
             // Collect affected user and tree IDs
             if (task.UserTree?.UserId != null)

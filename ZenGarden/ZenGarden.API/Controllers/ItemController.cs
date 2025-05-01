@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
-using ZenGarden.Domain.Entities;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -44,7 +43,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
-    [HttpPut("active-item/{itemId}")]
+    [HttpPut("active-item/{itemId:int}")]
     [Produces("application/json")]
     public async Task<IActionResult> ActiveItem(int itemId)
     {
@@ -53,9 +52,9 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
-    [HttpPut("update-item/{itemId}")]
+    [HttpPut("update-item/{itemId:int}")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateItem(int itemId,  [FromForm] UpdateItemDto item)
+    public async Task<IActionResult> UpdateItem(int itemId, [FromForm] UpdateItemDto item)
     {
         item.ItemId = itemId;
         var i = await _itemService.UpdateItemAsync(item);
@@ -63,7 +62,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
     }
 
 
-    [HttpPut("update-item-detail/{itemId}")]
+    [HttpPut("update-item-detail/{itemId:int}")]
     public async Task<IActionResult> UpdateItemDetail(int itemId, [FromForm] UpdateItemDetailDto itemDetail)
     {
         itemDetail.ItemId = itemId;
@@ -81,7 +80,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
         var type = _itemDetailService.GetFolderNameByItemType(request.Type);
 
 
-        // Upload file to S3
+        // Upload files to S3
         var mediaUrl =
             await _s3Service.UploadFileToFolderAsync(request
                 .File, type); // Null forgiving operator is safe here due to the earlier null check
@@ -95,7 +94,7 @@ public class ItemController(IItemService itemService, IItemDetailService itemDet
 
         request.ItemDetail.MediaUrl = mediaUrl;
 
-        // Save item to database (any exceptions here will be handled by middleware)
+        // Save item to databases (middleware will handle any exceptions here)
         await _itemService.CreateItemAsync(request);
 
         // Return successful response

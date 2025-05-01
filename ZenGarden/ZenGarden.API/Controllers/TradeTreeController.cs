@@ -26,7 +26,7 @@ public class TradeTreeController(ITradeTreeService tradeTreeService) : Controlle
     public async Task<IActionResult> GetTradeHistoryByStatus(int status)
     {
         var tradeHistory = await tradeTreeService.GetTradeHistoryByStatusAsync(status);
-       
+
         return Ok(tradeHistory);
     }
 

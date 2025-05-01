@@ -66,7 +66,8 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl = $"https://zengarden-be-fdre.onrender.com/api/Payment/success?paymentIntentId={paymentIntent.Id}",
+            SuccessUrl =
+                $"https://zengarden-be-fdre.onrender.com/api/Payment/success?paymentIntentId={paymentIntent.Id}",
             CancelUrl = $"https://zengarden-be-fdre.onrender.com/api/Payment/cancel?paymentIntentId={paymentIntent.Id}",
             Metadata = new Dictionary<string, string>
             {
@@ -100,7 +101,7 @@ public class PaymentService(
 
         await transactionRepository.CreateAsync(transaction);
         await unitOfWork.CommitAsync();
-   
+
         // 5. Return response
         return new CheckoutResponse
         {
