@@ -198,7 +198,7 @@ public class TradeTreeService(
         trade.Status = TradeStatus.Success;
         trade.CompletedAt = DateTime.UtcNow;
         trade.UpdatedAt = DateTime.UtcNow;
-        trade.TreeOwnerBid = recipientTree.TreeOwnerId;
+        trade.TreeOwnerBid = requesterTree.TreeOwnerId;
 
         // Save changes
         userTreeRepository.Update(recipientTree);
