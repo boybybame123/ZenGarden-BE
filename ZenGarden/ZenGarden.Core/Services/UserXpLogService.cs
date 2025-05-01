@@ -154,17 +154,14 @@ public class UserXpLogService(
 
         // Initialize variables for current and next level
         var currentLevel = userExp.LevelId;
-        UserXpConfig? currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel);
-        UserXpConfig? nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
+        var currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel);
+        var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
 
         // Check if the user has leveled up
         while (nextLevelConfig != null && userExp.TotalXp >= nextLevelConfig.XpThreshold)
         {
             // Subtract the XP threshold of the current level
-            if (currentLevelConfig != null)
-            {
-                userExp.TotalXp -= currentLevelConfig.XpThreshold;
-            }
+            if (currentLevelConfig != null) userExp.TotalXp -= currentLevelConfig.XpThreshold;
 
             // Move to the next level
             currentLevel++;
@@ -193,10 +190,7 @@ public class UserXpLogService(
                 $"Congratulations! You've reached level {currentLevel}!");
 
             // Reward the user if the new level is a multiple of 5
-            if (currentLevel % 5 == 0)
-            {
-                await useItemService.GiftRandomItemFromListAsync(userId);
-            }
+            if (currentLevel % 5 == 0) await useItemService.GiftRandomItemFromListAsync(userId);
         }
         else
         {
@@ -210,6 +204,7 @@ public class UserXpLogService(
             await unitOfWork.CommitAsync();
         }
     }
+
     private static double GetXpAmountBySource(XpSourceType source)
     {
         return source switch

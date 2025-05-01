@@ -29,11 +29,10 @@ public class TransactionsRepository : GenericRepository<Transactions>, ITransact
     }
 
     public async Task<List<Transactions>?> ListPendingTransactionsAsyn()
-    {   
+    {
         var fifteenMinutesAgo = DateTime.Now.AddMinutes(-15);
         return await _context.Set<Transactions>()
             .Where(t => t.CreatedAt < fifteenMinutesAgo && t.Status == TransactionStatus.Pending)
             .ToListAsync();
     }
-   
 }

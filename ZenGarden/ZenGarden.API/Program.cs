@@ -308,6 +308,7 @@ public partial class Program
         builder.Services.AddHostedService<OverdueTaskJob>();
         builder.Services.AddHostedService<DailyTaskResetJob>();
         builder.Services.AddHostedService<HandleExpiredChallengesJob>();
+        builder.Services.AddHostedService<WeeklyTaskResetJob>();
 
         // Cấu hình logging
         builder.Logging.AddConsole();
