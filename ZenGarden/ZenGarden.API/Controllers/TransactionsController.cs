@@ -42,6 +42,7 @@ public class TransactionsController(ITransactionsService transactionsService) : 
             return StatusCode(500, ex.Message);
         }
     }
+
     [HttpPost("mark-old-pending")]
     public async Task<IActionResult> MarkOldPendingTransactionsAsFailed()
     {

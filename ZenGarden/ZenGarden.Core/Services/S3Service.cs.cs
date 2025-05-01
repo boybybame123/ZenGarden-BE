@@ -13,23 +13,28 @@ public class S3Service : IS3Service
     private readonly string _baseUrl;
     private readonly string _bucketName;
     private readonly AmazonS3Client _s3Client;
-    private readonly string _serviceUrl;
 
     public S3Service(IConfiguration config)
     {
         var awsSection = config.GetSection("AWS");
-        var accessKey = awsSection["AccessKey"] ?? throw new ArgumentNullException("AccessKey missing");
-        var secretKey = awsSection["SecretKey"] ?? throw new ArgumentNullException("SecretKey missing");
-        _serviceUrl = awsSection["ServiceURL"] ?? throw new ArgumentNullException("ServiceURL missing");
-        _bucketName = awsSection["BucketName"] ?? throw new ArgumentNullException("BucketName missing");
 
-        // Xác định base URL từ service URL
-        var uri = new Uri(_serviceUrl);
+        string Require(string? value, string name)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? throw new ArgumentNullException(name, $"{name} is missing or empty")
+                : value;
+        }
+
+        var accessKey = Require(awsSection["AccessKey"], "AccessKey");
+        var secretKey = Require(awsSection["SecretKey"], "SecretKey");
+        var serviceUrl = Require(awsSection["ServiceURL"], "ServiceURL");
+        _bucketName = Require(awsSection["BucketName"], "BucketName");
+
         _baseUrl = "https://zengarden.hcm.ss.bfcplatform.vn";
 
         var s3Config = new AmazonS3Config
         {
-            ServiceURL = _serviceUrl,
+            ServiceURL = serviceUrl,
             ForcePathStyle = true
         };
 
