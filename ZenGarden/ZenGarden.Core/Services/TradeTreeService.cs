@@ -95,7 +95,7 @@ public class TradeTreeService(
         if (wallet.Balance < trade.TradeFee) return "Insufficient balance to accept trade request.";
         // Execute the trade
         await ExecuteTrade(trade, requesterTree, recipientTree);
-   
+
         wallet.Balance -= trade.TradeFee;
         walletRepository.Update(wallet);
         await unitOfWork.CommitAsync();
@@ -198,7 +198,7 @@ public class TradeTreeService(
         trade.Status = TradeStatus.Success;
         trade.CompletedAt = DateTime.UtcNow;
         trade.UpdatedAt = DateTime.UtcNow;
-        trade.TreeOwnerBid = recipientTree.TreeOwnerId;
+        trade.TreeOwnerBid = requesterTree.TreeOwnerId;
 
         // Save changes
         userTreeRepository.Update(recipientTree);

@@ -5,17 +5,9 @@ using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.Infrastructure.BackgroundJobs;
 
-public class WeeklyTaskResetService : BackgroundService
+public class WeeklyTaskResetJob(IServiceProvider serviceProvider, ILogger<WeeklyTaskResetJob> logger)
+    : BackgroundService
 {
-    private readonly ILogger<WeeklyTaskResetService> _logger;
-    private readonly IServiceProvider _serviceProvider;
-
-    public WeeklyTaskResetService(IServiceProvider serviceProvider, ILogger<WeeklyTaskResetService> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -29,7 +21,7 @@ public class WeeklyTaskResetService : BackgroundService
             var nextMonday = now.Date.AddDays(daysUntilMonday).AddHours(0);
             var delay = nextMonday - now;
 
-            _logger.LogInformation($"Next task priority reset scheduled for {nextMonday}");
+            logger.LogInformation($"Next task priority reset scheduled for {nextMonday}");
 
             // Đợi đến thứ Hai tiếp theo
             await Task.Delay(delay, stoppingToken);
@@ -37,14 +29,14 @@ public class WeeklyTaskResetService : BackgroundService
             // Thực hiện reset
             try
             {
-                using var scope = _serviceProvider.CreateScope();
+                using var scope = serviceProvider.CreateScope();
                 var taskService = scope.ServiceProvider.GetRequiredService<ITaskService>();
                 await taskService.WeeklyTaskPriorityResetAsync();
-                _logger.LogInformation("Weekly task priority reset completed successfully");
+                logger.LogInformation("Weekly task priority reset completed successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred during weekly task priority reset");
+                logger.LogError(ex, "Error occurred during weekly task priority reset");
             }
         }
     }
