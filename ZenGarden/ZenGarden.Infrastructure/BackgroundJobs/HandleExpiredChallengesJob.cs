@@ -17,8 +17,8 @@ public class HandleExpiredChallengesJob(IServiceScopeFactory scopeFactory, ILogg
                 using var scope = scopeFactory.CreateScope();
                 var challengeService =
                     scope.ServiceProvider
-                        .GetRequiredService<IChallengeService>(); // Thay IChallengeService bằng service tương ứng
-                await challengeService.HandleExpiredChallengesAsync(); // Gọi phương thức xử lý hết hạn challenge
+                        .GetRequiredService<IChallengeService>();
+                await challengeService.HandleExpiredChallengesAsync(); 
                 logger.LogInformation("HandleExpiredChallengesAsync executed successfully at {Time}", DateTime.UtcNow);
             }
             catch (Exception ex)
@@ -29,11 +29,10 @@ public class HandleExpiredChallengesJob(IServiceScopeFactory scopeFactory, ILogg
                     errorId);
             }
 
-            // Delay 1 phút trước khi chạy lại
             try
             {
                 await Task.Delay(TimeSpan.FromMinutes(1),
-                    stoppingToken); // Bạn có thể điều chỉnh thời gian delay theo nhu cầu
+                    stoppingToken); 
             }
             catch (TaskCanceledException)
             {
