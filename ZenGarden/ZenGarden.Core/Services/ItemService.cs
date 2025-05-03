@@ -51,6 +51,8 @@ public class ItemService(
     public async Task CreateItemAsync(CreateItemDto item)
     {
         var newItem = mapper.Map<Item>(item);
+        newItem.CreatedAt = DateTime.Now;
+        newItem.UpdatedAt = DateTime.Now;
         await itemRepository.CreateAsync(newItem);
         const string cacheKey = "all_items";
         await redisService.DeleteKeyAsync(cacheKey);
