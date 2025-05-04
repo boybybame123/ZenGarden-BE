@@ -158,14 +158,6 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
         return maxPriority + 1;
     }
 
-    public async Task<List<Tasks>> GetTasksByIdsAsync(List<int> taskIds)
-    {
-        return await _context.Tasks
-            .Include(t => t.UserTree)
-            .Where(t => taskIds.Contains(t.TaskId))
-            .ToListAsync();
-    }
-
     public async Task<List<Tasks>> GetActiveTasksByUserTreeIdAsync(int userTreeId)
     {
         return await _context.Tasks
@@ -184,5 +176,15 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .FirstOrDefaultAsync(t => t.TaskId == taskId);
 
         return task?.UserTree?.UserId;
+    }
+    
+    public async Task<List<Tasks>> GetReorderableTasksByIdsAsync(List<int> taskIds)
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t => taskIds.Contains(t.TaskId) &&
+                        (t.TaskTypeId == 2 || t.TaskTypeId == 3) &&
+                        t.Status != TasksStatus.InProgress && t.Status != TasksStatus.Paused)
+            .ToListAsync();
     }
 }
