@@ -640,7 +640,10 @@ public class TaskService(
 
         foreach (var treeId in affectedTreeIds)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{treeId}");
-
+        await notificationService.PushNotificationToAllAsync(
+            "Daily Tasks Reset",
+            "All daily tasks have been reset. You can now start fresh!"
+        );
         // To be extra safe, also invalidate all user and tree caches
         await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
         await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
