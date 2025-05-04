@@ -145,12 +145,14 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.UpdateTaskTypeAsync(taskId, dto.NewTaskTypeId);
         return NoContent();
     }
+
     [HttpPost("auto-pause")]
     public async Task<IActionResult> AutoPauseTasks()
     {
         await _taskService.AutoPauseTasksAsync();
         return Ok(new { message = "Auto pause executed successfully." });
     }
+
     [HttpPost("reset-daily-status")]
     public async Task<IActionResult> ResetDailyTaskStatus()
     {

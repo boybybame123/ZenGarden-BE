@@ -737,6 +737,37 @@ public class TaskService(
         await ForceUpdateTaskStatusAsync(task, newStatus);
     }
 
+    public async Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime)
+    {
+        var tasksToNotify = new List<Tasks>();
+
+        // Trường hợp 1: Thông báo khi đến StartDate
+        var startDateTasks = await taskRepository.GetTasksByStartDateTimeMatchingAsync(currentTime);
+        tasksToNotify.AddRange(startDateTasks);
+
+        // Trường hợp 2: Thông báo vào 7h sáng nếu đã qua startDate nhưng chưa start
+        if (currentTime is { Hour: 7, Minute: 0 })
+        {
+            var passedStartDateTasks = await taskRepository.GetTasksWithPassedStartDateNotStartedAsync(currentTime);
+            tasksToNotify.AddRange(passedStartDateTasks);
+        }
+
+        // Trường hợp 3: Thông báo trước EndDate 1 ngày vào 7h sáng
+        if (currentTime is { Hour: 7, Minute: 0 })
+        {
+            var oneDayBeforeEndDate = currentTime.AddDays(1);
+            var endDateReminderTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(oneDayBeforeEndDate, true);
+            tasksToNotify.AddRange(endDateReminderTasks);
+        }
+
+        // Trường hợp 4: Thông báo khi còn 5 phút trước EndDate
+        var fiveMinutesLater = currentTime.AddMinutes(5);
+        var urgentTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(fiveMinutesLater, false);
+        tasksToNotify.AddRange(urgentTasks);
+
+        return tasksToNotify;
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)
