@@ -863,11 +863,11 @@ public class TaskService(
         }
 
         // 4. Validate FocusMethod nếu có
-        if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
-        {
-            var focusMethodErrors = await ValidateFocusMethodSettings(dto);
-            errors.AddRange(focusMethodErrors);
-        }
+        //if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
+        //{
+        //    var focusMethodErrors = await ValidateFocusMethodSettings(dto);
+        //    errors.AddRange(focusMethodErrors);
+        //}
 
         // 5. Throw nếu có lỗi
         if (errors.Count > 0)
