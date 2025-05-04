@@ -1,4 +1,5 @@
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Interfaces.IServices;
@@ -23,4 +24,5 @@ public interface ITaskService
     Task WeeklyTaskPriorityResetAsync();
     Task ForceUpdateTaskStatusAsync(int taskId, TasksStatus newStatus);
     Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId);
+    Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime);
 }

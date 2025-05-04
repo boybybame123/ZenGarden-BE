@@ -640,7 +640,10 @@ public class TaskService(
 
         foreach (var treeId in affectedTreeIds)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{treeId}");
-
+        await notificationService.PushNotificationToAllAsync(
+            "Daily Tasks Reset",
+            "All daily tasks have been reset. You can now start fresh!"
+        );
         // To be extra safe, also invalidate all user and tree caches
         await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
         await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
@@ -653,11 +656,10 @@ public class TaskService(
 
         var taskIds = reorderList.Select(x => x.TaskId).ToList();
 
-        var tasks = await taskRepository.GetTasksByIdsAsync(taskIds);
-        tasks = tasks.Where(t => t.TaskTypeId is 2 or 3).ToList();
+        var tasks = await taskRepository.GetReorderableTasksByIdsAsync(taskIds);
 
         if (tasks.Count != reorderList.Count)
-            throw new KeyNotFoundException("Some tasks not found.");
+            throw new KeyNotFoundException("Some tasks not found or cannot be reordered due to type or status.");
 
         var firstTaskTypeId = tasks.First().TaskTypeId;
         foreach (var task in tasks)
@@ -679,10 +681,11 @@ public class TaskService(
 
         await taskRepository.UpdateRangeAsync(tasks);
         await unitOfWork.CommitAsync();
+
         await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{userTreeId}");
         await redisService.RemoveAsync(AllTasksCacheKey);
-
-        foreach (var taskId in taskIds) await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{taskId}");
+        foreach (var taskId in taskIds)
+            await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{taskId}");
     }
 
     public async Task WeeklyTaskPriorityResetAsync()
@@ -735,6 +738,37 @@ public class TaskService(
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         await ForceUpdateTaskStatusAsync(task, newStatus);
+    }
+
+    public async Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime)
+    {
+        var tasksToNotify = new List<Tasks>();
+
+        // Trường hợp 1: Thông báo khi đến StartDate
+        var startDateTasks = await taskRepository.GetTasksByStartDateTimeMatchingAsync(currentTime);
+        tasksToNotify.AddRange(startDateTasks);
+
+        // Trường hợp 2: Thông báo vào 7h sáng nếu đã qua startDate nhưng chưa start
+        if (currentTime is { Hour: 7, Minute: 0 })
+        {
+            var passedStartDateTasks = await taskRepository.GetTasksWithPassedStartDateNotStartedAsync(currentTime);
+            tasksToNotify.AddRange(passedStartDateTasks);
+        }
+
+        // Trường hợp 3: Thông báo trước EndDate 1 ngày vào 7h sáng
+        if (currentTime is { Hour: 7, Minute: 0 })
+        {
+            var oneDayBeforeEndDate = currentTime.AddDays(1);
+            var endDateReminderTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(oneDayBeforeEndDate, true);
+            tasksToNotify.AddRange(endDateReminderTasks);
+        }
+
+        // Trường hợp 4: Thông báo khi còn 5 phút trước EndDate
+        var fiveMinutesLater = currentTime.AddMinutes(5);
+        var urgentTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(fiveMinutesLater, false);
+        tasksToNotify.AddRange(urgentTasks);
+
+        return tasksToNotify;
     }
 
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
@@ -832,11 +866,11 @@ public class TaskService(
         }
 
         // 4. Validate FocusMethod nếu có
-        if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
-        {
-            var focusMethodErrors = await ValidateFocusMethodSettings(dto);
-            errors.AddRange(focusMethodErrors);
-        }
+        //if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
+        //{
+        //    var focusMethodErrors = await ValidateFocusMethodSettings(dto);
+        //    errors.AddRange(focusMethodErrors);
+        //}
 
         // 5. Throw nếu có lỗi
         if (errors.Count > 0)

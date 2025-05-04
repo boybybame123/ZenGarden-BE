@@ -18,6 +18,7 @@ public class UserService(
     IUserTreeService userTreeService,
     IUserTreeRepository userTreeRepository,
     IBagItemRepository bagItemRepository,
+    INotificationService notificationService,
     IUnitOfWork unitOfWork,
     IMapper mapper) : IUserService
 {
@@ -228,6 +229,7 @@ public class UserService(
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
 
         foreach (var tree in userTrees) await userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId);
+        await notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp.");
     }
 
     public async Task MakeItemdefault(int userid)

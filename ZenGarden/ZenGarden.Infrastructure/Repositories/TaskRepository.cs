@@ -158,14 +158,6 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
         return maxPriority + 1;
     }
 
-    public async Task<List<Tasks>> GetTasksByIdsAsync(List<int> taskIds)
-    {
-        return await _context.Tasks
-            .Include(t => t.UserTree)
-            .Where(t => taskIds.Contains(t.TaskId))
-            .ToListAsync();
-    }
-
     public async Task<List<Tasks>> GetActiveTasksByUserTreeIdAsync(int userTreeId)
     {
         return await _context.Tasks
@@ -184,5 +176,76 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
             .FirstOrDefaultAsync(t => t.TaskId == taskId);
 
         return task?.UserTree?.UserId;
+    }
+
+    public async Task<List<Tasks>> GetReorderableTasksByIdsAsync(List<int> taskIds)
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t => taskIds.Contains(t.TaskId) &&
+                        (t.TaskTypeId == 2 || t.TaskTypeId == 3) &&
+                        t.Status != TasksStatus.InProgress && t.Status != TasksStatus.Paused)
+            .ToListAsync();
+    }
+
+    public async Task<List<Tasks>> GetTasksByStartDateTimeMatchingAsync(DateTime currentTime)
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t =>
+                t.StartDate.HasValue &&
+                t.StartDate.Value.Year == currentTime.Year &&
+                t.StartDate.Value.Month == currentTime.Month &&
+                t.StartDate.Value.Day == currentTime.Day &&
+                t.StartDate.Value.Hour == currentTime.Hour &&
+                t.StartDate.Value.Minute == currentTime.Minute &&
+                t.Status == TasksStatus.NotStarted)
+            .ToListAsync();
+    }
+
+    public async Task<List<Tasks>> GetTasksWithPassedStartDateNotStartedAsync(
+        DateTime currentTime)
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t =>
+                t.StartDate.HasValue &&
+                t.StartDate.Value < currentTime &&
+                t.EndDate.HasValue &&
+                t.EndDate.Value > currentTime &&
+                t.Status == TasksStatus.NotStarted)
+            .ToListAsync();
+    }
+
+    public async Task<List<Tasks>> GetTasksWithEndDateMatchingAsync(
+        DateTime targetDate,
+        bool onlyMatchDay)
+    {
+        var query = _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t =>
+                t.EndDate.HasValue &&
+                t.Status != TasksStatus.Completed &&
+                t.Status != TasksStatus.Canceled &&
+                t.Status != TasksStatus.Overdue);
+
+        if (onlyMatchDay)
+            // Trùng ngày (dùng cho thông báo trước 1 ngày)
+            query = query.Where(t =>
+                t.EndDate != null &&
+                t.EndDate.Value.Year == targetDate.Year &&
+                t.EndDate.Value.Month == targetDate.Month &&
+                t.EndDate.Value.Day == targetDate.Day);
+        else
+            // Trùng chính xác đến phút (dùng cho thông báo trước 5 phút)
+            query = query.Where(t =>
+                t.EndDate != null &&
+                t.EndDate.Value.Year == targetDate.Year &&
+                t.EndDate.Value.Month == targetDate.Month &&
+                t.EndDate.Value.Day == targetDate.Day &&
+                t.EndDate.Value.Hour == targetDate.Hour &&
+                t.EndDate.Value.Minute == targetDate.Minute);
+
+        return await query.ToListAsync();
     }
 }
