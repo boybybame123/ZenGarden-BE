@@ -653,11 +653,10 @@ public class TaskService(
 
         var taskIds = reorderList.Select(x => x.TaskId).ToList();
 
-        var tasks = await taskRepository.GetTasksByIdsAsync(taskIds);
-        tasks = tasks.Where(t => t.TaskTypeId is 2 or 3).ToList();
+        var tasks = await taskRepository.GetReorderableTasksByIdsAsync(taskIds);
 
         if (tasks.Count != reorderList.Count)
-            throw new KeyNotFoundException("Some tasks not found.");
+            throw new KeyNotFoundException("Some tasks not found or cannot be reordered due to type or status.");
 
         var firstTaskTypeId = tasks.First().TaskTypeId;
         foreach (var task in tasks)
@@ -679,10 +678,11 @@ public class TaskService(
 
         await taskRepository.UpdateRangeAsync(tasks);
         await unitOfWork.CommitAsync();
+
         await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{userTreeId}");
         await redisService.RemoveAsync(AllTasksCacheKey);
-
-        foreach (var taskId in taskIds) await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{taskId}");
+        foreach (var taskId in taskIds)
+            await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{taskId}");
     }
 
     public async Task WeeklyTaskPriorityResetAsync()
