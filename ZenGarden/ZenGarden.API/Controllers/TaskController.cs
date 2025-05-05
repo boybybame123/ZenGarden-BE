@@ -167,13 +167,10 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(new { message = "Task updated successfully" });
     }
     
-    [HttpGet("challenge/{challengeId:int}/cloned-tasks")]
-    public async Task<IActionResult> GetClonedTasksByUserChallenge(int challengeId)
+    [HttpGet("user/{userId:int}/challenge/{challengeId:int}/cloned-tasks")]
+    public async Task<IActionResult> GetClonedTasksByUserChallenge(int userId, int challengeId)
     {
-        var userId = HttpContext.GetUserId();
-        if (!userId.HasValue) return Unauthorized();
-
-        var task = await _taskService.GetClonedTasksByUserChallengeAsync(userId.Value, challengeId);
+        var task = await _taskService.GetClonedTasksByUserChallengeAsync(userId, challengeId);
         return Ok(task);
     }
 }
