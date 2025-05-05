@@ -37,6 +37,7 @@ public class TaskService(
     private const string UserTasksCacheKeyPrefix = "user:tasks:";
     private const string TreeTasksCacheKeyPrefix = "tree:tasks:";
     private const string AllTasksCacheKey = "all:tasks";
+    private const string UserChallengeCacheKeyPrefix = "user_challenge_progress_";
     private static readonly TimeSpan DefaultCacheExpiry = TimeSpan.FromMinutes(15);
 
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -1106,6 +1107,15 @@ public class TaskService(
         // Invalidate tree-specific cache if applicable
         if (task.UserTreeId != null)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
+        if (task is { CloneFromTaskId: not null, UserTree.UserId: not null })
+        {
+            var userId = task.UserTree.UserId.Value;
+            var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.CloneFromTaskId.Value);
+            if (challengeTask != null)
+            {
+                await redisService.RemoveAsync($"{UserChallengeCacheKeyPrefix}{userId}:{challengeTask.ChallengeId}");
+            }
+        }
     }
 
     private async Task ForceUpdateTaskStatusAsync(Tasks task, TasksStatus newStatus)
@@ -1148,5 +1158,31 @@ public class TaskService(
         taskRepository.Update(task);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
+    }
+    
+    public async Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
+    {
+        var cacheKey = $"{UserChallengeCacheKeyPrefix}{userId}:{challengeId}";
+
+        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        if (cachedTasks != null) return cachedTasks;
+
+        var tasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
+        if (tasks == null || tasks.Count == 0)
+            throw new KeyNotFoundException($"No cloned tasks found for User ID {userId} and Challenge ID {challengeId}.");
+
+        var taskDto = mapper.Map<List<TaskDto>>(tasks);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
+
+        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+
+        return taskDto;
     }
 }
