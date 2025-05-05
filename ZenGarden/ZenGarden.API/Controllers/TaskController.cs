@@ -159,4 +159,11 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.ResetDailyTasksAsync();
         return Ok(new { message = "Daily task statuses reset successfully." });
     }
+
+    [HttpPatch("{taskId:int}/duration")]
+    public async Task<IActionResult> UpdateTaskDurationOnly(int taskId, [FromForm] UpdateTaskDto dto)
+    {
+        await _taskService.UpdateTaskSimpleAsync(taskId, dto);
+        return Ok(new { message = "Task updated successfully" });
+    }
 }
