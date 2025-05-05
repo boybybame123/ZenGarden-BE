@@ -16,6 +16,7 @@ public interface ITaskService
     Task<double> CalculateTaskXpAsync(int taskId);
     Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId);
     Task<List<TaskDto>> GetTaskByUserIdAsync(int userId);
+    Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId);
     Task PauseTaskAsync(int taskId);
     Task AutoPauseTasksAsync();
     Task ResetDailyTasksAsync();
