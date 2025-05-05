@@ -25,4 +25,5 @@ public interface ITaskService
     Task ForceUpdateTaskStatusAsync(int taskId, TasksStatus newStatus);
     Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId);
     Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime);
+    Task UpdateTaskSimpleAsync(int taskId, UpdateTaskDto updateTaskDto);
 }

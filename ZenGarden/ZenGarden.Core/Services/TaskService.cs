@@ -771,6 +771,72 @@ public class TaskService(
         return tasksToNotify;
     }
 
+    public async Task UpdateTaskSimpleAsync(int taskId, UpdateTaskDto updateTaskDto)
+    {
+        var existingTask = await taskRepository.GetByIdAsync(taskId)
+                           ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        // Update fields if provided in the DTO
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskName))
+            existingTask.TaskName = updateTaskDto.TaskName;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription))
+            existingTask.TaskDescription = updateTaskDto.TaskDescription;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
+            existingTask.TaskNote = updateTaskDto.TaskNote;
+
+        if (updateTaskDto.WorkDuration.HasValue)
+            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
+
+        if (updateTaskDto.BreakTime.HasValue)
+            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+
+        if (updateTaskDto.StartDate.HasValue)
+            existingTask.StartDate = updateTaskDto.StartDate.Value;
+
+        if (updateTaskDto.EndDate.HasValue)
+            existingTask.EndDate = updateTaskDto.EndDate.Value;
+
+        if (updateTaskDto.AccumulatedTime.HasValue)
+            existingTask.AccumulatedTime = updateTaskDto.AccumulatedTime.Value;
+
+        if (updateTaskDto.TotalDuration.HasValue)
+            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
+
+        if (updateTaskDto.TaskTypeId.HasValue)
+            existingTask.TaskTypeId = updateTaskDto.TaskTypeId.Value;
+
+        if (updateTaskDto.FocusMethodId.HasValue)
+            existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
+
+        if (updateTaskDto.UserTreeId.HasValue)
+        {
+            _ = await userTreeRepository.GetByIdAsync(updateTaskDto.UserTreeId.Value)
+                ?? throw new KeyNotFoundException(
+                    $"UserTree with ID {updateTaskDto.UserTreeId.Value} not found.");
+            existingTask.UserTreeId = updateTaskDto.UserTreeId.Value;
+        }
+
+        // Handle task result file/URL if provided
+        if (updateTaskDto.TaskFile != null || !string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
+        {
+            var userId = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
+                         throw new InvalidOperationException("UserId is null.");
+            existingTask.TaskResult =
+                await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userId);
+        }
+
+        existingTask.UpdatedAt = DateTime.UtcNow;
+        taskRepository.Update(existingTask);
+
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update task.");
+
+        // Invalidate relevant caches
+        await InvalidateTaskCaches(existingTask);
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)

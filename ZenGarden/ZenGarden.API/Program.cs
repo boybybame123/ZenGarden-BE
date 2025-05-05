@@ -304,7 +304,7 @@ public partial class Program
 
     private static void ConfigureBackgroundJobs(WebApplicationBuilder builder)
     {
-        builder.Services.AddHostedService<AutoPauseTaskJob>();
+        // builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
         builder.Services.AddHostedService<DailyTaskResetJob>();
         builder.Services.AddHostedService<HandleExpiredChallengesJob>();
