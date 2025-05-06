@@ -128,12 +128,20 @@ public class PaymentService(
             transaction.TransactionTime = DateTime.UtcNow;
 
             var wallet = await walletRepository.GetByIdAsync(transaction.WalletId);
+            var admin = await walletRepository.GetByIdAsync(18); // Assuming admin wallet ID is 1
             if (wallet != null)
             {
+                // Update wallet balance
                 wallet.Balance += transaction.Amount ?? 0;
                 wallet.UpdatedAt = DateTime.UtcNow;
                 wallet.LastTransactionAt = DateTime.UtcNow;
+                // Update admin wallet balance
+                admin.Balance += transaction.Amount ?? 0;
+                admin.UpdatedAt = DateTime.UtcNow;
+                admin.LastTransactionAt = DateTime.UtcNow;
                 walletRepository.Update(wallet);
+                await unitOfWork.CommitAsync();
+                walletRepository.Update(admin);
                 await unitOfWork.CommitAsync();
             }
 
