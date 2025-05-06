@@ -8,4 +8,6 @@ public interface IWalletService
     Task<Wallet> GetWalletAsync(int userId);
     Task LockWalletAsync(int userId);
     Task UnlockWalletAsync(int userId);
+    Task<List<Wallet>> GetAllWalletAsync();
+    Task<decimal> GetTotalBalanceAsync();
 }

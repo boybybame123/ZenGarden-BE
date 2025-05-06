@@ -68,14 +68,14 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
 
     public async Task<List<Tasks>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
     {
-        return await (from t in _context.Tasks
-                join original in _context.Tasks on t.CloneFromTaskId equals original.TaskId
-                join ct in _context.ChallengeTask on original.TaskId equals ct.TaskId
-                join uc in _context.UserChallenges on ct.ChallengeId equals uc.ChallengeId
-                where uc.UserId == userId
-                      && uc.ChallengeId == challengeId
-                      && t.CloneFromTaskId != null
-                select t)
+        return await _context.Tasks
+            .Where(t => t.CloneFromTaskId != null && 
+                        t.UserTree.UserId == userId &&
+                        _context.ChallengeTask.Any(ct => 
+                            ct.TaskId == t.CloneFromTaskId && 
+                            ct.ChallengeId == challengeId))
+            .GroupBy(t => t.CloneFromTaskId)
+            .Select(g => g.First())
             .ToListAsync();
     }
 
@@ -248,4 +248,5 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
 
         return await query.ToListAsync();
     }
+    
 }

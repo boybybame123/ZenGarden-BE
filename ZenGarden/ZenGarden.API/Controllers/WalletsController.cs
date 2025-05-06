@@ -70,4 +70,30 @@ public class WalletsController : ControllerBase
             return StatusCode(500);
         }
     }
+    [HttpGet("all")]
+    public async Task<ActionResult<IEnumerable<WalletDto>>> GetAllWallets()
+    {
+        try
+        {
+            var wallets = await _walletService.GetAllWalletAsync();
+            return Ok(wallets);
+        }
+        catch
+        {
+            return StatusCode(500);
+        }
+    }
+    [HttpGet("total-balance")]
+    public async Task<ActionResult<decimal>> GetTotalBalance()
+    {
+        try
+        {
+            var totalBalance = await _walletService.GetTotalBalanceAsync();
+            return Ok(totalBalance);
+        }
+        catch
+        {
+            return StatusCode(500);
+        }
+    }
 }

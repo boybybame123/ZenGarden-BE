@@ -8,7 +8,6 @@ namespace ZenGarden.Infrastructure.BackgroundJobs;
 
 public class TaskNotifierService(
     IServiceScopeFactory scopeFactory,
-    ITaskService taskService,
     ILogger<TaskNotifierService> logger)
     : BackgroundService
 {
@@ -39,6 +38,8 @@ public class TaskNotifierService(
 
         using var scope = scopeFactory.CreateScope();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        var taskService = scope.ServiceProvider.GetRequiredService<ITaskService>();
+
 
         // Lấy các task cần thông báo tại thời điểm hiện tại
         var tasksToNotify = await taskService.GetTasksToNotifyAsync(currentTime);
