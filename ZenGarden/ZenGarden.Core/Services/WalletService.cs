@@ -24,7 +24,14 @@ public class WalletService(
         var wallet = await walletRepository.GetByUserIdAsync(userId);
         if (wallet == null) throw new Exception($"Wallet for user {userId} not found");
 
-        return mapper.Map<Wallet>(wallet);
+        return wallet;
+    }
+
+    public async Task<List<Wallet>> GetAllWalletAsync()
+    {
+        var wallets = await walletRepository.GetAllAsync();
+        if (wallets == null) throw new Exception($"Wallets not found");
+        return wallets;
     }
 
 
@@ -50,5 +57,11 @@ public class WalletService(
 
         walletRepository.Update(wallet); // Changed to synchronous Update
         await unitOfWork.CommitAsync();
+    }
+    public async Task<decimal> GetTotalBalanceAsync()
+    {
+        var totalBalance = await walletRepository.GetTotalBalanceAsync();
+        if (totalBalance == null) throw new Exception($"Total balance not found");
+        return totalBalance;
     }
 }

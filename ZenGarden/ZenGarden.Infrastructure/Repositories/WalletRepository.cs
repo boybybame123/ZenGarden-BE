@@ -13,4 +13,8 @@ public class WalletRepository(ZenGardenContext context) : GenericRepository<Wall
     {
         return await _context.Wallet.FirstOrDefaultAsync(x => x.UserId == userId);
     }
+    public async Task<decimal> GetTotalBalanceAsync()
+    {
+        return await _context.Wallet.SumAsync(x => x.Balance ?? 0);
+    }
 }
