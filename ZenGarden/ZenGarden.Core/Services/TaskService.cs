@@ -532,6 +532,11 @@ public class TaskService(
         if (!validTypeChanges.Contains(task.TaskTypeId) || !validTypeChanges.Contains(newTaskTypeId))
             throw new InvalidOperationException("Only switching between TaskTypeId 2 and 3 is allowed.");
 
+        if ((newTaskTypeId == 1 && newDuration is < 30 or > 180) ||
+            (newTaskTypeId == 2 && newDuration < 180))
+            throw new ArgumentException("Invalid duration for the selected task type.");
+        
+
         var newTaskType = await taskTypeRepository.GetByIdAsync(newTaskTypeId);
         if (newTaskType == null)
             throw new KeyNotFoundException($"TaskType with ID {newTaskTypeId} not found.");
