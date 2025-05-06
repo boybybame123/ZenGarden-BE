@@ -142,7 +142,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpPut("{taskId:int}/task-type")]
     public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto)
     {
-        await _taskService.UpdateTaskTypeAsync(taskId, dto.NewTaskTypeId);
+        await _taskService.UpdateTaskTypeAsync(taskId, dto.NewTaskTypeId, dto.NewDuration);
         return NoContent();
     }
 

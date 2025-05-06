@@ -522,7 +522,7 @@ public class TaskService(
         await InvalidateTaskCaches(task);
     }
 
-    public async Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId)
+    public async Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId, int newDuration)
     {
         var task = await taskRepository.GetByIdAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
@@ -537,6 +537,7 @@ public class TaskService(
             throw new KeyNotFoundException($"TaskType with ID {newTaskTypeId} not found.");
 
         task.TaskTypeId = newTaskTypeId;
+        task.TotalDuration = newDuration;
         task.UpdatedAt = DateTime.UtcNow;
         taskRepository.Update(task);
 
@@ -544,7 +545,7 @@ public class TaskService(
             await xpConfigService.EnsureXpConfigExists(
                 task.FocusMethodId.Value,
                 newTaskTypeId,
-                task.TotalDuration.Value
+                newDuration
             );
 
         if (task.UserTree?.UserId is { } userId)
@@ -557,6 +558,7 @@ public class TaskService(
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
     }
+
 
     public async Task AutoPauseTasksAsync()
     {

@@ -24,7 +24,7 @@ public interface ITaskService
     Task ReorderTasksAsync(int userTreeId, List<ReorderTaskDto> reorderList);
     Task WeeklyTaskPriorityResetAsync();
     Task ForceUpdateTaskStatusAsync(int taskId, TasksStatus newStatus);
-    Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId);
+    Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId, int newDuration);
     Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime);
     Task UpdateTaskSimpleAsync(int taskId, UpdateTaskDto updateTaskDto);
 }
