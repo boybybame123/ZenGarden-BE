@@ -21,4 +21,7 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<List<Tasks>> GetActiveTasksByUserTreeIdAsync(int userTreeId);
     Task<int?> GetUserIdByTaskIdAsync(int taskId);
     Task<List<Tasks>> GetReorderableTasksByIdsAsync(List<int> taskIds);
+    Task<List<Tasks>> GetTasksByStartDateTimeMatchingAsync(DateTime currentTime);
+    Task<List<Tasks>> GetTasksWithPassedStartDateNotStartedAsync(DateTime currentTime);
+    Task<List<Tasks>> GetTasksWithEndDateMatchingAsync(DateTime targetDate, bool onlyMatchDay);
 }

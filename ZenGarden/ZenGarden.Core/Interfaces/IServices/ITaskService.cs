@@ -1,4 +1,5 @@
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
 namespace ZenGarden.Core.Interfaces.IServices;
@@ -15,6 +16,7 @@ public interface ITaskService
     Task<double> CalculateTaskXpAsync(int taskId);
     Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId);
     Task<List<TaskDto>> GetTaskByUserIdAsync(int userId);
+    Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId);
     Task PauseTaskAsync(int taskId);
     Task AutoPauseTasksAsync();
     Task ResetDailyTasksAsync();
@@ -23,4 +25,6 @@ public interface ITaskService
     Task WeeklyTaskPriorityResetAsync();
     Task ForceUpdateTaskStatusAsync(int taskId, TasksStatus newStatus);
     Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId);
+    Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime);
+    Task UpdateTaskSimpleAsync(int taskId, UpdateTaskDto updateTaskDto);
 }

@@ -165,6 +165,7 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         var notStartedChallenges = await _challengeService.GetChallengesNotStarted();
         return Ok(notStartedChallenges);
     }
+
     [HttpPost("handle-expired")]
     public async Task<IActionResult> HandleExpiredChallengesManually()
     {

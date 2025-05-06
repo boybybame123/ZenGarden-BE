@@ -37,6 +37,7 @@ public class TaskService(
     private const string UserTasksCacheKeyPrefix = "user:tasks:";
     private const string TreeTasksCacheKeyPrefix = "tree:tasks:";
     private const string AllTasksCacheKey = "all:tasks";
+    private const string UserChallengeCacheKeyPrefix = "user_challenge_progress_";
     private static readonly TimeSpan DefaultCacheExpiry = TimeSpan.FromMinutes(15);
 
     public async Task<List<TaskDto>> GetAllTaskAsync()
@@ -740,6 +741,103 @@ public class TaskService(
         await ForceUpdateTaskStatusAsync(task, newStatus);
     }
 
+    public async Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime)
+    {
+        var tasksToNotify = new List<Tasks>();
+
+        // Trường hợp 1: Thông báo khi đến StartDate
+        var startDateTasks = await taskRepository.GetTasksByStartDateTimeMatchingAsync(currentTime);
+        tasksToNotify.AddRange(startDateTasks);
+
+        // Trường hợp 2: Thông báo vào 7h sáng nếu đã qua startDate nhưng chưa start
+        if (currentTime is { Hour: 7, Minute: 0 })
+        {
+            var passedStartDateTasks = await taskRepository.GetTasksWithPassedStartDateNotStartedAsync(currentTime);
+            tasksToNotify.AddRange(passedStartDateTasks);
+        }
+
+        // Trường hợp 3: Thông báo trước EndDate 1 ngày vào 7h sáng
+        if (currentTime is { Hour: 7, Minute: 0 })
+        {
+            var oneDayBeforeEndDate = currentTime.AddDays(1);
+            var endDateReminderTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(oneDayBeforeEndDate, true);
+            tasksToNotify.AddRange(endDateReminderTasks);
+        }
+
+        // Trường hợp 4: Thông báo khi còn 5 phút trước EndDate
+        var fiveMinutesLater = currentTime.AddMinutes(5);
+        var urgentTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(fiveMinutesLater, false);
+        tasksToNotify.AddRange(urgentTasks);
+
+        return tasksToNotify;
+    }
+
+    public async Task UpdateTaskSimpleAsync(int taskId, UpdateTaskDto updateTaskDto)
+    {
+        var existingTask = await taskRepository.GetByIdAsync(taskId)
+                           ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        // Update fields if provided in the DTO
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskName))
+            existingTask.TaskName = updateTaskDto.TaskName;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription))
+            existingTask.TaskDescription = updateTaskDto.TaskDescription;
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
+            existingTask.TaskNote = updateTaskDto.TaskNote;
+
+        if (updateTaskDto.WorkDuration.HasValue)
+            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
+
+        if (updateTaskDto.BreakTime.HasValue)
+            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
+
+        if (updateTaskDto.StartDate.HasValue)
+            existingTask.StartDate = updateTaskDto.StartDate.Value;
+
+        if (updateTaskDto.EndDate.HasValue)
+            existingTask.EndDate = updateTaskDto.EndDate.Value;
+
+        if (updateTaskDto.AccumulatedTime.HasValue)
+            existingTask.AccumulatedTime = updateTaskDto.AccumulatedTime.Value;
+
+        if (updateTaskDto.TotalDuration.HasValue)
+            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
+
+        if (updateTaskDto.TaskTypeId.HasValue)
+            existingTask.TaskTypeId = updateTaskDto.TaskTypeId.Value;
+
+        if (updateTaskDto.FocusMethodId.HasValue)
+            existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
+
+        if (updateTaskDto.UserTreeId.HasValue)
+        {
+            _ = await userTreeRepository.GetByIdAsync(updateTaskDto.UserTreeId.Value)
+                ?? throw new KeyNotFoundException(
+                    $"UserTree with ID {updateTaskDto.UserTreeId.Value} not found.");
+            existingTask.UserTreeId = updateTaskDto.UserTreeId.Value;
+        }
+
+        // Handle task result file/URL if provided
+        if (updateTaskDto.TaskFile != null || !string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
+        {
+            var userId = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
+                         throw new InvalidOperationException("UserId is null.");
+            existingTask.TaskResult =
+                await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userId);
+        }
+
+        existingTask.UpdatedAt = DateTime.UtcNow;
+        taskRepository.Update(existingTask);
+
+        if (await unitOfWork.CommitAsync() == 0)
+            throw new InvalidOperationException("Failed to update task.");
+
+        // Invalidate relevant caches
+        await InvalidateTaskCaches(existingTask);
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)
@@ -1009,6 +1107,15 @@ public class TaskService(
         // Invalidate tree-specific cache if applicable
         if (task.UserTreeId != null)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
+        if (task is { CloneFromTaskId: not null, UserTree.UserId: not null })
+        {
+            var userId = task.UserTree.UserId.Value;
+            var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.CloneFromTaskId.Value);
+            if (challengeTask != null)
+            {
+                await redisService.RemoveAsync($"{UserChallengeCacheKeyPrefix}{userId}:{challengeTask.ChallengeId}");
+            }
+        }
     }
 
     private async Task ForceUpdateTaskStatusAsync(Tasks task, TasksStatus newStatus)
@@ -1051,5 +1158,31 @@ public class TaskService(
         taskRepository.Update(task);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
+    }
+    
+    public async Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
+    {
+        var cacheKey = $"{UserChallengeCacheKeyPrefix}{userId}:{challengeId}";
+
+        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        if (cachedTasks != null) return cachedTasks;
+
+        var tasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
+        if (tasks == null || tasks.Count == 0)
+            throw new KeyNotFoundException($"No cloned tasks found for User ID {userId} and Challenge ID {challengeId}.");
+
+        var taskDto = mapper.Map<List<TaskDto>>(tasks);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
+
+        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+
+        return taskDto;
     }
 }

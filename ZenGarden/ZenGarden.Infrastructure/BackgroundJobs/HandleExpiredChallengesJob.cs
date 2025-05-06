@@ -18,7 +18,7 @@ public class HandleExpiredChallengesJob(IServiceScopeFactory scopeFactory, ILogg
                 var challengeService =
                     scope.ServiceProvider
                         .GetRequiredService<IChallengeService>();
-                await challengeService.HandleExpiredChallengesAsync(); 
+                await challengeService.HandleExpiredChallengesAsync();
                 logger.LogInformation("HandleExpiredChallengesAsync executed successfully at {Time}", DateTime.UtcNow);
             }
             catch (Exception ex)
@@ -32,7 +32,7 @@ public class HandleExpiredChallengesJob(IServiceScopeFactory scopeFactory, ILogg
             try
             {
                 await Task.Delay(TimeSpan.FromMinutes(1),
-                    stoppingToken); 
+                    stoppingToken);
             }
             catch (TaskCanceledException)
             {

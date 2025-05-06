@@ -269,7 +269,7 @@ public partial class Program
                     {
                         Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
                     },
-                    Array.Empty<string>()
+                    []
                 }
             });
         });
@@ -304,11 +304,12 @@ public partial class Program
 
     private static void ConfigureBackgroundJobs(WebApplicationBuilder builder)
     {
-        builder.Services.AddHostedService<AutoPauseTaskJob>();
+        // builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
         builder.Services.AddHostedService<DailyTaskResetJob>();
         builder.Services.AddHostedService<HandleExpiredChallengesJob>();
         builder.Services.AddHostedService<WeeklyTaskResetJob>();
+        builder.Services.AddHostedService<TaskNotifierService>();
 
         // Cấu hình logging
         builder.Logging.AddConsole();
