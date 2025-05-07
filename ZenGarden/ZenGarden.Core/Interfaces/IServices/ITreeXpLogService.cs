@@ -7,4 +7,7 @@ public interface ITreeXpLogService
     Task<List<TreeXpLog>> GetAllTreeXpLog();
     Task<TreeXpLog?> GetTreeXpLogByLogIdAsync(int logId);
     Task<List<TreeXpLog>> GetTreeXpLogByTaskIdAsync(int taskId);
+    Task<TreeXpLog?> GetLatestTreeXpLogByUserTreeIdAsync(int userTreeId);
+    Task<List<TreeXpLog>> GetTreeXpLogByUserIdAsync(int userId);
+    Task<List<TreeXpLog>> GetTreeXpLogByUserTreeIdAsync(int userTreeId);
 }

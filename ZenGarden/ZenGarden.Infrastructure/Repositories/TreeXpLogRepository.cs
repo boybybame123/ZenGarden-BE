@@ -25,4 +25,25 @@ public class TreeXpLogRepository(ZenGardenContext context)
             .OrderByDescending(log => log.CreatedAt)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<List<TreeXpLog>> GetTreeXpLogByUserIdAsync(int userId)
+    {
+        return await _context.TreeXpLog
+            .Include(log => log.Tasks)
+            .ThenInclude(task => task!.UserTree)
+            .Where(log => log.Tasks != null && 
+                         log.Tasks.UserTree != null && 
+                         log.Tasks.UserTree.UserId == userId)
+            .OrderByDescending(log => log.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<TreeXpLog>> GetTreeXpLogByUserTreeIdAsync(int userTreeId)
+    {
+        return await _context.TreeXpLog
+            .Include(log => log.Tasks)
+            .Where(log => log.Tasks != null && log.Tasks.UserTreeId == userTreeId)
+            .OrderByDescending(log => log.CreatedAt)
+            .ToListAsync();
+    }
 }
