@@ -235,11 +235,18 @@ public class PaymentService
         _transactionRepository.Update(transaction);
         await _unitOfWork.CommitAsync();
 
-        await _notificationService.PushNotificationAsync(
-            transaction.UserId.Value,
-            "Payment Successful",
-            "Your payment has been processed successfully"
-        );
+        if (transaction.UserId.HasValue)
+        {
+            await _notificationService.PushNotificationAsync(
+                transaction.UserId.Value,
+                "Payment Successful",
+                "Your payment has been processed successfully"
+            );
+        }
+        else
+        {
+            _logger.LogWarning($"No UserId found for transaction {transaction.TransactionId}");
+        }
 
         _logger.LogInformation($"Successfully processed payment for transaction {transaction.TransactionId}");
     }
@@ -288,11 +295,18 @@ public class PaymentService
             _transactionRepository.Update(transaction);
             await _unitOfWork.CommitAsync();
 
-            await _notificationService.PushNotificationAsync(
-                transaction.UserId.Value,
-                "Payment Canceled",
-                "Your payment has been canceled"
-            );
+            if (transaction.UserId.HasValue)
+            {
+                await _notificationService.PushNotificationAsync(
+                    transaction.UserId.Value,
+                    "Payment Canceled",
+                    "Your payment has been canceled"
+                );
+            }
+            else
+            {
+                _logger.LogWarning($"No UserId found for transaction {transaction.TransactionId}");
+            }
 
             _logger.LogInformation($"Successfully processed payment cancellation for transaction {transaction.TransactionId}");
         }

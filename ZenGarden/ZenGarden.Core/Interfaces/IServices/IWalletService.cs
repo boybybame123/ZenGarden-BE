@@ -9,5 +9,5 @@ public interface IWalletService
     Task LockWalletAsync(int userId);
     Task UnlockWalletAsync(int userId);
     Task<List<Wallet>> GetAllWalletAsync();
-    Task<decimal> GetTotalBalanceAsync();
+    
 }
