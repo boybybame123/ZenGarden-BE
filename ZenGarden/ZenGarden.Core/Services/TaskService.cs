@@ -293,6 +293,7 @@ public class TaskService(
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var now = DateTime.UtcNow;
+
         if (now < task.StartDate)
             throw new InvalidOperationException(
                 $"Task has not started yet. Current time: {now:u}, StartDate: {task.StartDate:u}");
@@ -309,37 +310,50 @@ public class TaskService(
             throw new InvalidOperationException(
                 $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
 
-        if (task.Status == TasksStatus.NotStarted)
+        switch (task.Status)
         {
-            task.StartedAt = DateTime.UtcNow;
-            task.Status = TasksStatus.InProgress;
-            await userXpLogService.AddXpForStartTaskAsync(userId);
-        }
-        else if (task is { Status: TasksStatus.Paused, PausedAt: not null, StartedAt: not null })
-        {
-            var elapsedBeforePause = (task.PausedAt.Value - task.StartedAt.Value).TotalMinutes;
-            var totalAccumulated = task.AccumulatedTime + (int)elapsedBeforePause;
+            case TasksStatus.NotStarted:
+                task.StartedAt = now;
+                task.Status = TasksStatus.InProgress;
+                await userXpLogService.AddXpForStartTaskAsync(userId);
+                break;
 
-            if (totalAccumulated >= task.TotalDuration)
-                throw new InvalidOperationException("Task has already expired.");
+            case TasksStatus.Paused:
+                if (task.PausedAt == null || task.StartedAt == null)
+                    throw new InvalidOperationException("Invalid task timestamps for paused state.");
 
-            task.AccumulatedTime = totalAccumulated;
+                if (task.AccumulatedTime >= task.TotalDuration)
+                {
+                    task.Status = TasksStatus.Completed;
+                    task.CompletedAt = now;
+                    task.AccumulatedTime = task.TotalDuration;
+                    taskRepository.Update(task);
+                    await unitOfWork.CommitAsync();
+                    await InvalidateTaskCaches(task);
+                    return;
+                }
 
-            task.StartedAt = DateTime.UtcNow;
-            task.PausedAt = null;
-            task.Status = TasksStatus.InProgress;
-        }
-        else
-        {
-            throw new InvalidOperationException("Task cannot be started from the current state.");
+                task.StartedAt = now;
+                task.PausedAt = null;
+                task.Status = TasksStatus.InProgress;
+                break;
+
+            case TasksStatus.InProgress:
+            case TasksStatus.Completed:
+            case TasksStatus.Overdue:
+            case TasksStatus.Canceled:
+            default:
+                throw new InvalidOperationException("Task cannot be started from the current state.");
         }
 
         taskRepository.Update(task);
 
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
+
         await InvalidateTaskCaches(task);
     }
+
 
     public async Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
     {
@@ -382,16 +396,7 @@ public class TaskService(
 
                 var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
 
-                if (task.TaskTypeId is 2 or 3 && task.Priority is { } priority)
-                {
-                    var decayRate = xpConfig.PriorityDecayRate ?? 0.1;
-                    var minMultiplier = xpConfig.MinDecayMultiplier ?? 0.3;
-
-                    var rawMultiplier = 1 - (priority - 1) * decayRate;
-                    var decayMultiplier = Math.Max(rawMultiplier, minMultiplier);
-
-                    baseXp *= decayMultiplier;
-                }
+                baseXp = CalculateXpWithPriorityDecay(task, baseXp);
 
                 xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
 
@@ -535,7 +540,7 @@ public class TaskService(
         if ((newTaskTypeId == 1 && newDuration is < 30 or > 180) ||
             (newTaskTypeId == 2 && newDuration < 180))
             throw new ArgumentException("Invalid duration for the selected task type.");
-        
+
 
         var newTaskType = await taskTypeRepository.GetByIdAsync(newTaskTypeId);
         if (newTaskType == null)
@@ -845,6 +850,33 @@ public class TaskService(
         await InvalidateTaskCaches(existingTask);
     }
 
+    public async Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
+    {
+        var cacheKey = $"{UserChallengeCacheKeyPrefix}{userId}:{challengeId}";
+
+        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        if (cachedTasks != null) return cachedTasks;
+
+        var tasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
+        if (tasks == null || tasks.Count == 0)
+            throw new KeyNotFoundException(
+                $"No cloned tasks found for User ID {userId} and Challenge ID {challengeId}.");
+
+        var taskDto = mapper.Map<List<TaskDto>>(tasks);
+        foreach (var (dto, entity) in taskDto.Zip(tasks))
+        {
+            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
+            var remainingSeconds = CalculateRemainingSeconds(entity);
+
+            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        }
+
+        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+
+        return taskDto;
+    }
+
     private async Task UpdateUserTreeIfNeeded(Tasks task, CompleteTaskDto completeTaskDto)
     {
         if (task.UserTreeId == null)
@@ -1119,9 +1151,7 @@ public class TaskService(
             var userId = task.UserTree.UserId.Value;
             var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.CloneFromTaskId.Value);
             if (challengeTask != null)
-            {
                 await redisService.RemoveAsync($"{UserChallengeCacheKeyPrefix}{userId}:{challengeTask.ChallengeId}");
-            }
         }
     }
 
@@ -1166,30 +1196,20 @@ public class TaskService(
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
     }
-    
-    public async Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
+
+    private static double CalculateXpWithPriorityDecay(Tasks task, double baseXp)
     {
-        var cacheKey = $"{UserChallengeCacheKeyPrefix}{userId}:{challengeId}";
+        if (task.TaskTypeId is not 2 and not 3 || task.Priority is null)
+            return baseXp;
 
-        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
-        if (cachedTasks != null) return cachedTasks;
+        const double decayFactor = 0.1; // k trong công thức e^(-k * priority)
+        var minXp = baseXp * 0.3; // Không giảm dưới 30% base XP
 
-        var tasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
-        if (tasks == null || tasks.Count == 0)
-            throw new KeyNotFoundException($"No cloned tasks found for User ID {userId} and Challenge ID {challengeId}.");
+        var priorityIndex = task.Priority.Value - 1;
 
-        var taskDto = mapper.Map<List<TaskDto>>(tasks);
-        foreach (var (dto, entity) in taskDto.Zip(tasks))
-        {
-            var accumulatedSeconds = (int)((entity.AccumulatedTime ?? 0) * 60);
-            var remainingSeconds = CalculateRemainingSeconds(entity);
+        var decayMultiplier = Math.Exp(-decayFactor * priorityIndex);
+        var xp = baseXp * decayMultiplier;
 
-            dto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
-            dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
-        }
-
-        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
-
-        return taskDto;
+        return Math.Max(xp, minXp);
     }
 }

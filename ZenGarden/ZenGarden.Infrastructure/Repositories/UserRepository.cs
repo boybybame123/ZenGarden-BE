@@ -21,7 +21,9 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
     public async Task<Users?> GetByPhoneAsync(string? phone)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Phone == phone);
     }
 
     public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
