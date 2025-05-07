@@ -46,8 +46,29 @@ public partial class FocusMethodService : IFocusMethodService
     {
         try
         {
-            var prompt =
-                $"Given the task details:\n\n- **Task Name**: {dto.TaskName}\n- **Task Description**: {dto.TaskDescription}\n- **Total Duration**: {dto.TotalDuration}\n- **Start Date**: {dto.StartDate:yyyy-MM-dd}\n- **End Date**: {dto.EndDate:yyyy-MM-dd}\n\nSuggest a focus method that would be most effective for this task.\n\nYou are free to invent a new method or reuse an existing one if it's the best fit.\n\nReturn the result in EXACTLY the following two-part format:\n\n1. First line: Name - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description\n\n2. Second part (on new lines): Reason: [explain in 1-3 sentences why this method is suitable for this task]\n\nExample response format:\nPomodoro Plus - 25 - 45 - 5 - 15 - 30 - 10 - 1.2 - Enhanced Pomodoro technique with flexible time periods\nReason: This method is ideal for the task because it provides structured time management while allowing flexibility. The moderate work periods match the cognitive demands of the task while regular breaks prevent burnout.";
+            var prompt = $"""
+                          Given the task details:
+
+                          - **Task Name**: {dto.TaskName}
+                          - **Task Description**: {dto.TaskDescription}
+                          - **Total Duration**: {dto.TotalDuration} minutes
+                          - **Start Date**: {dto.StartDate:yyyy-MM-dd}
+                          - **End Date**: {dto.EndDate:yyyy-MM-dd}
+
+                          Suggest a focus method that strictly fits within the total duration.
+                          You must ensure that the sum of the default work duration and default break duration does not exceed the task's total duration.
+                          Prefer short, flexible methods for very short tasks.
+
+                          Return the result in EXACTLY the following format:
+
+                          1. First line: Name - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description
+
+                          2. Second part (on new lines): Reason: [explain in 1-3 sentences why this method is suitable for this task]
+
+                          Example:
+                          Quick Burst - 10 - 25 - 1 - 5 - 20 - 5 - 1.1 - A short method for tight schedules with a small break.
+                          Reason: This method fits well within the 30-minute window, allowing one full cycle of focused work and recovery.
+                          """;
             var aiResponse = await CallOpenAiApi(prompt);
             if (string.IsNullOrWhiteSpace(aiResponse))
                 throw new InvalidOperationException("OpenAI returned an empty response.");
