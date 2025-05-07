@@ -27,6 +27,7 @@ public static class JwtHelper
             new("sub", user.UserId.ToString()),
             new("jti", Guid.NewGuid().ToString()),
             new("email", user.Email),
+            new("phone", user.Phone),
             new("userId", user.UserId.ToString())
         };
 
