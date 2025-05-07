@@ -7,7 +7,6 @@ namespace ZenGarden.Core.Services;
 
 public class WalletService(
     IWalletRepository walletRepository,
-    IMapper mapper,
     IUnitOfWork unitOfWork)
     : IWalletService
 {
