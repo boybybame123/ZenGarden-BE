@@ -136,7 +136,7 @@ public class PaymentService(
                 wallet.UpdatedAt = DateTime.UtcNow;
                 wallet.LastTransactionAt = DateTime.UtcNow;
                 // Update admin wallet balance
-                admin.Balance -= transaction.Amount ?? 0;
+                admin.Balance += transaction.Amount ?? 0;
                 admin.UpdatedAt = DateTime.UtcNow;
                 admin.LastTransactionAt = DateTime.UtcNow;
                 walletRepository.Update(wallet);

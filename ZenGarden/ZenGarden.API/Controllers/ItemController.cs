@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.Enums;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -8,96 +9,193 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ItemController(IItemService itemService, IItemDetailService itemDetail, IS3Service s3Service)
-    : ControllerBase
+public class ItemController : ControllerBase
 {
-    private readonly IItemDetailService _itemDetailService =
-        itemDetail ?? throw new ArgumentNullException(nameof(itemDetail));
+    private readonly IItemDetailService _itemDetailService;
+    private readonly IItemService _itemService;
+    private readonly IS3Service _s3Service;
 
-    private readonly IItemService _itemService = itemService ?? throw new ArgumentNullException(nameof(itemService));
-
-    private readonly IS3Service _s3Service = s3Service ?? throw new ArgumentNullException(nameof(s3Service));
-
+    public ItemController(IItemService itemService, IItemDetailService itemDetail, IS3Service s3Service)
+    {
+        _itemDetailService = itemDetail ?? throw new ArgumentNullException(nameof(itemDetail));
+        _itemService = itemService ?? throw new ArgumentNullException(nameof(itemService));
+        _s3Service = s3Service ?? throw new ArgumentNullException(nameof(s3Service));
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetItems()
     {
-        var items = await _itemService.GetAllItemsAsync();
-        return Ok(items);
+        try
+        {
+            var items = await _itemService.GetAllItemsAsync();
+            return Ok(items);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error retrieving items", error = ex.Message });
+        }
     }
 
     [HttpGet("{itemId:int}")]
     public async Task<IActionResult> GetItemById(int itemId)
     {
-        var item = await _itemService.GetItemByIdAsync(itemId);
-        if (item == null) return NotFound();
-        return Ok(item);
+        if (itemId <= 0)
+            return BadRequest(new { message = "Invalid item ID" });
+
+        try
+        {
+            var item = await _itemService.GetItemByIdAsync(itemId);
+            if (item == null) return NotFound(new { message = $"Item with ID {itemId} not found" });
+            return Ok(item);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error retrieving item", error = ex.Message });
+        }
     }
 
     [HttpPut("{itemId:int}")]
     [Produces("application/json")]
     public async Task<IActionResult> DeleteItem(int itemId)
     {
-        await _itemService.DeleteItemAsync(itemId);
-        return Ok(new { message = "item deleted successfully" });
-    }
+        if (itemId <= 0)
+            return BadRequest(new { message = "Invalid item ID" });
 
+        try
+        {
+            await _itemService.DeleteItemAsync(itemId);
+            return Ok(new { message = "Item deleted successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error deleting item", error = ex.Message });
+        }
+    }
 
     [HttpPut("active-item/{itemId:int}")]
     [Produces("application/json")]
     public async Task<IActionResult> ActiveItem(int itemId)
     {
-        await _itemService.ActiveItem(itemId);
-        return Ok(new { message = "item activated successfully" });
-    }
+        if (itemId <= 0)
+            return BadRequest(new { message = "Invalid item ID" });
 
+        try
+        {
+            await _itemService.ActiveItem(itemId);
+            return Ok(new { message = "Item activated successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error activating item", error = ex.Message });
+        }
+    }
 
     [HttpPut("update-item/{itemId:int}")]
     [Produces("application/json")]
     public async Task<IActionResult> UpdateItem(int itemId, [FromForm] UpdateItemDto item)
     {
-        item.ItemId = itemId;
-        var i = await _itemService.UpdateItemAsync(item);
-        return Ok(i);
-    }
+        if (itemId <= 0)
+            return BadRequest(new { message = "Invalid item ID" });
 
+        if (item == null)
+            return BadRequest(new { message = "Item data is required" });
+
+        try
+        {
+            item.ItemId = itemId;
+            var updatedItem = await _itemService.UpdateItemAsync(item);
+            return Ok(updatedItem);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error updating item", error = ex.Message });
+        }
+    }
 
     [HttpPut("update-item-detail/{itemId:int}")]
     public async Task<IActionResult> UpdateItemDetail(int itemId, [FromForm] UpdateItemDetailDto itemDetail)
     {
-        itemDetail.ItemId = itemId;
-        var detail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
-        return Ok(detail);
+        if (itemId <= 0)
+            return BadRequest(new { message = "Invalid item ID" });
+
+        if (itemDetail == null)
+            return BadRequest(new { message = "Item detail data is required" });
+
+        try
+        {
+            itemDetail.ItemId = itemId;
+            var detail = await _itemDetailService.UpdateItemDetailAsync(itemDetail);
+            return Ok(detail);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error updating item detail", error = ex.Message });
+        }
     }
 
     [HttpPost("create-item")]
     public async Task<IActionResult> CreateItem([FromForm] CreateItemDto request)
     {
-        // Validate the uploaded file
+        if (request == null)
+            return BadRequest(new { message = "Request data is required" });
+
         if (request.File == null)
             return BadRequest(new { message = "File is required" });
 
-        var type = _itemDetailService.GetFolderNameByItemType(request.Type);
-
-
-        // Upload files to S3
-        var mediaUrl =
-            await _s3Service.UploadFileToFolderAsync(request
-                .File, type); // Null forgiving operator is safe here due to the earlier null check
-
-        if (string.IsNullOrEmpty(mediaUrl))
-            return BadRequest(new { message = "File upload failed" });
-
-        // Ensure ItemDetail is not null and assign MediaUrl
         if (request.ItemDetail == null)
-            return BadRequest(new { message = "ItemDetail is required." });
+            return BadRequest(new { message = "ItemDetail is required" });
 
-        request.ItemDetail.MediaUrl = mediaUrl;
+        if (!Enum.IsDefined(typeof(ItemType), request.Type))
+            return BadRequest(new { message = "Invalid item type" });
 
-        // Save item to databases (middleware will handle any exceptions here)
-        await _itemService.CreateItemAsync(request);
+        try
+        {
+            var type = _itemDetailService.GetFolderNameByItemType(request.Type);
+            var mediaUrl = await _s3Service.UploadFileToFolderAsync(request.File, type);
 
-        // Return successful response
-        return Ok(new { message = "Item created successfully", mediaUrl });
+            if (string.IsNullOrEmpty(mediaUrl))
+                return BadRequest(new { message = "File upload failed" });
+
+            request.ItemDetail.MediaUrl = mediaUrl;
+            await _itemService.CreateItemAsync(request);
+
+            return Ok(new { message = "Item created successfully", mediaUrl });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error creating item", error = ex.Message });
+        }
     }
 }
