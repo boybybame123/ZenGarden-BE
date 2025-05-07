@@ -20,5 +20,16 @@ public class SuggestFocusMethodValidator : AbstractValidator<SuggestFocusMethodD
         RuleFor(x => x.StartDate)
             .LessThan(x => x.EndDate)
             .WithMessage("StartDate must be before EndDate.");
+        RuleFor(x => x.StartDate)
+            .Must(start => start.Date >= DateTime.UtcNow.Date)
+            .WithMessage("StartDate cannot be in the past.");
+        RuleFor(x => x)
+            .Must(x =>
+            {
+                if (!x.TotalDuration.HasValue) return true;
+                var availableMinutes = (x.EndDate - x.StartDate).TotalMinutes;
+                return x.TotalDuration.Value <= availableMinutes;
+            })
+            .WithMessage("TotalDuration must not exceed the time between StartDate and EndDate.");
     }
 }
