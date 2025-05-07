@@ -126,7 +126,7 @@ public class PaymentService
             [
                 new SessionLineItemOptions
                 {
-                    PriceData = new SessionLineItemPriceDataOptions
+
                     PriceData = new SessionLineItemPriceDataOptions
                     {
                         UnitAmount = amountInCents,
