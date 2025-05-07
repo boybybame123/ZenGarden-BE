@@ -50,49 +50,79 @@ public class ItemService(
 
     public async Task CreateItemAsync(CreateItemDto item)
     {
-        var newItem = mapper.Map<Item>(item);
-        newItem.CreatedAt = DateTime.Now;
-        newItem.UpdatedAt = DateTime.Now;
-        await itemRepository.CreateAsync(newItem);
-        const string cacheKey = "all_items";
-        await redisService.DeleteKeyAsync(cacheKey);
-        if (await unitOfWork.CommitAsync() == 0)
+        try
         {
-            logger.LogError("Failed to create item.");
-            throw new InvalidOperationException("Failed to create item.");
-        }
+            if (item == null)
+            {
+                logger.LogError("CreateItemAsync called with null item");
+                throw new ArgumentNullException(nameof(item));
+            }
 
-        await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been created.");
-        await InvalidateCache();
+            var newItem = mapper.Map<Item>(item);
+            newItem.CreatedAt = DateTime.Now;
+            newItem.UpdatedAt = DateTime.Now;
+            
+            await itemRepository.CreateAsync(newItem);
+            
+            if (await unitOfWork.CommitAsync() == 0)
+            {
+                logger.LogError("Failed to create item: {ItemName}", item.Name);
+                throw new InvalidOperationException($"Failed to create item: {item.Name}");
+            }
+
+            await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been created.");
+            await InvalidateCache();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error creating item: {ItemName}", item?.Name);
+            throw;
+        }
     }
 
     public async Task<Item> UpdateItemAsync(UpdateItemDto item)
     {
-        var existingItem = await itemRepository.GetItemByIdAsync(item.ItemId);
-        if (existingItem == null)
+        try
         {
-            logger.LogWarning("Item with ID {ItemId} not found.", item.ItemId);
-            throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
+            if (item == null)
+            {
+                logger.LogError("UpdateItemAsync called with null item");
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            var existingItem = await itemRepository.GetItemByIdAsync(item.ItemId);
+            if (existingItem == null)
+            {
+                logger.LogWarning("Item with ID {ItemId} not found.", item.ItemId);
+                throw new KeyNotFoundException($"Item with ID {item.ItemId} not found.");
+            }
+
+            // Update only non-null properties
+            if (item.Name != null) existingItem.Name = item.Name;
+            existingItem.Type = item.Type;
+            if (item.Rarity != null) existingItem.Rarity = item.Rarity;
+            if (item.Cost != null) existingItem.Cost = item.Cost;
+            existingItem.Status = item.Status;
+            existingItem.UpdatedAt = DateTime.Now;
+
+            itemRepository.Update(existingItem);
+            
+            if (await unitOfWork.CommitAsync() == 0)
+            {
+                logger.LogError("Failed to update item: {ItemId}, {ItemName}", item.ItemId, existingItem.Name);
+                throw new InvalidOperationException($"Failed to update item: {existingItem.Name}");
+            }
+
+            await InvalidateCache();
+            await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {existingItem.Name} has been updated.");
+            
+            return existingItem;
         }
-
-        existingItem.Name = item.Name ?? existingItem.Name;
-        existingItem.Type = item.Type;
-        existingItem.Rarity = item.Rarity ?? existingItem.Rarity;
-        existingItem.Cost = item.Cost ?? existingItem.Cost;
-        existingItem.Status = item.Status;
-        existingItem.UpdatedAt = DateTime.Now;
-
-        itemRepository.Update(existingItem);
-        if (await unitOfWork.CommitAsync() == 0)
+        catch (Exception ex) when (ex is not KeyNotFoundException && ex is not ArgumentNullException)
         {
-            logger.LogError("Failed to update item.");
-            throw new InvalidOperationException("Failed to update item.");
+            logger.LogError(ex, "Error updating item: {ItemId}", item?.ItemId);
+            throw;
         }
-
-        var cacheKey = $"item_{item.ItemId}";
-        await redisService.DeleteKeyAsync(cacheKey);
-        await InvalidateCache();
-        return existingItem;
     }
 
     public async Task ActiveItem(int itemId)
