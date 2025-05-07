@@ -32,7 +32,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(task);
     }
 
-
     [HttpGet("by-user-tree/{userTreeId:int}")]
     public async Task<IActionResult> GetTasksByUserTreeId(int userTreeId)
     {
@@ -61,7 +60,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.UpdateTaskAsync(taskId, task);
         return Ok(new { message = "Task updated successfully" });
     }
-
 
     [HttpPost("create-task")]
     public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
@@ -140,8 +138,12 @@ public class TaskController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPut("{taskId:int}/task-type")]
-    public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto)
+    public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto, [FromServices] IValidator<UpdateTaskTypeIdDto> validator)
     {
+        var validationResult = await validator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
         await _taskService.UpdateTaskTypeAsync(taskId, dto.NewTaskTypeId, dto.NewDuration);
         return NoContent();
     }
@@ -170,7 +172,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpGet("user/{userId:int}/challenge/{challengeId:int}/cloned-tasks")]
     public async Task<IActionResult> GetClonedTasksByUserChallenge(int userId, int challengeId)
     {
-        var task = await _taskService.GetClonedTasksByUserChallengeAsync(userId, challengeId);
-        return Ok(task);
+        var tasks = await _taskService.GetClonedTasksByUserChallengeAsync(userId, challengeId);
+        return Ok(tasks);
     }
 }
