@@ -33,36 +33,85 @@ public class ItemDetailService(
 
     public async Task<ItemDetail> UpdateItemDetailAsync(UpdateItemDetailDto itemDetail)
     {
-        var updateItemDetail = await itemDetailRepository.GetItemDetailsByItemId(itemDetail.ItemId);
-
-        if (updateItemDetail != null)
+        try
         {
+            if (itemDetail == null)
+            {
+                throw new ArgumentNullException(nameof(itemDetail));
+            }
+
+            var updateItemDetail = await itemDetailRepository.GetItemDetailsByItemId(itemDetail.ItemId);
+            if (updateItemDetail == null)
+            {
+                throw new KeyNotFoundException($"ItemDetail with ItemId {itemDetail.ItemId} not found.");
+            }
+
+            // Validate effect if provided
+            if (itemDetail.Effect != null)
+            {
+                if (string.IsNullOrWhiteSpace(itemDetail.Effect))
+                {
+                    throw new ArgumentException("Effect cannot be empty or whitespace.");
+                }
+
+                // Try parse effect as number
+                if (int.TryParse(itemDetail.Effect, out int effectValue))
+                {
+                    if (effectValue <= 0 || effectValue >= 100)
+                    {
+                        throw new ArgumentException("Effect value must be greater than 0 and less than 100.");
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException("Effect must be a valid number.");
+                }
+
+                updateItemDetail.Effect = itemDetail.Effect;
+            }
+
+            // Update other properties if provided
             if (itemDetail.Description != null)
                 updateItemDetail.Description = itemDetail.Description;
+            
             if (itemDetail.Duration.HasValue)
                 updateItemDetail.Duration = itemDetail.Duration;
-            if (itemDetail.Effect != null)
-                updateItemDetail.Effect = itemDetail.Effect;
+            
             updateItemDetail.UpdatedAt = DateTime.Now;
+            
             if (itemDetail.IsUnique != updateItemDetail.IsUnique)
                 updateItemDetail.IsUnique = itemDetail.IsUnique;
+            
             if (itemDetail.MonthlyPurchaseLimit.HasValue)
                 updateItemDetail.MonthlyPurchaseLimit = itemDetail.MonthlyPurchaseLimit;
 
-
+            // Handle file upload if provided
             if (itemDetail.File != null)
             {
-                var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
-                updateItemDetail.MediaUrl = mediaUrl;
+                try
+                {
+                    var mediaUrl = await s3Service.UploadFileAsync(itemDetail.File);
+                    updateItemDetail.MediaUrl = mediaUrl;
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("Failed to upload file to S3.", ex);
+                }
             }
 
             itemDetailRepository.Update(updateItemDetail);
+            
             if (await unitOfWork.CommitAsync() == 0)
-                throw new InvalidOperationException("Failed to update item.");
+            {
+                throw new InvalidOperationException($"Failed to update item detail for ItemId {itemDetail.ItemId}");
+            }
+
             return updateItemDetail;
         }
-
-        throw new KeyNotFoundException("ItemDetail not found.");
+        catch (Exception ex) when (ex is not ArgumentNullException && ex is not KeyNotFoundException && ex is not ArgumentException)
+        {
+            throw new InvalidOperationException($"Error updating item detail: {ex.Message}", ex);
+        }
     }
 
     public string GetFolderNameByItemType(ItemType type)
