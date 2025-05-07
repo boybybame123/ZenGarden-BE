@@ -5,27 +5,101 @@ using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace ZenGarden.Core.Services;
 
-public class PaymentService(
-    ITransactionsRepository transactionRepository,
-    IWalletRepository walletRepository,
-    INotificationService notificationService,
-    IPackageRepository packageRepository,
-    IUnitOfWork unitOfWork)
+public class PaymentService
 {
-    private readonly StripeClient _stripeClient = new(
-        "sk_test_51QytHoLRxlQvzGwK9SWbMbZ0IdvtVY2I7564umiV1bSZBdYNyKsAxMGCtlysfAkStAemSjAtIQLpVCQXtC0qJrez00XPcVdOUq");
+    private readonly ITransactionsRepository _transactionRepository;
+    private readonly IWalletRepository _walletRepository;
+    private readonly INotificationService _notificationService;
+    private readonly IPackageRepository _packageRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<PaymentService> _logger;
+    private readonly StripeClient _stripeClient;
+    private readonly string _successUrl;
+    private readonly string _cancelUrl;
+    private readonly int _adminWalletId;
+
+    public PaymentService(
+        ITransactionsRepository transactionRepository,
+        IWalletRepository walletRepository,
+        INotificationService notificationService,
+        IPackageRepository packageRepository,
+        IUnitOfWork unitOfWork,
+        ILogger<PaymentService> logger,
+        IConfiguration configuration)
+    {
+        _transactionRepository = transactionRepository;
+        _walletRepository = walletRepository;
+        _notificationService = notificationService;
+        _packageRepository = packageRepository;
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+
+        var stripeSecretKey = configuration["Stripe:SecretKey"] 
+            ?? throw new ArgumentNullException("Stripe:SecretKey configuration is missing");
+        _stripeClient = new StripeClient(stripeSecretKey);
+        
+        _successUrl = configuration["Stripe:SuccessUrl"] 
+            ?? throw new ArgumentNullException("Stripe:SuccessUrl configuration is missing");
+        _cancelUrl = configuration["Stripe:CancelUrl"] 
+            ?? throw new ArgumentNullException("Stripe:CancelUrl configuration is missing");
+        _adminWalletId = configuration.GetValue<int>("AdminWalletId", 18);
+    }
 
     public async Task<CheckoutResponse> CreatePayment(CreatePaymentRequest request)
     {
-        // 1. Validate package
-        var package = await packageRepository.GetByIdAsync(request.PackageId);
-        if (package is not { IsActive: true })
-            throw new Exception("Invalid package");
-        var amountInCents = (long)(package.Price * 100);
-        // 2. Create PaymentIntent first
+        try
+        {
+            _logger.LogInformation($"Creating payment for user {request.UserId}, package {request.PackageId}");
+
+            // 1. Validate package
+            var package = await _packageRepository.GetByIdAsync(request.PackageId);
+            if (package == null)
+            {
+                _logger.LogWarning($"Package {request.PackageId} not found");
+                throw new KeyNotFoundException("Package not found");
+            }
+
+            if (!package.IsActive)
+            {
+                _logger.LogWarning($"Package {request.PackageId} is not active");
+                throw new InvalidOperationException("Package is not active");
+            }
+
+            var amountInCents = (long)(package.Price * 100);
+
+            // 2. Create PaymentIntent
+            var paymentIntent = await CreatePaymentIntent(request.UserId, package, amountInCents);
+
+            // 3. Create Checkout Session
+            var session = await CreateCheckoutSession(request.UserId, package, amountInCents, paymentIntent.Id);
+
+            // 4. Save transaction
+            var transaction = await SaveTransaction(request, package, paymentIntent.Id);
+
+            // 5. Return response
+            return new CheckoutResponse
+            {
+                CheckoutUrl = session.Url,
+                SessionId = session.Id,
+                PaymentIntentId = paymentIntent.Id,
+                Amount = package.Price,
+                PackageName = package.Name
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error creating payment for user {request.UserId}, package {request.PackageId}");
+            throw;
+        }
+    }
+
+    private async Task<PaymentIntent> CreatePaymentIntent(int userId, Packages package, long amountInCents)
+    {
         var paymentIntentService = new PaymentIntentService(_stripeClient);
         var paymentIntentOptions = new PaymentIntentCreateOptions
         {
@@ -33,16 +107,18 @@ public class PaymentService(
             Currency = "usd",
             Metadata = new Dictionary<string, string>
             {
-                { "user_id", request.UserId.ToString() },
+                { "user_id", userId.ToString() },
                 { "package_id", package.PackageId.ToString() }
             },
             PaymentMethodTypes = ["card"],
-            Description = $"Zen purchase - {package.Name}" // English-only description
+            Description = $"Zen purchase - {package.Name}"
         };
 
-        var paymentIntent = await paymentIntentService.CreateAsync(paymentIntentOptions);
+        return await paymentIntentService.CreateAsync(paymentIntentOptions);
+    }
 
-        // 3. Create Checkout Session with English-only text
+    private async Task<Session> CreateCheckoutSession(int userId, Packages package, long amountInCents, string paymentIntentId)
+    {
         var options = new SessionCreateOptions
         {
             PaymentMethodTypes = ["card"],
@@ -51,14 +127,14 @@ public class PaymentService(
                 new SessionLineItemOptions
                 {
                     PriceData = new SessionLineItemPriceDataOptions
+                    PriceData = new SessionLineItemPriceDataOptions
                     {
                         UnitAmount = amountInCents,
                         Currency = "usd",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
                             Name = package.Name,
-                            Description = $"Credit {(int)Math.Floor(package.Amount)} Zen to wallet" // English
-                            // Optional logo
+                            Description = $"Credit {(int)Math.Floor(package.Amount)} Zen to wallet"
                         }
                     },
                     Quantity = 1
@@ -66,27 +142,28 @@ public class PaymentService(
             ],
             Mode = "payment",
             Locale = "en",
-            SuccessUrl =
-                $"https://zengarden-be-fdre.onrender.com/api/Payment/success?paymentIntentId={paymentIntent.Id}",
-            CancelUrl = $"https://zengarden-be-fdre.onrender.com/api/Payment/cancel?paymentIntentId={paymentIntent.Id}",
+            SuccessUrl = $"{_successUrl}?paymentIntentId={paymentIntentId}",
+            CancelUrl = $"{_cancelUrl}?paymentIntentId={paymentIntentId}",
             Metadata = new Dictionary<string, string>
             {
-                { "user_id", request.UserId.ToString() },
+                { "user_id", userId.ToString() },
                 { "package_id", package.PackageId.ToString() }
             },
             CustomText = new SessionCustomTextOptions
             {
                 Submit = new SessionCustomTextSubmitOptions
                 {
-                    Message = "Complete Payment" // English button text
+                    Message = "Complete Payment"
                 }
             }
         };
 
         var service = new SessionService(_stripeClient);
-        var session = await service.CreateAsync(options);
+        return await service.CreateAsync(options);
+    }
 
-        // 4. Save transaction
+    private async Task<Transactions> SaveTransaction(CreatePaymentRequest request, Packages package, string paymentIntentId)
+    {
         var transaction = new Transactions
         {
             UserId = request.UserId,
@@ -96,84 +173,133 @@ public class PaymentService(
             Type = TransactionType.Deposit,
             Status = TransactionStatus.Pending,
             PaymentMethod = "Stripe",
-            TransactionRef = paymentIntent.Id
+            TransactionRef = paymentIntentId
         };
 
-        await transactionRepository.CreateAsync(transaction);
-        await unitOfWork.CommitAsync();
-
-        // 5. Return response
-        return new CheckoutResponse
-        {
-            CheckoutUrl = session.Url,
-            SessionId = session.Id,
-            PaymentIntentId = paymentIntent.Id,
-            Amount = package.Price,
-            PackageName = package.Name
-        };
+        await _transactionRepository.CreateAsync(transaction);
+        await _unitOfWork.CommitAsync();
+        return transaction;
     }
 
     public async Task HandlePaymentSucceeded(string paymentIntentId)
     {
-        var transaction = await transactionRepository.FindByRefAsync(paymentIntentId);
-        if (transaction is null)
-            throw new Exception("Transaction not found");
-        if (transaction.UserId == null)
-            throw new Exception("User not found");
-
-        // Check if the transaction is pending
-        if (transaction is { Status: TransactionStatus.Pending })
+        try
         {
-            transaction.Status = TransactionStatus.Completed;
-            transaction.TransactionTime = DateTime.UtcNow;
+            _logger.LogInformation($"Handling successful payment for payment intent {paymentIntentId}");
 
-            var wallet = await walletRepository.GetByIdAsync(transaction.WalletId);
-            var admin = await walletRepository.GetByIdAsync(18); // Assuming admin wallet ID is 1
-            if (wallet != null)
+            var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
+            if (transaction == null)
             {
-                // Update wallet balance
-                wallet.Balance += transaction.Amount ?? 0;
-                wallet.UpdatedAt = DateTime.UtcNow;
-                wallet.LastTransactionAt = DateTime.UtcNow;
-                // Update admin wallet balance
-                admin.Balance += transaction.Amount ?? 0;
-                admin.UpdatedAt = DateTime.UtcNow;
-                admin.LastTransactionAt = DateTime.UtcNow;
-                walletRepository.Update(wallet);
-                await unitOfWork.CommitAsync();
-                walletRepository.Update(admin);
-                await unitOfWork.CommitAsync();
+                _logger.LogWarning($"Transaction not found for payment intent {paymentIntentId}");
+                throw new KeyNotFoundException("Transaction not found");
             }
 
-            transactionRepository.Update(transaction);
-            await unitOfWork.CommitAsync();
+            if (transaction.UserId == null)
+            {
+                _logger.LogWarning($"User not found for transaction {transaction.TransactionId}");
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (transaction.Status != TransactionStatus.Pending)
+            {
+                _logger.LogWarning($"Transaction {transaction.TransactionId} is not pending");
+                throw new InvalidOperationException("Transaction is not pending");
+            }
+
+            await ProcessSuccessfulPayment(transaction);
         }
-        else
+        catch (Exception ex)
         {
-            throw new Exception("Transaction not found or already completed");
+            _logger.LogError(ex, $"Error handling successful payment for payment intent {paymentIntentId}");
+            throw;
+        }
+    }
+
+    private async Task ProcessSuccessfulPayment(Transactions transaction)
+    {
+        transaction.Status = TransactionStatus.Completed;
+        transaction.TransactionTime = DateTime.UtcNow;
+
+        var wallet = await _walletRepository.GetByIdAsync(transaction.WalletId);
+        var adminWallet = await _walletRepository.GetByIdAsync(_adminWalletId);
+
+        if (wallet == null || adminWallet == null)
+        {
+            _logger.LogError($"Wallet not found for transaction {transaction.TransactionId}");
+            throw new KeyNotFoundException("Wallet not found");
         }
 
-        await notificationService.PushNotificationAsync(transaction.UserId.Value, "Payment", "Success");
+        // Update wallet balances
+        await UpdateWalletBalances(wallet, adminWallet, transaction.Amount ?? 0);
+
+        _transactionRepository.Update(transaction);
+        await _unitOfWork.CommitAsync();
+
+        await _notificationService.PushNotificationAsync(
+            transaction.UserId.Value,
+            "Payment Successful",
+            "Your payment has been processed successfully"
+        );
+
+        _logger.LogInformation($"Successfully processed payment for transaction {transaction.TransactionId}");
+    }
+
+    private async Task UpdateWalletBalances(Wallet userWallet, Wallet adminWallet, decimal amount)
+    {
+        userWallet.Balance += amount;
+        userWallet.UpdatedAt = DateTime.UtcNow;
+        userWallet.LastTransactionAt = DateTime.UtcNow;
+
+        adminWallet.Balance += amount;
+        adminWallet.UpdatedAt = DateTime.UtcNow;
+        adminWallet.LastTransactionAt = DateTime.UtcNow;
+
+        _walletRepository.Update(userWallet);
+        _walletRepository.Update(adminWallet);
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task HandlePaymentCanceled(string paymentIntentId)
     {
-        var transaction = await transactionRepository.FindByRefAsync(paymentIntentId);
-        if (transaction is null)
-            throw new Exception("Transaction not found");
-        if (transaction.UserId == null)
-            throw new Exception("User not found");
+        try
+        {
+            _logger.LogInformation($"Handling canceled payment for payment intent {paymentIntentId}");
 
-        if (transaction is { Status: TransactionStatus.Pending })
-        {
+            var transaction = await _transactionRepository.FindByRefAsync(paymentIntentId);
+            if (transaction == null)
+            {
+                _logger.LogWarning($"Transaction not found for payment intent {paymentIntentId}");
+                throw new KeyNotFoundException("Transaction not found");
+            }
+
+            if (transaction.UserId == null)
+            {
+                _logger.LogWarning($"User not found for transaction {transaction.TransactionId}");
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (transaction.Status != TransactionStatus.Pending)
+            {
+                _logger.LogWarning($"Transaction {transaction.TransactionId} is not pending");
+                throw new InvalidOperationException("Transaction is not pending");
+            }
+
             transaction.Status = TransactionStatus.Failed;
-            transactionRepository.Update(transaction);
-            await unitOfWork.CommitAsync();
-            await notificationService.PushNotificationAsync(transaction.UserId.Value, "Payment", "Canceled");
+            _transactionRepository.Update(transaction);
+            await _unitOfWork.CommitAsync();
+
+            await _notificationService.PushNotificationAsync(
+                transaction.UserId.Value,
+                "Payment Canceled",
+                "Your payment has been canceled"
+            );
+
+            _logger.LogInformation($"Successfully processed payment cancellation for transaction {transaction.TransactionId}");
         }
-        else
+        catch (Exception ex)
         {
-            throw new Exception("Transaction not found or already completed");
+            _logger.LogError(ex, $"Error handling canceled payment for payment intent {paymentIntentId}");
+            throw;
         }
     }
 }
