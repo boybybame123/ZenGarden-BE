@@ -57,10 +57,5 @@ public class WalletService(
         walletRepository.Update(wallet); // Changed to synchronous Update
         await unitOfWork.CommitAsync();
     }
-    public async Task<decimal> GetTotalBalanceAsync()
-    {
-        var totalBalance = await walletRepository.GetTotalBalanceAsync();
-        if (totalBalance == null) throw new Exception($"Total balance not found");
-        return totalBalance;
-    }
+
 }
