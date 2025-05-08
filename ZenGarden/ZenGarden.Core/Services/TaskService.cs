@@ -459,8 +459,18 @@ public class TaskService(
 
                 await UpdateChallengeProgress(task);
 
-                await notificationService.PushNotificationAsync(userid, "Task Completed",
-                    $"Task {task.TaskName} has been completed. You earned {xpEarned} XP.");
+                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
+                var bonusXp = 0;
+                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
+                    effectPercent > 0)
+                {
+                    bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
+                }
+                var xpMessage = bonusXp > 0 && equippedItem?.Item?.Name != null
+                    ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {equippedItem.Item.Name}: +{bonusXp} XP) for completing a task!"
+                    : $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP for completing a task!";
+                await notificationService.PushNotificationAsync(userid, "Task Completed", xpMessage);
                 await InvalidateTaskCaches(task);
             }
             catch (Exception ex)
