@@ -446,16 +446,19 @@ public class TaskService(
         var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
                      throw new InvalidOperationException("UserId is null.");
 
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
-                throw new InvalidOperationException("TaskNote is required for challenge tasks.");
-
-
-
-            task.TaskNote = completeTaskDto.TaskNote;
-            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+        if (task.TaskTypeId == 4)
+        {
+            if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
+            {
+                task.TaskNote = completeTaskDto.TaskNote;
+            }    
+            task.TaskResult =
+await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
             if (string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
+
+        }
 
         if (await IsDailyTaskAlreadyCompleted(task))
             throw new InvalidOperationException("You have already completed this daily task today.");
