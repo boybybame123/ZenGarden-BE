@@ -1,6 +1,5 @@
 using AutoMapper;
 using FluentValidation;
-using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
@@ -64,13 +63,12 @@ public class TaskService(
 
     public async Task<TaskDto?> GetTaskByIdAsync(int taskId)
     {
-        // Try to get from the cache first
         var cacheKey = $"{TaskCacheKeyPrefix}{taskId}";
         var cachedTask = await redisService.GetAsync<TaskDto>(cacheKey);
         if (cachedTask != null) return cachedTask;
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(taskId);
-        if (task == null) throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var taskDto = mapper.Map<TaskDto>(task);
         var remaining = CalculateRemainingSeconds(task);
@@ -78,22 +76,18 @@ public class TaskService(
         var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
         taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
-        // Cache the result
         await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
-
         return taskDto;
     }
 
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
-        // Try to get from the cache first
         var cacheKey = $"{UserTasksCacheKeyPrefix}{userId}";
         var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
         if (cachedTasks != null) return cachedTasks;
 
-        var tasks = await taskRepository.GetTasksByUserIdAsync(userId);
-        if (tasks == null || tasks.Count == 0)
-            throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
+        var tasks = await taskRepository.GetTasksByUserIdAsync(userId)
+                    ?? throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
 
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
         foreach (var (dto, entity) in taskDto.Zip(tasks))
@@ -105,22 +99,18 @@ public class TaskService(
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
-        // Cache the result
         await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
-
         return taskDto;
     }
 
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
-        // Try to get from the cache first
         var cacheKey = $"{TreeTasksCacheKeyPrefix}{userTreeId}";
         var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
         if (cachedTasks != null) return cachedTasks;
 
-        var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId);
-        if (tasks == null || tasks.Count == 0)
-            throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
+        var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId)
+                    ?? throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
 
         var taskDto = mapper.Map<List<TaskDto>>(tasks);
         foreach (var (dto, entity) in taskDto.Zip(tasks))
@@ -132,16 +122,58 @@ public class TaskService(
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
-        // Cache the result
         await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
-
         return taskDto;
     }
 
-
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
-        await ValidateTaskDto(dto);
+        // Validate using FluentValidation
+        var validationResult = await createTaskValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
+
+        // Validate task type exists
+        if (await taskTypeRepository.GetByIdAsync(dto.TaskTypeId) == null)
+            throw new KeyNotFoundException($"TaskType with ID {dto.TaskTypeId} not found.");
+        
+        // Validate a user tree if provided
+        if (dto.UserTreeId.HasValue)
+        {
+            var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value)
+                           ?? throw new KeyNotFoundException($"UserTree with ID {dto.UserTreeId.Value} not found.");
+
+            if (userTree.UserId == null)
+                throw new InvalidOperationException("UserId is null in UserTree.");
+        }
+
+        // Validate focus method settings if provided
+        if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
+        {
+            var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value)
+                         ?? throw new KeyNotFoundException($"FocusMethod with ID {dto.FocusMethodId} not found.");
+
+            if (dto.WorkDuration.HasValue && method is { MinDuration: not null, MaxDuration: not null })
+            {
+                if (dto.WorkDuration.Value < method.MinDuration.Value)
+                    throw new InvalidOperationException(
+                        $"Work duration must be at least {method.MinDuration.Value} minutes for the selected focus method.");
+                if (dto.WorkDuration.Value > method.MaxDuration.Value)
+                    throw new InvalidOperationException(
+                        $"Work duration cannot exceed {method.MaxDuration.Value} minutes for the selected focus method.");
+            }
+
+            if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
+            {
+                if (dto.BreakTime.Value < method.MinBreak.Value)
+                    throw new InvalidOperationException(
+                        $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method.");
+                if (dto.BreakTime.Value > method.MaxBreak.Value)
+                    throw new InvalidOperationException(
+                        $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method.");
+            }
+        }
+
         var selectedMethod = await GetFocusMethodAsync(dto);
 
         await xpConfigService.EnsureXpConfigExists(
@@ -149,6 +181,7 @@ public class TaskService(
             dto.TaskTypeId,
             dto.TotalDuration ?? 30
         );
+
         int? nextPriority = null;
         if (dto.TaskTypeId is 2 or 3 && dto.UserTreeId != null)
             nextPriority = await taskRepository.GetNextPriorityForTreeAsync(dto.UserTreeId.Value);
@@ -174,11 +207,10 @@ public class TaskService(
         await taskRepository.CreateAsync(newTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(newTask);
-        var taskDto = mapper.Map<TaskDto>(newTask);
 
+        var taskDto = mapper.Map<TaskDto>(newTask);
         var remainingSeconds = CalculateRemainingSeconds(newTask);
         taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
-
         var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
         taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
@@ -293,7 +325,13 @@ public class TaskService(
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         var now = DateTime.UtcNow;
+        await ValidateTaskStartConditions(task, now, userId, taskId);
+        await UpdateTaskStatus(task, now);
+        await InvalidateTaskCaches(task);
+    }
 
+    private async Task ValidateTaskStartConditions(Tasks task, DateTime now, int userId, int taskId)
+    {
         if (now < task.StartDate)
             throw new InvalidOperationException(
                 $"Task has not started yet. Current time: {now:u}, StartDate: {task.StartDate:u}");
@@ -309,13 +347,17 @@ public class TaskService(
         if (existingInProgressTask != null && existingInProgressTask.TaskId != taskId)
             throw new InvalidOperationException(
                 $"You already have a task in progress (Task ID: {existingInProgressTask.TaskId}). Please complete it first.");
+    }
 
+    private async Task UpdateTaskStatus(Tasks task, DateTime now)
+    {
         switch (task.Status)
         {
             case TasksStatus.NotStarted:
                 task.StartedAt = now;
                 task.Status = TasksStatus.InProgress;
-                await userXpLogService.AddXpForStartTaskAsync(userId);
+                if (task.UserTree.UserId != null)
+                    await userXpLogService.AddXpForStartTaskAsync(task.UserTree.UserId.Value);
                 break;
 
             case TasksStatus.Paused:
@@ -329,7 +371,6 @@ public class TaskService(
                     task.AccumulatedTime = task.TotalDuration;
                     taskRepository.Update(task);
                     await unitOfWork.CommitAsync();
-                    await InvalidateTaskCaches(task);
                     return;
                 }
 
@@ -338,22 +379,14 @@ public class TaskService(
                 task.Status = TasksStatus.InProgress;
                 break;
 
-            case TasksStatus.InProgress:
-            case TasksStatus.Completed:
-            case TasksStatus.Overdue:
-            case TasksStatus.Canceled:
             default:
                 throw new InvalidOperationException("Task cannot be started from the current state.");
         }
 
         taskRepository.Update(task);
-
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to start the task.");
-
-        await InvalidateTaskCaches(task);
     }
-
 
     public async Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto)
     {
@@ -784,69 +817,15 @@ public class TaskService(
         return tasksToNotify;
     }
 
-    public async Task UpdateTaskSimpleAsync(int taskId, UpdateTaskDto updateTaskDto)
+    public async Task UpdateTaskSimpleAsync(int taskId, UpdateTaskSimpleDto updateTaskDto)
     {
         var existingTask = await taskRepository.GetByIdAsync(taskId)
                            ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        // Update fields if provided in the DTO
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskName))
-            existingTask.TaskName = updateTaskDto.TaskName;
-
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskDescription))
-            existingTask.TaskDescription = updateTaskDto.TaskDescription;
-
-        if (!string.IsNullOrWhiteSpace(updateTaskDto.TaskNote))
-            existingTask.TaskNote = updateTaskDto.TaskNote;
-
-        if (updateTaskDto.WorkDuration.HasValue)
-            existingTask.WorkDuration = updateTaskDto.WorkDuration.Value;
-
-        if (updateTaskDto.BreakTime.HasValue)
-            existingTask.BreakTime = updateTaskDto.BreakTime.Value;
-
-        if (updateTaskDto.StartDate.HasValue)
-            existingTask.StartDate = updateTaskDto.StartDate.Value;
-
-        if (updateTaskDto.EndDate.HasValue)
-            existingTask.EndDate = updateTaskDto.EndDate.Value;
-
-        if (updateTaskDto.AccumulatedTime.HasValue)
-            existingTask.AccumulatedTime = updateTaskDto.AccumulatedTime.Value;
-
-        if (updateTaskDto.TotalDuration.HasValue)
-            existingTask.TotalDuration = updateTaskDto.TotalDuration.Value;
-
-        if (updateTaskDto.TaskTypeId.HasValue)
-            existingTask.TaskTypeId = updateTaskDto.TaskTypeId.Value;
-
-        if (updateTaskDto.FocusMethodId.HasValue)
-            existingTask.FocusMethodId = updateTaskDto.FocusMethodId.Value;
-
-        if (updateTaskDto.UserTreeId.HasValue)
-        {
-            _ = await userTreeRepository.GetByIdAsync(updateTaskDto.UserTreeId.Value)
-                ?? throw new KeyNotFoundException(
-                    $"UserTree with ID {updateTaskDto.UserTreeId.Value} not found.");
-            existingTask.UserTreeId = updateTaskDto.UserTreeId.Value;
-        }
-
-        // Handle task result file/URL if provided
-        if (updateTaskDto.TaskFile != null || !string.IsNullOrWhiteSpace(updateTaskDto.TaskResult))
-        {
-            var userId = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
-                         throw new InvalidOperationException("UserId is null.");
-            existingTask.TaskResult =
-                await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userId);
-        }
-
+        existingTask.TotalDuration = updateTaskDto.TotalDuration;
         existingTask.UpdatedAt = DateTime.UtcNow;
         taskRepository.Update(existingTask);
-
-        if (await unitOfWork.CommitAsync() == 0)
-            throw new InvalidOperationException("Failed to update task.");
-
-        // Invalidate relevant caches
+        await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(existingTask);
     }
 
@@ -930,93 +909,7 @@ public class TaskService(
             return taskResultUrl;
         throw new ArgumentException("Invalid TaskResult URL.");
     }
-
-
-    private async Task ValidateTaskDto(CreateTaskDto dto)
-    {
-        const int maxTaskPerUser = 20;
-        var errors = new List<ValidationFailure>();
-
-        var validationResult = await createTaskValidator.ValidateAsync(dto);
-        errors.AddRange(validationResult.Errors);
-
-        var taskType = await taskTypeRepository.GetByIdAsync(dto.TaskTypeId);
-        if (taskType == null)
-            errors.Add(new ValidationFailure("TaskTypeId", $"TaskType not found. TaskTypeId = {dto.TaskTypeId}"));
-
-        switch (dto.UserTreeId)
-        {
-            case > 0 when await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value) is { } userTree:
-            {
-                var userId = userTree.UserId;
-                if (userId == null)
-                {
-                    errors.Add(new ValidationFailure("UserTreeId", "UserId is null in UserTree."));
-                }
-                else
-                {
-                    var userTasks = await taskRepository.GetTasksByUserIdAsync(userId.Value);
-                    var activeTasksCount = userTasks.Count(t =>
-                        t.Status is TasksStatus.NotStarted or TasksStatus.InProgress or TasksStatus.Paused);
-
-                    if (activeTasksCount >= maxTaskPerUser)
-                        errors.Add(new ValidationFailure("UserTreeId",
-                            $"You can only have up to {maxTaskPerUser} active tasks."));
-                }
-
-                break;
-            }
-            case > 0:
-                errors.Add(new ValidationFailure("UserTreeId", $"UserTree not found. UserTreeId = {dto.UserTreeId}"));
-                break;
-        }
-
-        // 4. Validate FocusMethod nếu có
-        if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
-        {
-            var focusMethodErrors = await ValidateFocusMethodSettings(dto);
-            errors.AddRange(focusMethodErrors);
-        }
-
-        // 5. Throw nếu có lỗi
-        if (errors.Count > 0)
-            throw new ValidationException(errors);
-    }
-
-    private async Task<List<ValidationFailure>> ValidateFocusMethodSettings(CreateTaskDto dto)
-    {
-        var errors = new List<ValidationFailure>();
-
-        if (dto.FocusMethodId == null) return errors;
-
-        var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value);
-        if (method == null)
-        {
-            errors.Add(new ValidationFailure("FocusMethodId", $"FocusMethod not found. Id = {dto.FocusMethodId}"));
-            return errors;
-        }
-
-        if (dto.WorkDuration.HasValue && method is { MinDuration: not null, MaxDuration: not null })
-        {
-            if (dto.WorkDuration.Value < method.MinDuration.Value)
-                errors.Add(new ValidationFailure("WorkDuration",
-                    $"Work duration must be at least {method.MinDuration.Value} minutes for the selected focus method."));
-            else if (dto.WorkDuration.Value > method.MaxDuration.Value)
-                errors.Add(new ValidationFailure("WorkDuration",
-                    $"Work duration cannot exceed {method.MaxDuration.Value} minutes for the selected focus method."));
-        }
-
-        if (!dto.BreakTime.HasValue || method is not { MinBreak: not null, MaxBreak: not null }) return errors;
-        if (dto.BreakTime.Value < method.MinBreak.Value)
-            errors.Add(new ValidationFailure("BreakTime",
-                $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method."));
-        else if (dto.BreakTime.Value > method.MaxBreak.Value)
-            errors.Add(new ValidationFailure("BreakTime",
-                $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method."));
-
-        return errors;
-    }
-
+    
     private async Task<FocusMethodDto> GetFocusMethodAsync(CreateTaskDto dto)
     {
         if (dto.FocusMethodId.HasValue)
@@ -1133,26 +1026,20 @@ public class TaskService(
 
     private async Task InvalidateTaskCaches(Tasks task)
     {
-        // Invalidate individual task cache
-        await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
-
-        // Invalidate all tasks cache
-        await redisService.RemoveAsync(AllTasksCacheKey);
-
-        // Invalidate user-specific cache if applicable
-        if (task.UserTree?.UserId != null)
-            await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{task.UserTree.UserId}");
-
-        // Invalidate tree-specific cache if applicable
-        if (task.UserTreeId != null)
-            await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
-        if (task is { CloneFromTaskId: not null, UserTree.UserId: not null })
+        var cacheKeys = new List<string>
         {
-            var userId = task.UserTree.UserId.Value;
-            var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.CloneFromTaskId.Value);
-            if (challengeTask != null)
-                await redisService.RemoveAsync($"{UserChallengeCacheKeyPrefix}{userId}:{challengeTask.ChallengeId}");
-        }
+            $"{TaskCacheKeyPrefix}{task.TaskId}",
+            AllTasksCacheKey
+        };
+
+        if (task.UserTreeId.HasValue)
+            cacheKeys.Add($"{TreeTasksCacheKeyPrefix}{task.UserTreeId}");
+
+        var userId = await taskRepository.GetUserIdByTaskIdAsync(task.TaskId);
+        if (userId.HasValue)
+            cacheKeys.Add($"{UserTasksCacheKeyPrefix}{userId}");
+
+        await Task.WhenAll(cacheKeys.Select(key => redisService.RemoveAsync(key)));
     }
 
     private async Task ForceUpdateTaskStatusAsync(Tasks task, TasksStatus newStatus)
@@ -1211,5 +1098,32 @@ public class TaskService(
         var xp = baseXp * decayMultiplier;
 
         return Math.Max(xp, minXp);
+    }
+
+    public async Task UpdateTaskResultAsync(int taskId, UpdateTaskResultDto updateTaskResultDto)
+    {
+        var existingTask = await taskRepository.GetByIdAsync(taskId)
+                           ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        var userId = await taskRepository.GetUserIdByTaskIdAsync(taskId)
+                     ?? throw new InvalidOperationException("UserId is null.");
+
+        if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
+            throw new InvalidOperationException(
+                "Tasks in 'InProgress' or 'Paused' state cannot be updated based on the new requirement.");
+
+        if (!string.IsNullOrWhiteSpace(updateTaskResultDto.TaskNote))
+            existingTask.TaskNote = updateTaskResultDto.TaskNote;
+
+        existingTask.TaskResult = await HandleTaskResultUpdate(
+            updateTaskResultDto.TaskFile,
+            updateTaskResultDto.TaskResult,
+            userId
+        );
+
+        existingTask.UpdatedAt = DateTime.UtcNow;
+        taskRepository.Update(existingTask);
+        await unitOfWork.CommitAsync();
+        await InvalidateTaskCaches(existingTask);
     }
 }

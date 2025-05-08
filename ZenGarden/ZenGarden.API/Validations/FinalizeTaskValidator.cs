@@ -33,4 +33,4 @@ public class FinalizeTaskValidator : AbstractValidator<FinalizeTaskDto>
         RuleFor(x => x.BreakTime)
             .GreaterThanOrEqualTo(0).WithMessage("Break time must be 0 or greater.");
     }
-} 
+}

@@ -8,17 +8,20 @@ public class UpdateTaskValidator : AbstractValidator<UpdateTaskDto>
     public UpdateTaskValidator()
     {
         RuleFor(x => x.TaskName)
-            .NotEmpty().WithMessage("TaskName is required.")
-            .MaximumLength(100).WithMessage("TaskName must be at most 100 characters.");
+            .MaximumLength(100).When(x => !string.IsNullOrWhiteSpace(x.TaskName))
+            .WithMessage("TaskName must be at most 100 characters.");
 
         RuleFor(x => x.TaskDescription)
-            .MaximumLength(500).WithMessage("TaskDescription must be at most 500 characters.");
+            .MaximumLength(500).When(x => !string.IsNullOrWhiteSpace(x.TaskDescription))
+            .WithMessage("TaskDescription must be at most 500 characters.");
 
         RuleFor(x => x.TaskNote)
-            .MaximumLength(300).WithMessage("TaskNote must be at most 300 characters.");
+            .MaximumLength(300).When(x => !string.IsNullOrWhiteSpace(x.TaskNote))
+            .WithMessage("TaskNote must be at most 300 characters.");
 
         RuleFor(x => x.TaskResult)
-            .MaximumLength(300).WithMessage("TaskResult must be at most 300 characters.")
+            .MaximumLength(300).When(x => !string.IsNullOrWhiteSpace(x.TaskResult))
+            .WithMessage("TaskResult must be at most 300 characters.")
             .Must(uri => string.IsNullOrWhiteSpace(uri) || Uri.IsWellFormedUriString(uri, UriKind.Absolute))
             .WithMessage("TaskResult must be a valid URL if provided.");
 

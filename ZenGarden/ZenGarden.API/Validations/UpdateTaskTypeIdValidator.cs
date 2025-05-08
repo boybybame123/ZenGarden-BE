@@ -26,4 +26,4 @@ public class UpdateTaskTypeIdValidator : AbstractValidator<UpdateTaskTypeIdDto>
             })
             .WithMessage("Invalid duration for the selected task type.");
     }
-} 
+}

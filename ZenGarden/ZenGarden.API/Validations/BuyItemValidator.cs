@@ -13,4 +13,4 @@ public class BuyItemValidator : AbstractValidator<BuyItemDto>
         RuleFor(x => x.UserId)
             .GreaterThan(0).WithMessage("User ID must be greater than 0.");
     }
-} 
+}
