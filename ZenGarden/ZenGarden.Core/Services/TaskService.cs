@@ -427,11 +427,20 @@ public class TaskService(
                 var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
                                ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
-                var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
+                var baseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
 
                 baseXp = CalculateXpWithPriorityDecay(task, baseXp);
 
-                xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
+                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
+                var bonusXp = 0.0;
+                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
+                    effectPercent > 0)
+                {
+                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+                    await useItemService.UseItemXpBoostTree(userid);
+                }
+                xpEarned = Math.Round(baseXp + bonusXp, 2);
 
                 if (xpEarned > 0 && task.UserTree != null)
                 {
@@ -459,14 +468,6 @@ public class TaskService(
 
                 await UpdateChallengeProgress(task);
 
-                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
-                var bonusXp = 0;
-                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
-                    effectPercent > 0)
-                {
-                    bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
-                }
                 var xpMessage = bonusXp > 0 && equippedItem?.Item?.Name != null
                     ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {equippedItem.Item.Name}: +{bonusXp} XP) for completing a task!"
                     : $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP for completing a task!";
@@ -1028,10 +1029,10 @@ public class TaskService(
         var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
         if (equippedItem == null ||
             !double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) ||
-            !(effectPercent > 0)) return baseXp;
-        var bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
-        await useItemService.UseItemXpBoostTree(userId);
-        return baseXp + bonusXp;
+            !(effectPercent > 0)) return Math.Round(baseXp, 2);
+        
+        var bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+        return Math.Round(baseXp + bonusXp, 2);
     }
 
     private async Task InvalidateTaskCaches(Tasks task)
