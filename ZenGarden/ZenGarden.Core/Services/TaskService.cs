@@ -477,6 +477,7 @@ public class TaskService(
                 var baseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
 
                 baseXp = CalculateXpWithPriorityDecay(task, baseXp);
+                baseXp = Math.Round(baseXp, 2);
 
                 var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
                 var bonusXp = 0.0;
