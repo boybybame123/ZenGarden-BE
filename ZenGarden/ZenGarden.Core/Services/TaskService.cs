@@ -409,12 +409,7 @@ public class TaskService(
 
                 if (task.AccumulatedTime >= task.TotalDuration)
                 {
-                    task.Status = TasksStatus.Completed;
-                    task.CompletedAt = now;
-                    task.AccumulatedTime = task.TotalDuration;
-                    taskRepository.Update(task);
-                    await unitOfWork.CommitAsync();
-                    return;
+                    throw new InvalidOperationException($"Task has exceeded its duration limit of {task.TotalDuration} minutes.");
                 }
 
                 task.StartedAt = now;
@@ -441,8 +436,7 @@ public class TaskService(
 
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-
-
+        
         var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
                      throw new InvalidOperationException("UserId is null.");
 
@@ -451,7 +445,7 @@ public class TaskService(
                 task.TaskNote = completeTaskDto.TaskNote;
             }    
             task.TaskResult =
-await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+                    await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
             if (string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
@@ -545,8 +539,7 @@ await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResul
 
         return xpEarned;
     }
-
-
+    
     public async Task UpdateOverdueTasksAsync()
     {
         var overdueTasks = await taskRepository.GetOverdueTasksAsync();
@@ -1165,10 +1158,6 @@ await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResul
 
         var userId = await taskRepository.GetUserIdByTaskIdAsync(taskId)
                      ?? throw new InvalidOperationException("UserId is null.");
-
-        if (existingTask.Status is TasksStatus.InProgress or TasksStatus.Paused)
-            throw new InvalidOperationException(
-                "Tasks in 'InProgress' or 'Paused' state cannot be updated based on the new requirement.");
 
         if (!string.IsNullOrWhiteSpace(updateTaskResultDto.TaskNote))
             existingTask.TaskNote = updateTaskResultDto.TaskNote;

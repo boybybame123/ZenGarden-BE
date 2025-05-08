@@ -10,30 +10,19 @@ public class UpdateUserValidator : AbstractValidator<UpdateUserDTO>
         RuleFor(x => x.UserId)
             .GreaterThan(0).WithMessage("User ID must be greater than 0.");
 
-        RuleFor(x => x.RoleId)
-            .GreaterThan(0).When(x => x.RoleId.HasValue)
-            .WithMessage("Role ID must be greater than 0 if provided.");
-
         RuleFor(x => x.UserName)
-            .NotEmpty().WithMessage("Username is required.")
-            .MaximumLength(50).WithMessage("Username must not exceed 50 characters.")
+            .MaximumLength(50).When(x => !string.IsNullOrEmpty(x.UserName))
+            .WithMessage("Username must not exceed 50 characters.")
             .Matches("^[a-zA-Z0-9_.-]+$")
+            .When(x => !string.IsNullOrEmpty(x.UserName))
             .WithMessage("Username can only contain letters, numbers, and the following special characters: ., -, _");
 
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email format.");
-
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters long.")
-            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
-            .Matches("[0-9]").WithMessage("Password must contain at least one number.")
-            .Matches(@"[\W]").WithMessage("Password must contain at least one special character.");
+            .EmailAddress().When(x => !string.IsNullOrEmpty(x.Email))
+            .WithMessage("Invalid email format.");
 
         RuleFor(x => x.Phone)
-            .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(@"^\d{10,15}$").WithMessage("Phone number must be between 10 and 15 digits.");
+            .Matches(@"^\d{10,15}$").When(x => !string.IsNullOrEmpty(x.Phone))
+            .WithMessage("Phone number must be between 10 and 15 digits.");
     }
 }
