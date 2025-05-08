@@ -70,7 +70,7 @@ public class ItemService(
                 throw new InvalidOperationException($"Failed to create item: {item.Name}");
             }
 
-            await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been created.");
+            await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been released.");
             await InvalidateCache();
         }
         catch (Exception ex)
