@@ -153,6 +153,10 @@ public class UseItemService(
             }
 
             itemBag.Quantity--;
+            if (itemBag.Quantity == 0)
+            {
+                itemBag.isEquipped = false;
+            }
             itemBag.UpdatedAt = DateTime.UtcNow;
             bagItemRepository.Update(itemBag);
             await unitOfWork.CommitAsync();
@@ -284,6 +288,10 @@ public class UseItemService(
             }
 
             itemBag.Quantity--;
+            if (itemBag.Quantity ==0)
+            {
+                itemBag.isEquipped = false;
+            }
             itemBag.UpdatedAt = DateTime.UtcNow;
             bagItemRepository.Update(itemBag);
             await unitOfWork.CommitAsync();
