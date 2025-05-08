@@ -205,7 +205,9 @@ public class UserXpLogService(
         {
             // Update XP to next level and max-level status if no level-up occurred
             var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == userExp.LevelId + 1);
-            userExp.XpToNextLevel = nextLevelConfig != null
+            var currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == userExp.LevelId);
+            
+            userExp.XpToNextLevel = nextLevelConfig != null && currentLevelConfig != null
                 ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
                 : 0;
             userExp.IsMaxLevel = nextLevelConfig == null;
