@@ -451,12 +451,15 @@ public class TaskService(
             if (string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
                 throw new InvalidOperationException("TaskNote is required for challenge tasks.");
 
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
-                throw new InvalidOperationException("TaskResult is required for challenge tasks.");
+
 
             task.TaskNote = completeTaskDto.TaskNote;
             task.TaskResult =
-                await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+
+            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
+                throw new InvalidOperationException("TaskResult is required for challenge tasks.");
+
         }
 
         if (await IsDailyTaskAlreadyCompleted(task))
