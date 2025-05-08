@@ -457,7 +457,7 @@ public class TaskService(
             task.TaskResult =
 await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
+            if (string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
         }
