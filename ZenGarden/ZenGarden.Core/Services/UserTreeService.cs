@@ -79,7 +79,6 @@ public class UserTreeService(
                 TotalDuration = 5,
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
-                Priority = 1,
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted
             },
@@ -87,12 +86,11 @@ public class UserTreeService(
             {
                 TaskName = "Prune your tree",
                 TaskDescription = "Keep your tree healthy by pruning it",
-                TaskTypeId = 2, // Weekly task
+                TaskTypeId = 1, 
                 UserTreeId = newUserTree.UserTreeId,
                 TotalDuration = 15,
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(7),
-                Priority = 2,
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted
             },
@@ -100,12 +98,23 @@ public class UserTreeService(
             {
                 TaskName = "Fertilize your tree",
                 TaskDescription = "Give your tree nutrients to help it grow",
-                TaskTypeId = 3, // Monthly task
+                TaskTypeId = 1,
                 UserTreeId = newUserTree.UserTreeId,
                 TotalDuration = 30,
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddMonths(1),
-                Priority = 3,
+                CreatedAt = DateTime.UtcNow,
+                Status = TasksStatus.NotStarted
+            },
+            new()
+            {
+                TaskName = "Check tree health",
+                TaskDescription = "Inspect your tree for any signs of disease or pests",
+                TaskTypeId = 1,
+                UserTreeId = newUserTree.UserTreeId,
+                TotalDuration = 10,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
                 CreatedAt = DateTime.UtcNow,
                 Status = TasksStatus.NotStarted
             }

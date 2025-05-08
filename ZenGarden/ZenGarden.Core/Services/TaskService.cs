@@ -321,13 +321,43 @@ public class TaskService(
 
     public async Task StartTaskAsync(int taskId, int userId)
     {
-        var task = await taskRepository.GetByIdAsync(taskId)
-                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        try
+        {
+            var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+                       ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
-        var now = DateTime.UtcNow;
-        await ValidateTaskStartConditions(task, now, userId, taskId);
-        await UpdateTaskStatus(task, now);
-        await InvalidateTaskCaches(task);
+            if (task.UserTree == null)
+            {
+                Console.WriteLine($"[ERROR] Task {taskId} has no UserTree associated");
+                throw new InvalidOperationException("Task is not associated with any UserTree.");
+            }
+
+            var now = DateTime.UtcNow;
+
+            Console.WriteLine($"[DEBUG] StartTask - Task ID: {taskId}");
+            Console.WriteLine($"[DEBUG] StartTask - UserTree ID: {task.UserTreeId}");
+            Console.WriteLine($"[DEBUG] StartTask - now: {now:u}, StartDate: {task.StartDate:u}, EndDate: {task.EndDate:u}, Status: {task.Status}");
+
+            await ValidateTaskStartConditions(task, now, userId, taskId);
+            await UpdateTaskStatus(task, now);
+
+            Console.WriteLine("[DEBUG] Task status updated successfully");
+
+            await InvalidateTaskCaches(task);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("=== [StartTaskAsync ERROR] ===");
+            Console.WriteLine($"Message: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner: {ex.InnerException.Message}");
+            }
+            Console.WriteLine("==============================");
+
+            throw;
+        }
     }
 
     private async Task ValidateTaskStartConditions(Tasks task, DateTime now, int userId, int taskId)
@@ -351,13 +381,26 @@ public class TaskService(
 
     private async Task UpdateTaskStatus(Tasks task, DateTime now)
     {
+        Console.WriteLine($"[DEBUG] UpdateTaskStatus - current task status: {task.Status}");
+        Console.WriteLine($"[DEBUG] Task details - ID: {task.TaskId}, UserTreeId: {task.UserTreeId}");
+
         switch (task.Status)
         {
             case TasksStatus.NotStarted:
                 task.StartedAt = now;
                 task.Status = TasksStatus.InProgress;
-                if (task.UserTree.UserId != null)
+
+                Console.WriteLine("[DEBUG] Task changed to InProgress");
+
+                if (task.UserTree?.UserId != null)
+                {
+                    Console.WriteLine($"[DEBUG] Adding XP for User ID: {task.UserTree.UserId.Value}");
                     await userXpLogService.AddXpForStartTaskAsync(task.UserTree.UserId.Value);
+                }
+                else
+                {
+                    Console.WriteLine("[WARNING] task.UserTree or task.UserTree.UserId is null!");
+                }
                 break;
 
             case TasksStatus.Paused:
@@ -379,8 +422,12 @@ public class TaskService(
                 task.Status = TasksStatus.InProgress;
                 break;
 
+            case TasksStatus.InProgress:
+            case TasksStatus.Completed:
+            case TasksStatus.Overdue:
+            case TasksStatus.Canceled:
             default:
-                throw new InvalidOperationException("Task cannot be started from the current state.");
+                throw new InvalidOperationException($"Task cannot be started from the current state: {task.Status}");
         }
 
         taskRepository.Update(task);
