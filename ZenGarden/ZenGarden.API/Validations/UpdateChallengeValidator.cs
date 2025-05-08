@@ -46,4 +46,4 @@ public class UpdateChallengeValidator : AbstractValidator<UpdateChallengeDto>
     {
         return date.HasValue && date.Value != default;
     }
-} 
+}

@@ -8,34 +8,48 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
     public CreateTaskValidator()
     {
         RuleFor(x => x.TaskName)
-            .NotEmpty().WithMessage("TaskName is required.")
-            .MaximumLength(100).WithMessage("TaskName must be at most 100 characters.");
+            .NotEmpty().WithMessage("Task name is required.")
+            .MaximumLength(100).WithMessage("Task name must not exceed 100 characters.");
 
         RuleFor(x => x.TaskDescription)
-            .MaximumLength(500).WithMessage("TaskDescription must be at most 500 characters.");
+            .MaximumLength(500).When(x => !string.IsNullOrEmpty(x.TaskDescription))
+            .WithMessage("Task description must not exceed 500 characters.");
 
         RuleFor(x => x.TaskTypeId)
-            .GreaterThan(0).WithMessage("TaskTypeId must be greater than 0.");
+            .GreaterThan(0).WithMessage("Task type ID must be greater than 0.");
 
         RuleFor(x => x.StartDate)
-            .NotEmpty().WithMessage("StartDate is required.");
+            .NotEmpty().WithMessage("Start date is required.")
+            .Must(startDate => startDate > DateTime.UtcNow)
+            .WithMessage(x =>
+                $"Start date cannot be in the past. Current time: {DateTime.UtcNow:u}, Start date: {x.StartDate:u}");
 
         RuleFor(x => x.EndDate)
-            .GreaterThan(x => x.StartDate).WithMessage("EndDate must be after StartDate.")
+            .NotEmpty().WithMessage("End date is required.")
+            .GreaterThan(x => x.StartDate)
+            .WithMessage("End date must be after start date.")
             .Must((dto, endDate) =>
-                !dto.TotalDuration.HasValue || endDate >= dto.StartDate.AddMinutes(dto.TotalDuration.Value))
-            .WithMessage("EndDate must be at least TotalDuration minutes after StartDate.");
+                !dto.TotalDuration.HasValue ||
+                endDate >= dto.StartDate.AddMinutes(dto.TotalDuration.Value))
+            .WithMessage(x => $"End date must be at least {x.TotalDuration} minutes after start date.");
 
         RuleFor(x => x.TotalDuration)
-            .GreaterThan(0).WithMessage("TotalDuration must be greater than 0.")
-            .When(x => x.TotalDuration.HasValue);
+            .GreaterThan(0).WithMessage("Total duration must be greater than 0.");
 
         RuleFor(x => x.WorkDuration)
-            .GreaterThan(0).WithMessage("WorkDuration must be greater than 0.")
-            .When(x => x.WorkDuration.HasValue);
+            .GreaterThan(0).When(x => x.WorkDuration.HasValue)
+            .WithMessage("Work duration must be greater than 0.");
 
         RuleFor(x => x.BreakTime)
-            .GreaterThanOrEqualTo(0).WithMessage("BreakTime must be 0 or greater.")
-            .When(x => x.BreakTime.HasValue);
+            .GreaterThan(0).When(x => x.BreakTime.HasValue)
+            .WithMessage("Break time must be greater than 0.");
+
+        RuleFor(x => x.UserTreeId)
+            .GreaterThan(0).When(x => x.UserTreeId.HasValue)
+            .WithMessage("User tree ID must be greater than 0.");
+
+        RuleFor(x => x.FocusMethodId)
+            .GreaterThan(0).When(x => x.FocusMethodId.HasValue)
+            .WithMessage("Focus method ID must be greater than 0.");
     }
 }

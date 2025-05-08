@@ -24,7 +24,8 @@ public class TaskTypesController(ITaskTypeService taskTypeService) : ControllerB
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateTaskTypeDto dto, [FromServices] IValidator<CreateTaskTypeDto> validator)
+    public async Task<IActionResult> Create([FromBody] CreateTaskTypeDto dto,
+        [FromServices] IValidator<CreateTaskTypeDto> validator)
     {
         var validationResult = await validator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -35,7 +36,8 @@ public class TaskTypesController(ITaskTypeService taskTypeService) : ControllerB
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskTypeDto dto, [FromServices] IValidator<UpdateTaskTypeDto> validator)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskTypeDto dto,
+        [FromServices] IValidator<UpdateTaskTypeDto> validator)
     {
         var validationResult = await validator.ValidateAsync(dto);
         if (!validationResult.IsValid)
