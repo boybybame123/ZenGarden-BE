@@ -152,35 +152,44 @@ public class UserXpLogService(
         var allLevels = await userXpConfigRepository.GetAllAsync();
         var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
 
-        // Find the highest level the user qualifies for
-        var newLevel = userExp.LevelId; // Start from current level
         var remainingXp = userExp.TotalXp;
-        
-        // Only check levels higher than current level
-        foreach (var level in sortedLevels.Where(l => l.LevelId > userExp.LevelId))
+        var currentLevel = userExp.LevelId;
+        var hasLeveledUp = false;
+
+        // Keep checking for level ups while user has enough XP
+        while (true)
         {
-            if (remainingXp >= level.XpThreshold)
-            {
-                newLevel = level.LevelId;
-                remainingXp -= level.XpThreshold;
-            }
-            else
-            {
+            var currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel);
+            if (currentLevelConfig == null) break; // Stop if current level config not found
+
+            var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
+            if (nextLevelConfig == null) break; // Stop if next level doesn't exist
+
+            if (remainingXp < currentLevelConfig.XpThreshold)
                 break;
-            }
+
+            // Level up
+            currentLevel++;
+            remainingXp -= currentLevelConfig.XpThreshold;
+            hasLeveledUp = true;
+
+            // Notify the user of the level-up
+            await notificationService.PushNotificationAsync(userId, "Level Up!",
+                $"Congratulations! You've reached level {currentLevel}!");
+
+            // Reward the user if the new level is a multiple of 5
+            if (currentLevel % 5 == 0)
+                await useItemService.GiftRandomItemFromListAsync(userId);
         }
 
-        // Determine if the user leveled up
-        var isLevelUp = userExp.LevelId != newLevel;
-
-        if (isLevelUp)
+        if (hasLeveledUp)
         {
             // Update the user's level and remaining XP
-            userExp.LevelId = newLevel;
+            userExp.LevelId = currentLevel;
             userExp.TotalXp = remainingXp;
             
             // Find the next level configuration
-            var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == newLevel + 1);
+            var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
             
             // Update XP to next level and max-level status
             userExp.XpToNextLevel = nextLevelConfig != null
@@ -191,13 +200,6 @@ public class UserXpLogService(
             // Save the updated user experience data
             userExperienceRepository.Update(userExp);
             await unitOfWork.CommitAsync();
-
-            // Notify the user of the level-up
-            await notificationService.PushNotificationAsync(userId, "Level Up!",
-                $"Congratulations! You've reached level {newLevel}!");
-
-            // Reward the user if the new level is a multiple of 5
-            if (newLevel % 5 == 0) await useItemService.GiftRandomItemFromListAsync(userId);
         }
         else
         {
