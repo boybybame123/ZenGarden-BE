@@ -448,15 +448,16 @@ public class TaskService(
 
         if (task.TaskTypeId == 4)
         {
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
-                throw new InvalidOperationException("TaskNote is required for challenge tasks.");
+            if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
+            {
+                task.TaskNote = completeTaskDto.TaskNote;
+            }    
+            task.TaskResult =
+await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
+            if (string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
-            task.TaskNote = completeTaskDto.TaskNote;
-            task.TaskResult =
-                await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
         }
 
         if (await IsDailyTaskAlreadyCompleted(task))
@@ -477,6 +478,7 @@ public class TaskService(
                 var baseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
 
                 baseXp = CalculateXpWithPriorityDecay(task, baseXp);
+                baseXp = Math.Round(baseXp, 2);
 
                 var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
                 var bonusXp = 0.0;
