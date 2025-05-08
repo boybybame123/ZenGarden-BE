@@ -9,9 +9,15 @@ namespace ZenGarden.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class TaskController(ITaskService taskService) : ControllerBase
+public class TaskController(
+    ITaskService taskService,
+    IValidator<UpdateTaskResultDto> updateTaskResultValidator)
+    : ControllerBase
 {
     private readonly ITaskService _taskService = taskService ?? throw new ArgumentNullException(nameof(taskService));
+
+    private readonly IValidator<UpdateTaskResultDto> _updateTaskResultValidator =
+        updateTaskResultValidator ?? throw new ArgumentNullException(nameof(updateTaskResultValidator));
 
     [HttpGet]
     public async Task<IActionResult> GetTasks()
@@ -26,12 +32,8 @@ public class TaskController(ITaskService taskService) : ControllerBase
         if (taskId <= 0) return BadRequest(new { Message = "Invalid task ID" });
 
         var task = await _taskService.GetTaskByIdAsync(taskId);
-
-        if (task == null) return NotFound(new { Message = $"Task with ID {taskId} not found" });
-
         return Ok(task);
     }
-
 
     [HttpGet("by-user-tree/{userTreeId:int}")]
     public async Task<IActionResult> GetTasksByUserTreeId(int userTreeId)
@@ -55,13 +57,11 @@ public class TaskController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPatch("Update-Task/{taskId:int}")]
-    public async Task<IActionResult> UpdateTask(
-        int taskId, [FromForm] UpdateTaskDto task)
+    public async Task<IActionResult> UpdateTask(int taskId, [FromForm] UpdateTaskDto task)
     {
         await _taskService.UpdateTaskAsync(taskId, task);
         return Ok(new { message = "Task updated successfully" });
     }
-
 
     [HttpPost("create-task")]
     public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
@@ -121,7 +121,7 @@ public class TaskController(ITaskService taskService) : ControllerBase
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
-        await taskService.ReorderTasksAsync(userTreeId, reorderList);
+        await _taskService.ReorderTasksAsync(userTreeId, reorderList);
         return Ok(new { message = "reorder task successfully." });
     }
 
@@ -140,8 +140,13 @@ public class TaskController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPut("{taskId:int}/task-type")]
-    public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto)
+    public async Task<IActionResult> UpdateTaskType(int taskId, [FromBody] UpdateTaskTypeIdDto dto,
+        [FromServices] IValidator<UpdateTaskTypeIdDto> validator)
     {
+        var validationResult = await validator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
         await _taskService.UpdateTaskTypeAsync(taskId, dto.NewTaskTypeId, dto.NewDuration);
         return NoContent();
     }
@@ -161,16 +166,29 @@ public class TaskController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPatch("{taskId:int}/duration")]
-    public async Task<IActionResult> UpdateTaskDurationOnly(int taskId, [FromForm] UpdateTaskDto dto)
+    public async Task<IActionResult> UpdateTaskDurationOnly(int taskId, [FromBody] UpdateTaskSimpleDto dto)
     {
         await _taskService.UpdateTaskSimpleAsync(taskId, dto);
         return Ok(new { message = "Task updated successfully" });
     }
-    
+
     [HttpGet("user/{userId:int}/challenge/{challengeId:int}/cloned-tasks")]
     public async Task<IActionResult> GetClonedTasksByUserChallenge(int userId, int challengeId)
     {
-        var task = await _taskService.GetClonedTasksByUserChallengeAsync(userId, challengeId);
-        return Ok(task);
+        var tasks = await _taskService.GetClonedTasksByUserChallengeAsync(userId, challengeId);
+        return Ok(tasks);
+    }
+
+    [HttpPut("{taskId:int}/result")]
+    public async Task<IActionResult> UpdateTaskResult(
+        int taskId,
+        [FromForm] UpdateTaskResultDto updateTaskResultDto)
+    {
+        var validationResult = await _updateTaskResultValidator.ValidateAsync(updateTaskResultDto);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
+        await _taskService.UpdateTaskResultAsync(taskId, updateTaskResultDto);
+        return Ok(new { Message = "Task result updated successfully" });
     }
 }
