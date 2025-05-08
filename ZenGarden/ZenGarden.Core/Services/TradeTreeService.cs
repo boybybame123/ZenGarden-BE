@@ -102,10 +102,10 @@ public class TradeTreeService(
         // Notify both users
         await notificationService.PushNotificationAsync(
             trade.TreeOwnerAid ?? throw new InvalidOperationException("TreeOwnerAid is null"), "Trees",
-            "Your trade has been accepted.");
+            $"Your trade of {requesterTree.Name} for {recipientTree.Name} has been accepted.");
         await notificationService.PushNotificationAsync(
             trade.TreeOwnerBid ?? throw new InvalidOperationException("TreeOwnerBid is null"), "Trees",
-            "Your trade  has been accepted.");
+            $"Your trade of {recipientTree.Name} for {requesterTree.Name} has been accepted.");
 
         return "Trade accepted successfully. Ownership has been transferred.";
     }

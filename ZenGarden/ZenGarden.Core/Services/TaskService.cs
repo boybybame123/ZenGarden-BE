@@ -436,31 +436,21 @@ public class TaskService(
 
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
                    ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
-
+        
         var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
                      throw new InvalidOperationException("UserId is null.");
 
-        // Validate challenge task requirements
-        if (task.TaskTypeId == 4)
-        {
-            if (task.CloneFromTaskId == null)
-                throw new InvalidOperationException("Challenge task must have a CloneFromTaskId.");
+            if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
+            {
+                task.TaskNote = completeTaskDto.TaskNote;
+            }    
+            task.TaskResult =
+                    await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
-            var challengeTask = await challengeTaskRepository.GetByTaskIdAsync(task.CloneFromTaskId.Value);
-            if (challengeTask == null)
-                throw new InvalidOperationException("Original challenge task not found.");
-
-            // Validate challenge task requirements
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
-                throw new InvalidOperationException("TaskNote is required for challenge tasks.");
-
-            if (string.IsNullOrWhiteSpace(completeTaskDto.TaskResult))
+            if (string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
-            // Update task with challenge information
-            task.TaskNote = completeTaskDto.TaskNote;
-            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
-        }
+        
 
         if (await IsDailyTaskAlreadyCompleted(task))
             throw new InvalidOperationException("You have already completed this daily task today.");
@@ -477,11 +467,21 @@ public class TaskService(
                 var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
                                ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
-                var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
+                var baseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
 
                 baseXp = CalculateXpWithPriorityDecay(task, baseXp);
+                baseXp = Math.Round(baseXp, 2);
 
-                xpEarned = await CalculateXpWithBoostAsync(task, baseXp);
+                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
+                var bonusXp = 0.0;
+                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
+                    effectPercent > 0)
+                {
+                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+                    await useItemService.UseItemXpBoostTree(userid);
+                }
+                xpEarned = Math.Round(baseXp + bonusXp, 2);
 
                 if (xpEarned > 0 && task.UserTree != null)
                 {
@@ -509,14 +509,6 @@ public class TaskService(
 
                 await UpdateChallengeProgress(task);
 
-                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
-                var bonusXp = 0;
-                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
-                    effectPercent > 0)
-                {
-                    bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
-                }
                 var xpMessage = bonusXp > 0 && equippedItem?.Item?.Name != null
                     ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {equippedItem.Item.Name}: +{bonusXp} XP) for completing a task!"
                     : $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP for completing a task!";
@@ -547,7 +539,7 @@ public class TaskService(
 
         return xpEarned;
     }
-
+    
     public async Task UpdateOverdueTasksAsync()
     {
         var overdueTasks = await taskRepository.GetOverdueTasksAsync();
@@ -1077,10 +1069,10 @@ public class TaskService(
         var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
         if (equippedItem == null ||
             !double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) ||
-            !(effectPercent > 0)) return baseXp;
-        var bonusXp = (int)Math.Floor(baseXp * (effectPercent / 100));
-        await useItemService.UseItemXpBoostTree(userId);
-        return baseXp + bonusXp;
+            !(effectPercent > 0)) return Math.Round(baseXp, 2);
+        
+        var bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+        return Math.Round(baseXp + bonusXp, 2);
     }
 
     private async Task InvalidateTaskCaches(Tasks task)

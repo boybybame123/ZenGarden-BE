@@ -152,50 +152,62 @@ public class UserXpLogService(
         var allLevels = await userXpConfigRepository.GetAllAsync();
         var sortedLevels = allLevels.OrderBy(l => l.XpThreshold).ToList();
 
-        // Initialize variables for current and next level
+        var remainingXp = userExp.TotalXp;
         var currentLevel = userExp.LevelId;
-        var currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel);
-        var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
+        var hasLeveledUp = false;
 
-        // Check if the user has leveled up
-        while (nextLevelConfig != null && userExp.TotalXp >= nextLevelConfig.XpThreshold)
+        // Keep checking for level ups while user has enough XP
+        while (true)
         {
-            // Subtract the XP threshold of the current level
-            if (currentLevelConfig != null) userExp.TotalXp -= currentLevelConfig.XpThreshold;
+            var currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel);
+            if (currentLevelConfig == null) break; // Stop if current level config not found
 
-            // Move to the next level
+            var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
+            if (nextLevelConfig == null) break; // Stop if next level doesn't exist
+
+            if (remainingXp < currentLevelConfig.XpThreshold)
+                break;
+
+            // Level up
             currentLevel++;
-            currentLevelConfig = nextLevelConfig;
-            nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
-        }
-
-        // Determine if the user leveled up
-        var isLevelUp = userExp.LevelId != currentLevel;
-
-        if (isLevelUp)
-        {
-            // Update the user's level, XP to the next level, and max-level status
-            userExp.LevelId = currentLevel;
-            userExp.XpToNextLevel = nextLevelConfig != null
-                ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
-                : 0;
-            userExp.IsMaxLevel = nextLevelConfig == null;
-
-            // Save the updated user experience data
-            userExperienceRepository.Update(userExp);
-            await unitOfWork.CommitAsync();
+            remainingXp -= currentLevelConfig.XpThreshold;
+            hasLeveledUp = true;
 
             // Notify the user of the level-up
             await notificationService.PushNotificationAsync(userId, "Level Up!",
                 $"Congratulations! You've reached level {currentLevel}!");
 
             // Reward the user if the new level is a multiple of 5
-            if (currentLevel % 5 == 0) await useItemService.GiftRandomItemFromListAsync(userId);
+            if (currentLevel % 5 == 0)
+                await useItemService.GiftRandomItemFromListAsync(userId);
+        }
+
+        if (hasLeveledUp)
+        {
+            // Update the user's level and remaining XP
+            userExp.LevelId = currentLevel;
+            userExp.TotalXp = remainingXp;
+            
+            // Find the next level configuration
+            var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == currentLevel + 1);
+            
+            // Update XP to next level and max-level status
+            userExp.XpToNextLevel = nextLevelConfig != null
+                ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - remainingXp)
+                : 0;
+            userExp.IsMaxLevel = nextLevelConfig == null;
+
+            // Save the updated user experience data
+            userExperienceRepository.Update(userExp);
+            await unitOfWork.CommitAsync();
         }
         else
         {
-            // Update XP to the next level and max-level status if no level-up occurred
-            userExp.XpToNextLevel = nextLevelConfig != null
+            // Update XP to next level and max-level status if no level-up occurred
+            var nextLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == userExp.LevelId + 1);
+            var currentLevelConfig = sortedLevels.FirstOrDefault(l => l.LevelId == userExp.LevelId);
+            
+            userExp.XpToNextLevel = nextLevelConfig != null && currentLevelConfig != null
                 ? (int)Math.Ceiling(nextLevelConfig.XpThreshold - userExp.TotalXp)
                 : 0;
             userExp.IsMaxLevel = nextLevelConfig == null;
