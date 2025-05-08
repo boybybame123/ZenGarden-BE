@@ -16,4 +16,4 @@ public class CreatePaymentRequestValidator : AbstractValidator<CreatePaymentRequ
         RuleFor(x => x.PackageId)
             .GreaterThan(0).WithMessage("Package ID must be greater than 0.");
     }
-} 
+}

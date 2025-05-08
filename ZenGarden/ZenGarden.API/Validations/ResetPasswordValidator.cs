@@ -24,4 +24,4 @@ public class ResetPasswordValidator : AbstractValidator<ResetPasswordDto>
             .Matches("[0-9]").WithMessage("Password must contain at least one number.")
             .Matches(@"[\W]").WithMessage("Password must contain at least one special character.");
     }
-} 
+}

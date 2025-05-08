@@ -17,7 +17,8 @@ public class UpdateUserValidator : AbstractValidator<UpdateUserDTO>
         RuleFor(x => x.UserName)
             .NotEmpty().WithMessage("Username is required.")
             .MaximumLength(50).WithMessage("Username must not exceed 50 characters.")
-            .Matches("^[a-zA-Z0-9_.-]+$").WithMessage("Username can only contain letters, numbers, and the following special characters: ., -, _");
+            .Matches("^[a-zA-Z0-9_.-]+$")
+            .WithMessage("Username can only contain letters, numbers, and the following special characters: ., -, _");
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")
@@ -35,4 +36,4 @@ public class UpdateUserValidator : AbstractValidator<UpdateUserDTO>
             .NotEmpty().WithMessage("Phone number is required.")
             .Matches(@"^\d{10,15}$").WithMessage("Phone number must be between 10 and 15 digits.");
     }
-} 
+}

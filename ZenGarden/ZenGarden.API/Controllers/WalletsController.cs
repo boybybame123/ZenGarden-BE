@@ -70,6 +70,7 @@ public class WalletsController : ControllerBase
             return StatusCode(500);
         }
     }
+
     [HttpGet("all")]
     public async Task<ActionResult<IEnumerable<WalletDto>>> GetAllWallets()
     {
