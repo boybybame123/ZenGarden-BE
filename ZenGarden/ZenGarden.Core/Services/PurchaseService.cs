@@ -145,6 +145,7 @@ public class PurchaseService(
                 CreatedAt = DateTime.UtcNow,
                 Status = PurchaseHistoryStatus.Approved
             });
+            await unitOfWork.CommitAsync();
     }
 
     private async Task SendNotification(int userId, Item item)
