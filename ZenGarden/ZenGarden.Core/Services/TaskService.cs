@@ -82,9 +82,9 @@ public class TaskService(
 
     public async Task<List<TaskDto>> GetTaskByUserIdAsync(int userId)
     {
-        var cacheKey = $"{UserTasksCacheKeyPrefix}{userId}";
-        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
-        if (cachedTasks != null) return cachedTasks;
+        //var cacheKey = $"{UserTasksCacheKeyPrefix}{userId}";
+        //var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        //if (cachedTasks != null) return cachedTasks;
 
         var tasks = await taskRepository.GetTasksByUserIdAsync(userId)
                     ?? throw new KeyNotFoundException($"Tasks with User ID {userId} not found.");
@@ -99,15 +99,15 @@ public class TaskService(
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
-        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+        //await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
         return taskDto;
     }
 
     public async Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId)
     {
-        var cacheKey = $"{TreeTasksCacheKeyPrefix}{userTreeId}";
-        var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
-        if (cachedTasks != null) return cachedTasks;
+        //var cacheKey = $"{TreeTasksCacheKeyPrefix}{userTreeId}";
+        //var cachedTasks = await redisService.GetAsync<List<TaskDto>>(cacheKey);
+        //if (cachedTasks != null) return cachedTasks;
 
         var tasks = await taskRepository.GetTasksByUserTreeIdAsync(userTreeId)
                     ?? throw new KeyNotFoundException($"Tasks with UserTree ID {userTreeId} not found.");
@@ -122,7 +122,7 @@ public class TaskService(
             dto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
         }
 
-        await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
+        //await redisService.SetAsync(cacheKey, taskDto, DefaultCacheExpiry);
         return taskDto;
     }
 
