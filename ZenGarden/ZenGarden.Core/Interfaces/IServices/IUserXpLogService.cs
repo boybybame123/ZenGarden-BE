@@ -1,3 +1,5 @@
+using ZenGarden.Domain.DTOs;
+
 namespace ZenGarden.Core.Interfaces.IServices;
 
 public interface IUserXpLogService
@@ -7,4 +9,6 @@ public interface IUserXpLogService
     Task<int> GetCurrentStreakAsync(int userId);
     Task<double> AddXpForStartTaskAsync(int userId);
     Task CheckLevelUpAsync(int userId);
+    Task<List<UserXpLogDto>> GetAllUserXpLogsAsync();
+    Task<List<UserXpLogDto>> GetUserXpLogsByUserIdAsync(int userId);
 }

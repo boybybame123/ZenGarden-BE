@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZenGarden.API.Middleware;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 
 namespace ZenGarden.API.Controllers;
 
@@ -59,5 +60,19 @@ public class UserXpLogsController(IUserXpLogService userXpLogService)
     {
         await userXpLogService.CheckLevelUpAsync(userId);
         return Ok(new { message = "Level check and update completed successfully." });
+    }
+    
+    [HttpGet]
+    public async Task<ActionResult<List<UserXpLogDto>>> GetAllUserXpLogs()
+    {
+        var logs = await userXpLogService.GetAllUserXpLogsAsync();
+        return Ok(logs);
+    }
+    
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<List<UserXpLogDto>>> GetUserXpLogsByUserId(int userId)
+    {
+        var logs = await userXpLogService.GetUserXpLogsByUserIdAsync(userId);
+        return Ok(logs);
     }
 }

@@ -47,4 +47,21 @@ public class UserXpLogRepository(ZenGardenContext context) : GenericRepository<U
                           && log.XpSource == XpSourceType.DailyLogin)
             .ToListAsync();
     }
+
+    public async Task<List<UserXpLog>> GetAllUserXpLogsAsync()
+    {
+        return await _context.UserXpLog
+            .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<UserXpLog>> GetUserXpLogsByUserIdAsync(int userId)
+    {
+        return await _context.UserXpLog
+            .Include(x => x.User)
+            .Where(x => x.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
 }

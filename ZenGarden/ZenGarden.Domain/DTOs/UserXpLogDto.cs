@@ -8,8 +8,8 @@ public class UserXpLogDto
 
     public int UserId { get; init; }
     public XpSourceType XpSource { get; init; }
-    public int XpAmount { get; init; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public double XpAmount { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
     public UserDto? User { get; init; }
 }
