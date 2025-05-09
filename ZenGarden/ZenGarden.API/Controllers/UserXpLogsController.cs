@@ -69,7 +69,7 @@ public class UserXpLogsController(IUserXpLogService userXpLogService)
         return Ok(logs);
     }
     
-    [HttpGet("user/{userId}")]
+    [HttpGet("user/{userId:int}")]
     public async Task<ActionResult<List<UserXpLogDto>>> GetUserXpLogsByUserId(int userId)
     {
         var logs = await userXpLogService.GetUserXpLogsByUserIdAsync(userId);
