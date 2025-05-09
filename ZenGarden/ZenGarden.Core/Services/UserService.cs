@@ -46,21 +46,13 @@ public class UserService(
         var userUpdate = await GetUserByIdAsync(user.UserId);
         if (userUpdate == null)
             throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
-
-        if (!string.IsNullOrEmpty(user.Password))
-            userUpdate.Password = PasswordHasher.HashPassword(user.Password);
+        
         if (!string.IsNullOrEmpty(user.Email))
             userUpdate.Email = user.Email;
         if (!string.IsNullOrEmpty(user.Phone))
             userUpdate.Phone = user.Phone;
         if (!string.IsNullOrEmpty(user.UserName))
             userUpdate.UserName = user.UserName;
-        if (user.RoleId != null && user.RoleId != 0)
-            userUpdate.RoleId = user.RoleId;
-
-        if (user.Status != userUpdate.Status)
-            userUpdate.Status = user.Status;
-
 
         userRepository.Update(userUpdate);
         if (await unitOfWork.CommitAsync() == 0)
