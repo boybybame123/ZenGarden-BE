@@ -1,5 +1,7 @@
-﻿using ZenGarden.Core.Interfaces.IRepositories;
+﻿using AutoMapper;
+using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
+using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 
@@ -11,7 +13,8 @@ public class UserXpLogService(
     INotificationService notificationService,
     IUserXpConfigRepository userXpConfigRepository,
     IUseItemService useItemService,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IMapper mapper)
     : IUserXpLogService
 {
     public async Task<List<DateTime>> GetUserCheckInHistoryAsync(int userId, int month, int year)
@@ -225,5 +228,17 @@ public class UserXpLogService(
             XpSourceType.DailyLogin => 10,
             _ => 0
         };
+    }
+
+    public async Task<List<UserXpLogDto>> GetAllUserXpLogsAsync()
+    {
+        var logs = await userXpLogRepository.GetAllUserXpLogsAsync();
+        return mapper.Map<List<UserXpLogDto>>(logs);
+    }
+
+    public async Task<List<UserXpLogDto>> GetUserXpLogsByUserIdAsync(int userId)
+    {
+        var logs = await userXpLogRepository.GetUserXpLogsByUserIdAsync(userId);
+        return mapper.Map<List<UserXpLogDto>>(logs);
     }
 }
