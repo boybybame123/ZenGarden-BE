@@ -5,6 +5,7 @@ using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using ZenGarden.Shared.Helpers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ZenGarden.Core.Services;
 
@@ -15,13 +16,15 @@ public class UserService(
     IUserXpConfigRepository userXpConfigRepository,
     IUserExperienceRepository userExperienceRepository,
     IUserConfigRepository userConfigRepository,
-    IUserTreeService userTreeService,
-    IUserTreeRepository userTreeRepository,
     IBagItemRepository bagItemRepository,
-    INotificationService notificationService,
     IUnitOfWork unitOfWork,
-    IMapper mapper) : IUserService
+    IMapper mapper,
+    IRedisService redisService,
+    IServiceScopeFactory scopeFactory) : IUserService
 {
+    private const int CACHE_DURATION_MINUTES = 30;
+    private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+
     public async Task<List<UserDto>> GetAllUsersAsync()
     {
         var users = await userRepository.GetAllAsync();
@@ -30,16 +33,35 @@ public class UserService(
 
     public async Task<Users?> GetUserByIdAsync(int userId)
     {
-        return await userRepository.GetByIdAsync(userId)
-               ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
-    }
+        string cacheKey = $"user:id:{userId}";
+        
+        var cachedUser = await redisService.GetAsync<UserResponseDto>(cacheKey);
+        if (cachedUser != null)
+        {
+            return await userRepository.GetByIdAsync(cachedUser.UserId);
+        }
 
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
+
+        var userDto = mapper.Map<UserResponseDto>(user);
+        await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+
+        return user;
+    }
 
     public async Task<Users?> GetUserByEmailAsync(string email)
     {
-        return await userRepository.GetByEmailAsync(email);
-    }
+        string cacheKey = $"user:email:{email}";
+        
+        var user = await redisService.GetOrSetAsync(
+            cacheKey,
+            async () => await userRepository.GetByEmailAsync(email),
+            TimeSpan.FromMinutes(CACHE_DURATION_MINUTES)
+        );
 
+        return user;
+    }
 
     public async Task UpdateUserAsync(UpdateUserDTO user)
     {
@@ -57,8 +79,13 @@ public class UserService(
         userRepository.Update(userUpdate);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to update user.");
-    }
 
+        // Invalidate cache
+        await redisService.RemoveAsync($"user:id:{user.UserId}");
+        await redisService.RemoveAsync($"user:email:{userUpdate.Email}");
+        if (!string.IsNullOrEmpty(userUpdate.Phone))
+            await redisService.RemoveAsync($"user:phone:{userUpdate.Phone}");
+    }
 
     public async Task DeleteUserAsync(int userId)
     {
@@ -72,13 +99,32 @@ public class UserService(
 
     public async Task<Users?> ValidateUserAsync(string? email, string? phone, string password)
     {
+        string cacheKey = !string.IsNullOrEmpty(email) 
+            ? $"user:email:{email}" 
+            : $"user:phone:{phone}";
+
+        var cachedUser = await redisService.GetAsync<UserResponseDto>(cacheKey);
+        if (cachedUser != null)
+        {
+            var userFromDb = await userRepository.GetByIdAsync(cachedUser.UserId);
+            if (userFromDb == null) return null;
+            return PasswordHasher.VerifyPassword(password, userFromDb.Password) ? userFromDb : null;
+        }
+
         var user = !string.IsNullOrEmpty(email)
             ? await userRepository.GetByEmailAsync(email)
             : await userRepository.GetByPhoneAsync(phone);
 
         if (user == null || string.IsNullOrEmpty(user.Password)) return null;
 
-        return PasswordHasher.VerifyPassword(password, user.Password) ? user : null;
+        if (PasswordHasher.VerifyPassword(password, user.Password))
+        {
+            var userDto = mapper.Map<UserResponseDto>(user);
+            await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+            return user;
+        }
+
+        return null;
     }
 
     public async Task<Users?> GetUserByRefreshTokenAsync(string refreshToken)
@@ -123,7 +169,6 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
 
-
         await unitOfWork.BeginTransactionAsync();
         try
         {
@@ -158,10 +203,16 @@ public class UserService(
                 CreatedAt = DateTime.UtcNow
             };
 
-            await walletRepository.CreateAsync(wallet);
-            await bagRepository.CreateAsync(bag);
-            await userExperienceRepository.CreateAsync(userExperience);
-            await userConfigRepository.CreateAsync(userConfig);
+            // Run independent operations in parallel
+            var createTasks = new[]
+            {
+                walletRepository.CreateAsync(wallet),
+                bagRepository.CreateAsync(bag),
+                userExperienceRepository.CreateAsync(userExperience),
+                userConfigRepository.CreateAsync(userConfig)
+            };
+
+            await Task.WhenAll(createTasks);
             await unitOfWork.CommitAsync();
             await unitOfWork.CommitTransactionAsync();
             return newUser;
@@ -172,7 +223,6 @@ public class UserService(
             throw;
         }
     }
-
 
     public async Task<string> GenerateAndSaveOtpAsync(string email)
     {
@@ -218,10 +268,17 @@ public class UserService(
 
     public async Task OnUserLoginAsync(int userId)
     {
-        var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var userTreeRepository = scope.ServiceProvider.GetRequiredService<IUserTreeRepository>();
+            var userTreeService = scope.ServiceProvider.GetRequiredService<IUserTreeService>();
+            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
-        foreach (var tree in userTrees) await userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId);
-        await notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp.");
+            var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
+            foreach (var tree in userTrees)
+                await userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId);
+            await notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp.");
+        }
     }
 
     public async Task MakeItemdefault(int userid)

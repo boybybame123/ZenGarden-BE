@@ -21,17 +21,32 @@ public class AuthController(
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
+        Console.WriteLine("=== LOGIN START ===");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var validationResult = await loginValidator.ValidateAsync(loginDto);
+        sw.Stop();
+        Console.WriteLine($"[Login] Validation: {sw.ElapsedMilliseconds}ms");
         if (!validationResult.IsValid) return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
+        sw.Restart();
         var user = await userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
+        sw.Stop();
+        Console.WriteLine($"[Login] ValidateUserAsync: {sw.ElapsedMilliseconds}ms");
         if (user == null)
             return Unauthorized(new { error = "Invalid credentials." });
 
+        sw.Restart();
         var tokens = tokenService.GenerateJwtToken(user);
+        sw.Stop();
+        Console.WriteLine($"[Login] GenerateJwtToken: {sw.ElapsedMilliseconds}ms");
 
+        sw.Restart();
         await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
-        await userService.OnUserLoginAsync(user.UserId);
+        sw.Stop();
+        Console.WriteLine($"[Login] UpdateUserRefreshTokenAsync: {sw.ElapsedMilliseconds}ms");
+
+        // Fire and forget login tasks in true background
+        _ = Task.Run(() => userService.OnUserLoginAsync(user.UserId));
 
         return Ok(new { tokens.Token, tokens.RefreshToken });
     }

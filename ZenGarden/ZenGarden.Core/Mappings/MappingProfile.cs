@@ -75,6 +75,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.User != null ? src.User.UserName : "Unknown"))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+        CreateMap<Users, UserResponseDto>()
+            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role != null ? src.Role.RoleName : string.Empty));
     }
 
     private static double CalculateXpToNextLevel(UserTree userTree)
