@@ -996,10 +996,6 @@ public class TaskService(
         if (task.StartedAt == null)
             throw new InvalidOperationException("Task must have a start time to be completed.");
 
-        if (task.TotalDuration.HasValue &&
-            DateTime.UtcNow - task.StartedAt < TimeSpan.FromMinutes(task.TotalDuration.Value - 1))
-            throw new InvalidOperationException(
-                "Task cannot be completed more than 1 minute before the required duration.");
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
