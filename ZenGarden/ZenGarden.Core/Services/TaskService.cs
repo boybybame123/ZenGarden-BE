@@ -995,6 +995,7 @@ public class TaskService(
 
         if (task.StartedAt == null)
             throw new InvalidOperationException("Task must have a start time to be completed.");
+
     }
 
     private async Task<int?> GetDailyTaskTypeIdAsync()
