@@ -38,13 +38,11 @@ public class UserRepository(ZenGardenContext context) : GenericRepository<Users>
 
     public async Task UpdateUserRefreshTokenAsync(int userId, string refreshToken, DateTime expiryDate)
     {
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null) throw new KeyNotFoundException("User not found");
-
-        user.RefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
-        user.RefreshTokenExpiry = expiryDate;
-
-        await _context.SaveChangesAsync();
+        await _context.Users
+            .Where(u => u.UserId == userId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.RefreshTokenHash, refreshToken)
+                .SetProperty(u => u.RefreshTokenExpiry, expiryDate));
     }
 
     public async Task<Users?> GetByIdAsync(int userId)
