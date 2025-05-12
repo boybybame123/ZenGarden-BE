@@ -110,6 +110,7 @@ public partial class Program
 
         builder.Services.AddSingleton<RealtimeBackgroundService>();
         builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
+        builder.Services.AddScoped<TaskRealtimeService>();
 
         // FluentValidation
         builder.Services.AddControllers()
@@ -350,6 +351,7 @@ public partial class Program
         // Endpoints
         app.MapControllers();
         app.MapHub<NotificationHub>("/hubs/notification");
+        app.MapHub<TaskHub>("/hubs/task");
 
         // Swagger
         app.UseSwagger();

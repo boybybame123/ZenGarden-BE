@@ -22,4 +22,6 @@ public class TaskDto
     public string? UserTreeName { get; set; }
     public string? TaskTypeName { get; set; }
     public string? FocusMethodName { get; set; }
+
+    
 }
