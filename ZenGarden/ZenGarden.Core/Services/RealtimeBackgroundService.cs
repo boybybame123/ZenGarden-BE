@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using ZenGarden.API.Hubs;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using ZenGarden.Core.Hubs;
 using ZenGarden.Core.Interfaces.IServices;
 
 namespace ZenGarden.API.Services;
