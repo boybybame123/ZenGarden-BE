@@ -248,5 +248,16 @@ public class TaskRepository(ZenGardenContext context) : GenericRepository<Tasks>
 
         return await query.ToListAsync();
     }
+
+    public async Task<int?> GetUserTreeIdByTaskIdAsync(int taskId)
+    {
+        var task = await _context.Tasks
+            .FirstOrDefaultAsync(t => t.TaskId == taskId);
+
+        return task?.UserTreeId;
+
+    }
+
+
     
 }

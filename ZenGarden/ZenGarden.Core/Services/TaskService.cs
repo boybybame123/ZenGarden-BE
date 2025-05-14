@@ -30,7 +30,8 @@ public class TaskService(
     IUseItemService useItemService,
     IRedisService redisService,
     IUserXpLogService userXpLogService,
-    IValidator<CreateTaskDto> createTaskValidator) : ITaskService
+    IValidator<CreateTaskDto> createTaskValidator,
+    TaskRealtimeService taskRealtimeService) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
     private const string UserTasksCacheKeyPrefix = "user:tasks:";
@@ -214,6 +215,7 @@ public class TaskService(
         var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
         taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
+        await taskRealtimeService.NotifyTaskCreated(taskDto);
         return taskDto;
     }
 
@@ -306,6 +308,8 @@ public class TaskService(
             throw new InvalidOperationException("Failed to update task.");
 
         await InvalidateTaskCaches(existingTask);
+        var taskDto = mapper.Map<TaskDto>(existingTask);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 
     public async Task DeleteTaskAsync(int taskId)
@@ -313,10 +317,16 @@ public class TaskService(
         var task = await taskRepository.GetByIdAsync(taskId);
         if (task == null)
             throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        
+        var userId = task.UserTree?.UserId;
+        var treeId = task.UserTreeId;
+        
         await InvalidateTaskCaches(task);
         await taskRepository.RemoveAsync(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete task.");
+            
+        await taskRealtimeService.NotifyTaskDeleted(taskId, userId, treeId);
     }
 
     public async Task StartTaskAsync(int taskId, int userId)
@@ -344,6 +354,8 @@ public class TaskService(
             Console.WriteLine("[DEBUG] Task status updated successfully");
 
             await InvalidateTaskCaches(task);
+            var taskDto = mapper.Map<TaskDto>(task);
+            await taskRealtimeService.NotifyTaskStatusChanged(taskDto);
         }
         catch (Exception ex)
         {
@@ -537,6 +549,8 @@ public class TaskService(
             await InvalidateTaskCaches(task);
         }
 
+        var taskDto = mapper.Map<TaskDto>(task);
+        await taskRealtimeService.NotifyTaskStatusChanged(taskDto);
         return xpEarned;
     }
     
@@ -609,6 +623,8 @@ public class TaskService(
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to pause the task.");
         await InvalidateTaskCaches(task);
+        var taskDto = mapper.Map<TaskDto>(task);
+        await taskRealtimeService.NotifyTaskStatusChanged(taskDto);
     }
 
     public async Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId, int newDuration)
@@ -651,6 +667,8 @@ public class TaskService(
 
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
+        var taskDto = mapper.Map<TaskDto>(task);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 
 
@@ -878,6 +896,8 @@ public class TaskService(
         taskRepository.Update(existingTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(existingTask);
+        var taskDto = mapper.Map<TaskDto>(existingTask);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 
     public async Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
@@ -1168,5 +1188,7 @@ public class TaskService(
         taskRepository.Update(existingTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(existingTask);
+        var taskDto = mapper.Map<TaskDto>(existingTask);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 }
