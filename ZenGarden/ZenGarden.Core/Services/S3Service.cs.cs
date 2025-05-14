@@ -10,7 +10,7 @@ namespace ZenGarden.Core.Services;
 
 public class S3Service : IS3Service
 {
-    private readonly string _baseUrl;
+    private const string _baseUrl = "https://zengarden.hcm.ss.bfcplatform.vn";
     private readonly string _bucketName;
     private readonly AmazonS3Client _s3Client;
 
@@ -18,19 +18,10 @@ public class S3Service : IS3Service
     {
         var awsSection = config.GetSection("AWS");
 
-        string Require(string? value, string name)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? throw new ArgumentNullException(name, $"{name} is missing or empty")
-                : value;
-        }
-
+        _bucketName = Require(awsSection["BucketName"], "BucketName");
         var accessKey = Require(awsSection["AccessKey"], "AccessKey");
         var secretKey = Require(awsSection["SecretKey"], "SecretKey");
         var serviceUrl = Require(awsSection["ServiceURL"], "ServiceURL");
-        _bucketName = Require(awsSection["BucketName"], "BucketName");
-
-        _baseUrl = "https://zengarden.hcm.ss.bfcplatform.vn";
 
         var s3Config = new AmazonS3Config
         {
@@ -39,6 +30,13 @@ public class S3Service : IS3Service
         };
 
         _s3Client = new AmazonS3Client(accessKey, secretKey, s3Config);
+    }
+
+    private static string Require(string? value, string name)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentNullException(name, $"{name} is missing or empty")
+            : value;
     }
 
     public async Task<string> UploadFileAsync(IFormFile file)
@@ -122,6 +120,21 @@ public class S3Service : IS3Service
         return response.HttpStatusCode == HttpStatusCode.NoContent;
     }
 
+    public string GetPreSignedUrl(string key, int expiryInMinutes = 60)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Key cannot be empty");
+
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _bucketName,
+            Key = key,
+            Expires = DateTime.UtcNow.AddMinutes(expiryInMinutes)
+        };
+
+        return _s3Client.GetPreSignedURL(request);
+    }
+
     public async Task<string> GetPreSignedUrlAsync(string key, int expiryInMinutes = 60)
     {
         if (string.IsNullOrWhiteSpace(key))
@@ -166,7 +179,7 @@ public class S3Service : IS3Service
             ContentType = file.ContentType,
             CannedACL = S3CannedACL.PublicRead,
             AutoCloseStream = true,
-            PartSize = 10 * 1024 * 1024 // 10MB
+            PartSize = 50 * 1024 * 1024 // 10MB
         };
 
         var transferUtility = new TransferUtility(_s3Client);
