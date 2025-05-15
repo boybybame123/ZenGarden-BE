@@ -27,11 +27,11 @@ public class TaskService(
     INotificationService notificationService,
     IMapper mapper,
     IBagRepository bagRepository,
-    IUseItemService useItemService,
     IRedisService redisService,
     IUserXpLogService userXpLogService,
     IValidator<CreateTaskDto> createTaskValidator,
-    TaskRealtimeService taskRealtimeService) : ITaskService
+    TaskRealtimeService taskRealtimeService,
+    IItemRepository itemRepository) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
     private const string UserTasksCacheKeyPrefix = "user:tasks:";
@@ -452,14 +452,15 @@ public class TaskService(
         var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
                      throw new InvalidOperationException("UserId is null.");
 
-            if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
+        var key = $"user:{userid}:active_effect:{ItemType.XpBoostTree}";
+        if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
             {
                 task.TaskNote = completeTaskDto.TaskNote;
             }    
-            task.TaskResult =
-                    await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
-            if (string.IsNullOrWhiteSpace(task.TaskResult))
+            // Only require TaskResult for challenge tasks (tasks cloned from a challenge)
+            if (task.CloneFromTaskId != null && string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
         
@@ -484,15 +485,28 @@ public class TaskService(
                 baseXp = CalculateXpWithPriorityDecay(task, baseXp);
                 baseXp = Math.Round(baseXp, 2);
 
-                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
                 var bonusXp = 0.0;
-                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
-                    effectPercent > 0)
+                string? activeBoostItemName = null;
+                double effectPercentage = 0;
+
+                // Check for active XP Boost Tree effect from Redis
+                if (await redisService.KeyExistsAsync(key))
                 {
-                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
-                    await useItemService.UseItemXpBoostTree(userid);
+                    var itemIdStr = await redisService.GetStringAsync(key);
+                    if (int.TryParse(itemIdStr, out var activeItemId) && activeItemId > 0)
+                    {
+                        var activeItem = await itemRepository.GetByIdAsync(activeItemId);
+                        if (activeItem?.ItemDetail?.Effect != null && 
+                            double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
+                            parsedEffect > 0)
+                        {
+                            effectPercentage = parsedEffect;
+                            activeBoostItemName = activeItem.Name;
+                            bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
+                        }
+                    }
                 }
+                
                 xpEarned = Math.Round(baseXp + bonusXp, 2);
 
                 if (xpEarned > 0 && task.UserTree != null)
@@ -521,8 +535,8 @@ public class TaskService(
 
                 await UpdateChallengeProgress(task);
 
-                var xpMessage = bonusXp > 0 && equippedItem?.Item?.Name != null
-                    ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {equippedItem.Item.Name}: +{bonusXp} XP) for completing a task!"
+                var xpMessage = bonusXp > 0 && activeBoostItemName != null
+                    ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {activeBoostItemName}: +{bonusXp} XP) for completing a task!"
                     : $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP for completing a task!";
                 await notificationService.PushNotificationAsync(userid, "Task Completed", xpMessage);
                 await InvalidateTaskCaches(task);
