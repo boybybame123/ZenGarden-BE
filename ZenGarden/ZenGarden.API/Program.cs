@@ -14,10 +14,10 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ZenGarden.API.Filters;
-using ZenGarden.API.Hubs;
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Services;
 using ZenGarden.API.Validations;
+using ZenGarden.Core.Hubs;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Core.Mappings;
@@ -110,6 +110,7 @@ public partial class Program
 
         builder.Services.AddSingleton<RealtimeBackgroundService>();
         builder.Services.AddHostedService(provider => provider.GetRequiredService<RealtimeBackgroundService>());
+        builder.Services.AddScoped<TaskRealtimeService>();
 
         // FluentValidation
         builder.Services.AddControllers()
@@ -350,6 +351,7 @@ public partial class Program
         // Endpoints
         app.MapControllers();
         app.MapHub<NotificationHub>("/hubs/notification");
+        app.MapHub<TaskHub>("/hubs/task");
 
         // Swagger
         app.UseSwagger();

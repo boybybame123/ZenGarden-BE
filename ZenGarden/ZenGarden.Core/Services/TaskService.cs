@@ -27,10 +27,11 @@ public class TaskService(
     INotificationService notificationService,
     IMapper mapper,
     IBagRepository bagRepository,
-    IUseItemService useItemService,
     IRedisService redisService,
     IUserXpLogService userXpLogService,
-    IValidator<CreateTaskDto> createTaskValidator) : ITaskService
+    IValidator<CreateTaskDto> createTaskValidator,
+    TaskRealtimeService taskRealtimeService,
+    IItemRepository itemRepository) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
     private const string UserTasksCacheKeyPrefix = "user:tasks:";
@@ -214,6 +215,7 @@ public class TaskService(
         var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
         taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
+        await taskRealtimeService.NotifyTaskCreated(taskDto);
         return taskDto;
     }
 
@@ -306,6 +308,8 @@ public class TaskService(
             throw new InvalidOperationException("Failed to update task.");
 
         await InvalidateTaskCaches(existingTask);
+        var taskDto = mapper.Map<TaskDto>(existingTask);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 
     public async Task DeleteTaskAsync(int taskId)
@@ -313,10 +317,16 @@ public class TaskService(
         var task = await taskRepository.GetByIdAsync(taskId);
         if (task == null)
             throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+        
+        var userId = task.UserTree?.UserId;
+        var treeId = task.UserTreeId;
+        
         await InvalidateTaskCaches(task);
         await taskRepository.RemoveAsync(task);
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to delete task.");
+            
+        await taskRealtimeService.NotifyTaskDeleted(taskId, userId, treeId);
     }
 
     public async Task StartTaskAsync(int taskId, int userId)
@@ -344,6 +354,8 @@ public class TaskService(
             Console.WriteLine("[DEBUG] Task status updated successfully");
 
             await InvalidateTaskCaches(task);
+            var taskDto = mapper.Map<TaskDto>(task);
+            await taskRealtimeService.NotifyTaskStatusChanged(taskDto);
         }
         catch (Exception ex)
         {
@@ -440,14 +452,15 @@ public class TaskService(
         var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
                      throw new InvalidOperationException("UserId is null.");
 
-            if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
+        var key = $"user:{userid}:active_effect:{ItemType.XpBoostTree}";
+        if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
             {
                 task.TaskNote = completeTaskDto.TaskNote;
             }    
-            task.TaskResult =
-                    await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
-            if (string.IsNullOrWhiteSpace(task.TaskResult))
+            // Only require TaskResult for challenge tasks (tasks cloned from a challenge)
+            if (task.CloneFromTaskId != null && string.IsNullOrWhiteSpace(task.TaskResult))
                 throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
         
@@ -472,15 +485,28 @@ public class TaskService(
                 baseXp = CalculateXpWithPriorityDecay(task, baseXp);
                 baseXp = Math.Round(baseXp, 2);
 
-                var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
                 var bonusXp = 0.0;
-                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
-                    effectPercent > 0)
+                string? activeBoostItemName = null;
+                double effectPercentage = 0;
+
+                // Check for active XP Boost Tree effect from Redis
+                if (await redisService.KeyExistsAsync(key))
                 {
-                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
-                    await useItemService.UseItemXpBoostTree(userid);
+                    var itemIdStr = await redisService.GetStringAsync(key);
+                    if (int.TryParse(itemIdStr, out var activeItemId) && activeItemId > 0)
+                    {
+                        var activeItem = await itemRepository.GetByIdAsync(activeItemId);
+                        if (activeItem?.ItemDetail?.Effect != null && 
+                            double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
+                            parsedEffect > 0)
+                        {
+                            effectPercentage = parsedEffect;
+                            activeBoostItemName = activeItem.Name;
+                            bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
+                        }
+                    }
                 }
+                
                 xpEarned = Math.Round(baseXp + bonusXp, 2);
 
                 if (xpEarned > 0 && task.UserTree != null)
@@ -509,8 +535,8 @@ public class TaskService(
 
                 await UpdateChallengeProgress(task);
 
-                var xpMessage = bonusXp > 0 && equippedItem?.Item?.Name != null
-                    ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {equippedItem.Item.Name}: +{bonusXp} XP) for completing a task!"
+                var xpMessage = bonusXp > 0 && activeBoostItemName != null
+                    ? $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP ({baseXp} XP + {activeBoostItemName}: +{bonusXp} XP) for completing a task!"
                     : $"Task {task.TaskName} has been completed. You've earned {xpEarned} XP for completing a task!";
                 await notificationService.PushNotificationAsync(userid, "Task Completed", xpMessage);
                 await InvalidateTaskCaches(task);
@@ -537,6 +563,8 @@ public class TaskService(
             await InvalidateTaskCaches(task);
         }
 
+        var taskDto = mapper.Map<TaskDto>(task);
+        await taskRealtimeService.NotifyTaskStatusChanged(taskDto);
         return xpEarned;
     }
     
@@ -609,6 +637,8 @@ public class TaskService(
         if (await unitOfWork.CommitAsync() == 0)
             throw new InvalidOperationException("Failed to pause the task.");
         await InvalidateTaskCaches(task);
+        var taskDto = mapper.Map<TaskDto>(task);
+        await taskRealtimeService.NotifyTaskStatusChanged(taskDto);
     }
 
     public async Task UpdateTaskTypeAsync(int taskId, int newTaskTypeId, int newDuration)
@@ -651,6 +681,8 @@ public class TaskService(
 
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(task);
+        var taskDto = mapper.Map<TaskDto>(task);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 
 
@@ -878,6 +910,8 @@ public class TaskService(
         taskRepository.Update(existingTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(existingTask);
+        var taskDto = mapper.Map<TaskDto>(existingTask);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 
     public async Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId)
@@ -1168,5 +1202,7 @@ public class TaskService(
         taskRepository.Update(existingTask);
         await unitOfWork.CommitAsync();
         await InvalidateTaskCaches(existingTask);
+        var taskDto = mapper.Map<TaskDto>(existingTask);
+        await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
 }
