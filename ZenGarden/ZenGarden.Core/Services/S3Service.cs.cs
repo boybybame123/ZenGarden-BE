@@ -179,7 +179,7 @@ public class S3Service : IS3Service
             ContentType = file.ContentType,
             CannedACL = S3CannedACL.PublicRead,
             AutoCloseStream = true,
-            PartSize = 50 * 1024 * 1024 // 10MB
+            PartSize = 30 * 1024 * 1024 // 10MB
         };
 
         var transferUtility = new TransferUtility(_s3Client);
