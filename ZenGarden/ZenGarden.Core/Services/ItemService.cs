@@ -58,10 +58,32 @@ public class ItemService(
                 throw new ArgumentNullException(nameof(item));
             }
 
+
+            if (item.Type == ItemType.XpBoostTree)
+            {
+                if (item.ItemDetail == null || item.ItemDetail.Duration == null || item.ItemDetail.Duration <= 0)
+                {
+                    logger.LogError("XpBoostTree item must have a positive Duration.");
+                    throw new ArgumentException("XpBoostTree item must have a positive Duration.", nameof(item.ItemDetail.Duration));
+                }
+
+                // Validate Effect: must be a number between 1 and 100
+                if (string.IsNullOrWhiteSpace(item.ItemDetail.Effect) ||
+                    !int.TryParse(item.ItemDetail.Effect, out var effectValue) ||
+                    effectValue < 1 || effectValue > 100)
+                {
+                    logger.LogError("XpBoostTree item Effect must be a number between 1 and 100.");
+                    throw new ArgumentException("XpBoostTree item Effect must be a number between 1 and 100.", nameof(item.ItemDetail.Effect));
+                }
+            }
+
+            
+
             var newItem = mapper.Map<Item>(item);
             newItem.CreatedAt = DateTime.Now;
             newItem.UpdatedAt = DateTime.Now;
             
+        
             await itemRepository.CreateAsync(newItem);
             
             if (await unitOfWork.CommitAsync() == 0)
