@@ -4,6 +4,7 @@ using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace ZenGarden.Core.Services;
 
@@ -235,6 +236,11 @@ public class UseItemService(
         }
     }
 
+    
+
+
+
+
     public async Task Cancel(int bagItemId)
     {
         var item = await bagItemRepository.GetByIdAsync(bagItemId);
@@ -368,5 +374,18 @@ public class UseItemService(
             logger.LogError(ex, $"Error using XP Protect for user {userId}");
             throw;
         }
+    }
+    public async Task<(int? ItemId, long RemainingSeconds)> GetXpBoostTreeRemainingTimeAsync(int userId)
+    {
+        var genericEffectKey = $"user:{userId}:active_effect:{ItemType.XpBoostTree}";
+        var itemIdStr = await redisService.GetStringAsync(genericEffectKey);
+        var ttl = await redisService.GetKeyTimeToLiveAsync(genericEffectKey);
+        int? itemId = null;
+        if (int.TryParse(itemIdStr, out var parsedId))
+        {
+            itemId = parsedId;
+        }
+        long seconds = (ttl.HasValue && ttl.Value.TotalSeconds > 0) ? (long)ttl.Value.TotalSeconds : 0;
+        return (itemId, seconds);
     }
 }
