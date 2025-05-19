@@ -31,7 +31,9 @@ public class TaskService(
     IUserXpLogService userXpLogService,
     IValidator<CreateTaskDto> createTaskValidator,
     TaskRealtimeService taskRealtimeService,
-    IItemRepository itemRepository) : ITaskService
+    IUseItemService useItemService,
+    IItemRepository itemRepository
+    ) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
     private const string UserTasksCacheKeyPrefix = "user:tasks:";
@@ -452,18 +454,15 @@ public class TaskService(
         var userid = await taskRepository.GetUserIdByTaskIdAsync(taskId) ??
                      throw new InvalidOperationException("UserId is null.");
 
-        var key = $"user:{userid}:active_effect:{ItemType.XpBoostTree}";
         if (!string.IsNullOrWhiteSpace(completeTaskDto.TaskNote))
-            {
-                task.TaskNote = completeTaskDto.TaskNote;
-            }    
-            task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
+        {
+            task.TaskNote = completeTaskDto.TaskNote;
+        }    
+        task.TaskResult = await HandleTaskResultUpdate(completeTaskDto.TaskFile, completeTaskDto.TaskResult, userid);
 
-            // Only require TaskResult for challenge tasks (tasks cloned from a challenge)
-            if (task.CloneFromTaskId != null && string.IsNullOrWhiteSpace(task.TaskResult))
-                throw new InvalidOperationException("TaskResult is required for challenge tasks.");
-
-        
+        // Only require TaskResult for challenge tasks (tasks cloned from a challenge)
+        if (task.CloneFromTaskId != null && string.IsNullOrWhiteSpace(task.TaskResult))
+            throw new InvalidOperationException("TaskResult is required for challenge tasks.");
 
         if (await IsDailyTaskAlreadyCompleted(task))
             throw new InvalidOperationException("You have already completed this daily task today.");
@@ -489,22 +488,24 @@ public class TaskService(
                 string? activeBoostItemName = null;
                 double effectPercentage = 0;
 
-                // Check for active XP Boost Tree effect from Redis
-                if (await redisService.KeyExistsAsync(key))
+                // Try to use XP Boost Tree item
+                try 
                 {
-                    var itemIdStr = await redisService.GetStringAsync(key);
-                    if (int.TryParse(itemIdStr, out var activeItemId) && activeItemId > 0)
+                    var itemId = await useItemService.UseItemXpBoostTree(userid);
+                    var activeItem = await itemRepository.GetByIdAsync(itemId);
+                    if (activeItem?.ItemDetail?.Effect != null && 
+                        double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
+                        parsedEffect > 0)
                     {
-                        var activeItem = await itemRepository.GetByIdAsync(activeItemId);
-                        if (activeItem?.ItemDetail?.Effect != null && 
-                            double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
-                            parsedEffect > 0)
-                        {
-                            effectPercentage = parsedEffect;
-                            activeBoostItemName = activeItem.Name;
-                            bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
-                        }
+                        effectPercentage = parsedEffect;
+                        activeBoostItemName = activeItem.Name;
+                        bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
                     }
+                }
+                catch (Exception ex)
+                {
+                    // Log the error but continue with base XP if XP Boost Tree usage fails
+                    throw new InvalidOperationException($"Failed to use XP Boost Tree item: {ex.Message}", ex);
                 }
                 
                 xpEarned = Math.Round(baseXp + bonusXp, 2);
