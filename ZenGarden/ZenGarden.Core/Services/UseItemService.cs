@@ -137,7 +137,7 @@ public class UseItemService(
         return "success";
     }
 
-    public async Task UseItemXpBoostTree(int userId)
+    public async Task<int> UseItemXpBoostTree(int userId)
     {
         try
         {
@@ -184,6 +184,8 @@ public class UseItemService(
             
             await notificationService.PushNotificationAsync(userId, "XP Boost Used", 
                 $"You have used {itemBag.Item.Name}!");
+
+            return itemBag.Item.ItemId;
         }
         catch (InvalidOperationException ex)
         {

@@ -31,7 +31,8 @@ public class TaskService(
     IUserXpLogService userXpLogService,
     IValidator<CreateTaskDto> createTaskValidator,
     TaskRealtimeService taskRealtimeService,
-    IUseItemService useItemService
+    IUseItemService useItemService,
+    IItemRepository itemRepository
     ) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
@@ -490,14 +491,14 @@ public class TaskService(
                 // Try to use XP Boost Tree item
                 try 
                 {
-                    await useItemService.UseItemXpBoostTree(userid);
-                    var equippedItem = await bagRepository.GetEquippedItemAsync(userid, ItemType.XpBoostTree);
-                    if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                        double.TryParse(equippedItem.Item.ItemDetail.Effect, out var parsedEffect) && 
+                    var itemId = await useItemService.UseItemXpBoostTree(userid);
+                    var activeItem = await itemRepository.GetByIdAsync(itemId);
+                    if (activeItem?.ItemDetail?.Effect != null && 
+                        double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
                         parsedEffect > 0)
                     {
                         effectPercentage = parsedEffect;
-                        activeBoostItemName = equippedItem.Item.Name;
+                        activeBoostItemName = activeItem.Name;
                         bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
                     }
                 }
