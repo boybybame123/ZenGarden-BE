@@ -34,8 +34,8 @@ public class ItemRepository(ZenGardenContext context) : GenericRepository<Item>(
     public async Task<List<Item>> GetListItemGift()
     {
         return await _context.Item
-            .Include(i => i.ItemDetail)
-            .Where(i => i.Status == Domain.Enums.ItemStatus.Active)
+            .Include(u => u.ItemDetail)
+            .Where(u => u.Type == ItemType.XpBoostTree || u.Type == ItemType.XpProtect)
             .ToListAsync();
     }
 }
