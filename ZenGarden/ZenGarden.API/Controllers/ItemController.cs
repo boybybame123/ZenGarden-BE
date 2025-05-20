@@ -162,32 +162,73 @@ public class ItemController : ControllerBase
     }
 
     [HttpPost("create-item")]
+    [Produces("application/json")]
     public async Task<IActionResult> CreateItem([FromForm] CreateItemDto request)
     {
         if (request == null)
             return BadRequest(new { message = "Request data is required" });
 
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return BadRequest(new { message = "Item name is required" });
+
+        if (request.Cost == null || request.Cost <= 0)
+            return BadRequest(new { message = "Valid cost is required" });
+
+        if (string.IsNullOrWhiteSpace(request.Rarity))
+            return BadRequest(new { message = "Item rarity is required" });
+
         if (request.File == null)
-            return BadRequest(new { message = "File is required" });
+            return BadRequest(new { message = "Item image is required" });
 
         if (request.ItemDetail == null)
-            return BadRequest(new { message = "ItemDetail is required" });
+            return BadRequest(new { message = "Item details are required" });
+
+        // Validate item details
+        if (string.IsNullOrWhiteSpace(request.ItemDetail.Description))
+            return BadRequest(new { message = "Item description is required" });
 
         if (!Enum.IsDefined(typeof(ItemType), request.Type))
             return BadRequest(new { message = "Invalid item type" });
 
+        // Validate file type
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+        var fileExtension = Path.GetExtension(request.File.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(fileExtension))
+            return BadRequest(new { message = "Invalid file type. Allowed types: jpg, jpeg, png, gif" });
+
+        // Validate file size (max 5MB)
+        if (request.File.Length > 5 * 1024 * 1024)
+            return BadRequest(new { message = "File size exceeds 5MB limit" });
+
         try
         {
+            // Validate item type specific requirements
+            if (request.Type == ItemType.XpBoostTree)
+            {
+                if (request.ItemDetail.Duration == null || request.ItemDetail.Duration <= 0)
+                    return BadRequest(new { message = "XpBoostTree item must have a positive Duration" });
+
+                if (string.IsNullOrWhiteSpace(request.ItemDetail.Effect) ||
+                    !int.TryParse(request.ItemDetail.Effect, out var effectValue) ||
+                    effectValue < 1 || effectValue > 100)
+                    return BadRequest(new { message = "XpBoostTree item Effect must be a number between 1 and 100" });
+            }
+
             var type = _itemDetailService.GetFolderNameByItemType(request.Type);
             var mediaUrl = await _s3Service.UploadFileToFolderAsync(request.File, type);
 
             if (string.IsNullOrEmpty(mediaUrl))
-                return BadRequest(new { message = "File upload failed" });
+                return BadRequest(new { message = "Failed to upload file" });
 
             request.ItemDetail.MediaUrl = mediaUrl;
-            await _itemService.CreateItemAsync(request);
+            var createdItem = await _itemService.CreateItemAsync(request);
 
-            return Ok(new { message = "Item created successfully", mediaUrl });
+            return Ok(new { 
+                message = "Item created successfully", 
+                data = createdItem,
+                mediaUrl 
+            });
         }
         catch (ArgumentException ex)
         {
