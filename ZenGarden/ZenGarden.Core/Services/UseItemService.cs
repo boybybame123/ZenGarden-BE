@@ -82,7 +82,7 @@ public class UseItemService(
             await bagItemRepository.UnequipByBagIdAndItemTypeAsync(bag.BagId, item.Item.Type);
 
             // Apply item to UserConfig
-            string result = await ApplyItemToUserConfig(item.Item.Type, itemDetail.MediaUrl, userConfig);
+            string result = ApplyItemToUserConfig(item.Item.Type, itemDetail.MediaUrl, userConfig);
             if (result != "success")
             {
                 logger.LogWarning($"Failed to apply item {itembagId} to user config: {result}");
@@ -112,7 +112,7 @@ public class UseItemService(
         }
     }
 
-    private async Task<string> ApplyItemToUserConfig(ItemType itemType, string mediaUrl, UserConfig userConfig)
+    private string ApplyItemToUserConfig(ItemType itemType, string mediaUrl, UserConfig userConfig)
     {
         switch (itemType)
         {
@@ -126,7 +126,7 @@ public class UseItemService(
                 userConfig.ImageUrl = mediaUrl;
                 break;
             case ItemType.XpBoostTree:
-                await UseItemXpBoostTree(userConfig.UserId);
+
                 break;
             case ItemType.XpProtect:
                 // These items are handled separately
@@ -137,32 +137,21 @@ public class UseItemService(
         return "success";
     }
 
-    public async Task UseItemXpBoostTree(int userId)
+    public async Task<int> UseItemXpBoostTree(int userId)
     {
         try
         {
             logger.LogInformation($"Attempting to use XP Boost Tree for user {userId}");
 
-            // 1. Kiểm tra key chung hiện có
-            var genericEffectKey = $"user:{userId}:active_effect:{ItemType.XpBoostTree}";
-            if (await redisService.KeyExistsAsync(genericEffectKey))
-            {
-                string existingItemId = await redisService.GetStringAsync(genericEffectKey);
-                logger.LogWarning($"User {userId} already has an active XP Boost Tree effect. Active ItemId from Redis: {existingItemId}.");
-                throw new InvalidOperationException($"An XP Boost effect (from item ID: {existingItemId}) is already active. Cannot use another XP Boost Tree at this time.");
-            }
-
-            // 2. Lấy itemBag
+            // Lấy itemBag
             var itemBag = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
             if (itemBag == null)
             {
-                logger.LogWarning($"No XP Boost Tree equipped or available for user {userId}. An equipped item is expected to use this feature.");
-                // Consider throwing KeyNotFoundException if an equipped item is strictly expected here
-                // return; 
+                logger.LogWarning($"No XP Boost Tree equipped or available for user {userId}");
                 throw new KeyNotFoundException($"No XP Boost Tree is currently equipped or available for use by user {userId}. Please equip an XP Boost Tree first.");
             }
 
-            // 3. Kiểm tra itemBag
+            // Kiểm tra itemBag
             if (itemBag.Quantity <= 0)
             {
                 logger.LogWarning($"XP Boost Tree {itemBag.Item?.Name} (ID: {itemBag.ItemId}) quantity is zero for user {userId}");
@@ -175,71 +164,40 @@ public class UseItemService(
                 throw new InvalidOperationException("XP Boost Tree item information is incomplete.");
             }
 
-            // Kiểm tra ItemDetail.Duration (coi là SỐ GIỜ)
-            if (!itemBag.Item.ItemDetail.Duration.HasValue || itemBag.Item.ItemDetail.Duration.Value <= 0)
-            {
-                logger.LogWarning($"Item ID {itemBag.Item.ItemId} ({itemBag.Item.Name}) has no defined or invalid duration (<=0 hours). ItemDetail.Duration is null or not positive.");
-                throw new InvalidOperationException($"Item '{itemBag.Item.Name}' has no defined or an invalid duration (must be more than 0 hours).");
-            }
-            
-            int durationInHours = itemBag.Item.ItemDetail.Duration.Value;
-            // Theo quy tắc đã thống nhất, Duration là giờ và > 0.
-            // Quy tắc "ít nhất 1 giờ" đã được bao hàm bởi "> 0 giờ".
-            // Nếu bạn muốn một mức tối thiểu cụ thể khác (ví dụ: ít nhất 2 giờ), bạn có thể thêm kiểm tra ở đây.
-
-            long totalSeconds = (long)durationInHours * 3600;
-            if (totalSeconds <= 0) // Kiểm tra lại sau khi nhân, phòng trường hợp durationInHours quá lớn gây tràn số âm
-            {
-                logger.LogError($"Calculated totalSeconds is invalid ({totalSeconds}) for item {itemBag.Item.ItemId} with duration {durationInHours} hours.");
-                throw new InvalidOperationException($"Item '{itemBag.Item.Name}' has an invalid calculated duration.");
-            }
-            TimeSpan effectTimeSpan = TimeSpan.FromSeconds(totalSeconds);
-
             // Giảm số lượng
             itemBag.Quantity--;
             if (itemBag.Quantity == 0)
             {
-                // Không tự động unequip ở đây, việc unequip nên là một hành động riêng biệt
-                // hoặc dựa trên logic khác. Việc isEquipped=false khi quantity=0 có thể
-                // được xử lý bởi một logic khác khi hiển thị túi đồ hoặc khi chọn item.
-                // Để đơn giản, chỉ cập nhật quantity.
-                itemBag.isEquipped = false; // Tạm thời bỏ qua, trừ khi có yêu cầu cụ thể
+                itemBag.isEquipped = false;
             }
             itemBag.UpdatedAt = DateTime.UtcNow;
             bagItemRepository.Update(itemBag);
 
-            // 4. Đặt key chung lên Redis với giá trị là ItemId
-            string valueToStoreInRedis = itemBag.Item.ItemId.ToString();
-            await redisService.SetStringAsync(genericEffectKey, valueToStoreInRedis, effectTimeSpan);
-
             await unitOfWork.CommitAsync();
 
-            // Xóa cache liên quan đến túi đồ (nếu có)
+            // Xóa cache liên quan đến túi đồ
             var bagCacheKey = $"BagItems_{itemBag.BagId}";
             await redisService.DeleteKeyAsync(bagCacheKey);
 
-            // 5. Thông báo
-            logger.LogInformation($"Successfully activated XP Boost Tree {itemBag.Item.Name} (ID: {itemBag.Item.ItemId}) for user {userId} for {durationInHours} hour(s). Redis key: {genericEffectKey}");
+            // Thông báo
+            logger.LogInformation($"Successfully used XP Boost Tree {itemBag.Item.Name} (ID: {itemBag.Item.ItemId}) for user {userId}");
             
-            await notificationService.PushNotificationAsync(userId, "XP Boost Activated", 
-                $"Your {itemBag.Item.Name} is now active for {durationInHours} hour(s)!");
+            await notificationService.PushNotificationAsync(userId, "XP Boost Used", 
+                $"You have used {itemBag.Item.Name}!");
+
+            return itemBag.Item.ItemId;
         }
-        catch (InvalidOperationException ex) // Bắt các lỗi đã biết và ghi log cụ thể hơn
+        catch (InvalidOperationException ex)
         {
             logger.LogWarning(ex, $"Validation error using XP Boost Tree for user {userId}: {ex.Message}");
-            throw; // Ném lại để phía gọi (ví dụ TaskService) có thể xử lý
+            throw;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, $"Generic error using XP Boost Tree for user {userId}");
-            throw; // Ném lại để phía gọi có thể xử lý
+            throw;
         }
     }
-
-    
-
-
-
 
     public async Task Cancel(int bagItemId)
     {

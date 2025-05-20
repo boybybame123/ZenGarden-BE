@@ -28,16 +28,6 @@ public class UseItemController(IUseItemService useItemService) : ControllerBase
         await useItemService.Cancel(itemBagId);
         return Ok(new { message = "Item cancelled successfully" });
     }
-    [HttpGet("xp-boost-tree-remaining-time")]
-    public async Task<IActionResult> GetXpBoostTreeRemainingTime()
-    {
-        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdString, out var parsedUserId))
-            return BadRequest(new { message = "Invalid user ID" });
 
-        var (itemId, remainingSeconds) = await useItemService.GetXpBoostTreeRemainingTimeAsync(parsedUserId);
-
-        return Ok(new { ItemId = itemId, RemainingSeconds = remainingSeconds });
-    }
     
 }
