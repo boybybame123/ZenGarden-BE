@@ -1,24 +1,61 @@
-﻿namespace ZenGarden.Domain.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
 
+namespace ZenGarden.Domain.DTOs;
+
+/// <summary>
+/// Data Transfer Object for Item Detail information
+/// </summary>
 public class ItemDetailDto
 {
+    /// <summary>
+    /// Unique identifier for the item detail
+    /// </summary>
     public int ItemDetailId { get; set; }
 
-    public int ItemId { get; set; } // Liên kết với bảng Item
+    /// <summary>
+    /// Foreign key reference to the parent Item
+    /// </summary>
+    [Required(ErrorMessage = "Item ID is required")]
+    public int ItemId { get; set; }
 
+    /// <summary>
+    /// Detailed description of the item
+    /// </summary>
+    [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+    public string? Description { get; set; }
 
-    public string? Description { get; set; } // Mô tả item
+    /// <summary>
+    /// URL to the item's media file (image, audio, etc.)
+    /// </summary>
+    [Url(ErrorMessage = "Invalid media URL format")]
+    public string? MediaUrl { get; set; }
 
+    /// <summary>
+    /// Effect configuration in JSON format
+    /// </summary>
+    [StringLength(1000, ErrorMessage = "Effect configuration cannot exceed 1000 characters")]
+    public string? Effect { get; set; }
 
-    public string? MediaUrl { get; set; } // Đường dẫn file ảnh hoặc nhạc
+    /// <summary>
+    /// Duration of the effect in seconds (null if permanent)
+    /// </summary>
+    [Range(0, int.MaxValue, ErrorMessage = "Duration must be a positive number")]
+    public int? Duration { get; set; }
 
-    public string? Effect { get; set; } // Chứa JSON hiệu ứng
+    /// <summary>
+    /// Number of times this item has been sold
+    /// </summary>
+    [Range(0, int.MaxValue, ErrorMessage = "Sold count cannot be negative")]
+    public int Sold { get; set; }
 
-    public int? Duration { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
+    /// <summary>
+    /// Indicates if the item can only be purchased once
+    /// </summary>
+    public bool IsUnique { get; set; } = false;
 
-    public int Sold { get; set; } // Số lần bán 
-
-    public bool IsUnique { get; set; } = false; // TRUE nếu chỉ mua 1 lần
-
-    public int? MonthlyPurchaseLimit { get; set; } // Thời gian hiệu lực (giây), NULL nếu vĩnh viễn
+    /// <summary>
+    /// Maximum number of times this item can be purchased per month (null if unlimited)
+    /// </summary>
+    [Range(0, int.MaxValue, ErrorMessage = "Monthly purchase limit must be a positive number")]
+    public int? MonthlyPurchaseLimit { get; set; }
 }
