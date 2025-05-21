@@ -11,6 +11,8 @@ public class RedisService : IRedisService, IDisposable
     private readonly IDatabase _database;
     private readonly ILogger<RedisService> _logger;
     private readonly ConnectionMultiplexer _redis;
+    private const int MaxRetries = 3;
+    private const int RetryDelayMs = 1000;
 
     public RedisService(IConfiguration configuration, ILogger<RedisService> logger)
     {
@@ -23,7 +25,7 @@ public class RedisService : IRedisService, IDisposable
             var portStr = configuration["Redis:Port"];
             var password = configuration["Redis:Password"];
             var user = configuration["Redis:User"] ?? "default";
-            var useSsl = bool.Parse(configuration["Redis:UseSSL"] ?? "false");
+            var useSsl = bool.Parse(configuration["Redis:UseSSL"] ?? "true");
 
             // Kiểm tra thông tin cấu hình
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(portStr) || string.IsNullOrEmpty(password))
@@ -39,10 +41,13 @@ public class RedisService : IRedisService, IDisposable
                 Password = password,
                 User = user,
                 AbortOnConnectFail = false,
-                ConnectTimeout = int.Parse(configuration["Redis:ConnectTimeout"] ?? "15000"),
-                SyncTimeout = int.Parse(configuration["Redis:SyncTimeout"] ?? "10000"),
+                ConnectTimeout = int.Parse(configuration["Redis:ConnectTimeout"] ?? "30000"),
+                SyncTimeout = int.Parse(configuration["Redis:SyncTimeout"] ?? "20000"),
                 Ssl = useSsl,
-                ClientName = configuration["Redis:ClientName"] ?? "ZenGardenApp"
+                ClientName = configuration["Redis:ClientName"] ?? "ZenGardenApp",
+                ReconnectRetryPolicy = new LinearRetry(RetryDelayMs),
+                ConnectRetry = MaxRetries,
+                KeepAlive = 60
             };
 
             _logger.LogInformation("Attempting to connect to Redis at {host}:{port}", host, port);
@@ -58,30 +63,55 @@ public class RedisService : IRedisService, IDisposable
         }
     }
 
+    private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> operation, string operationName)
+    {
+        var retries = 0;
+        while (true)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (RedisConnectionException ex) when (retries < MaxRetries)
+            {
+                retries++;
+                _logger.LogWarning(ex, "Redis connection error during {Operation}. Retry {Retry} of {MaxRetries}", 
+                    operationName, retries, MaxRetries);
+                await Task.Delay(RetryDelayMs * retries);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Redis operation {Operation}", operationName);
+                throw;
+            }
+        }
+    }
+
     public async Task<bool> PingAsync()
     {
-        try
+        return await ExecuteWithRetryAsync(async () =>
         {
             var result = await _database.PingAsync();
             _logger.LogInformation("Redis ping successful: {Result}", result);
             return result > TimeSpan.Zero;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while pinging the Redis server.");
-            return false;
-        }
+        }, "Ping");
     }
 
     public async Task<string> GetStringAsync(string key)
     {
-        var result = await _database.StringGetAsync(key);
-        return result.IsNullOrEmpty ? string.Empty : result.ToString();
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var result = await _database.StringGetAsync(key);
+            return result.IsNullOrEmpty ? string.Empty : result.ToString();
+        }, "GetString");
     }
 
     public async Task<bool> SetStringAsync(string key, string value, TimeSpan? expiry = null)
     {
-        return await _database.StringSetAsync(key, value, expiry);
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            return await _database.StringSetAsync(key, value, expiry);
+        }, "SetString");
     }
 
     public async Task<bool> KeyExistsAsync(string key)
@@ -134,10 +164,13 @@ public class RedisService : IRedisService, IDisposable
 
     public async Task<T?> GetAsync<T>(string key)
     {
-        var redisValue = await _database.StringGetAsync(key);
-        if (redisValue.IsNullOrEmpty) return default;
-        var jsonString = redisValue.ToString();
-        return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var redisValue = await _database.StringGetAsync(key);
+            if (redisValue.IsNullOrEmpty) return default;
+            var jsonString = redisValue.ToString();
+            return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
+        }, "Get");
     }
 
     public async Task RemoveAsync(string key)

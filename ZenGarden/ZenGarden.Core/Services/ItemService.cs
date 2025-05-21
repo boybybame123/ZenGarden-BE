@@ -48,7 +48,7 @@ public class ItemService(
         return itemDto;
     }
 
-    public async Task CreateItemAsync(CreateItemDto item)
+    public async Task<ItemDto> CreateItemAsync(CreateItemDto item)
     {
         try
         {
@@ -58,32 +58,52 @@ public class ItemService(
                 throw new ArgumentNullException(nameof(item));
             }
 
+            // Validate item details
+            if (item.ItemDetail == null)
+            {
+                logger.LogError("Item details are required");
+                throw new ArgumentException("Item details are required");
+            }
 
+            // Validate item type specific requirements
             if (item.Type == ItemType.XpBoostTree)
             {
-                if (item.ItemDetail == null || item.ItemDetail.Duration == null || item.ItemDetail.Duration <= 0)
+                if (item.ItemDetail.Duration == null || item.ItemDetail.Duration <= 0)
                 {
-                    logger.LogError("XpBoostTree item must have a positive Duration.");
-                    throw new ArgumentException("XpBoostTree item must have a positive Duration.", nameof(item.ItemDetail.Duration));
+                    logger.LogError("XpBoostTree item must have a positive Duration");
+                    throw new ArgumentException("XpBoostTree item must have a positive Duration");
                 }
 
-                // Validate Effect: must be a number between 1 and 100
                 if (string.IsNullOrWhiteSpace(item.ItemDetail.Effect) ||
                     !int.TryParse(item.ItemDetail.Effect, out var effectValue) ||
                     effectValue < 1 || effectValue > 100)
                 {
-                    logger.LogError("XpBoostTree item Effect must be a number between 1 and 100.");
-                    throw new ArgumentException("XpBoostTree item Effect must be a number between 1 and 100.", nameof(item.ItemDetail.Effect));
+                    logger.LogError("XpBoostTree item Effect must be a number between 1 and 100");
+                    throw new ArgumentException("XpBoostTree item Effect must be a number between 1 and 100");
                 }
             }
 
-            
+            // Check if item with same name exists
+            var existingItem = await itemRepository.GetItemByNameAsync(item.Name);
+            if (existingItem != null)
+            {
+                logger.LogError("Item with name {ItemName} already exists", item.Name);
+                throw new ArgumentException($"Item with name {item.Name} already exists");
+            }
 
             var newItem = mapper.Map<Item>(item);
-            newItem.CreatedAt = DateTime.Now;
-            newItem.UpdatedAt = DateTime.Now;
+            newItem.CreatedAt = DateTime.UtcNow;
+            newItem.UpdatedAt = DateTime.UtcNow;
+            newItem.Status = ItemStatus.Active; // Set initial status as Active
             
-        
+            // Initialize item detail
+            if (newItem.ItemDetail != null)
+            {
+                newItem.ItemDetail.Sold = 0;
+                newItem.ItemDetail.CreatedAt = DateTime.UtcNow;
+                newItem.ItemDetail.UpdatedAt = DateTime.UtcNow;
+            }
+            
             await itemRepository.CreateAsync(newItem);
             
             if (await unitOfWork.CommitAsync() == 0)
@@ -92,8 +112,14 @@ public class ItemService(
                 throw new InvalidOperationException($"Failed to create item: {item.Name}");
             }
 
-            await notificationService.PushNotificationToAllAsync("Marketplace", $"Item {item.Name} has been released.");
+            // Send notification
+            await notificationService.PushNotificationToAllAsync("Marketplace", $"New item {item.Name} has been released!");
+
+            // Invalidate cache
             await InvalidateCache();
+
+            // Return the created item
+            return mapper.Map<ItemDto>(newItem);
         }
         catch (Exception ex)
         {
