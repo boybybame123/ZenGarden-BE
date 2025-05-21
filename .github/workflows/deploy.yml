@@ -3,9 +3,10 @@ name: Deploy to Azure Web App
 on:
   push:
     branches:
-      - dev    # Tự động deploy khi đẩy lên nhánh dev
-      - main   # Hoặc nhánh main
-
+      - "**"
+  pull_request:
+    branches:
+      - "**"
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -20,13 +21,19 @@ jobs:
           dotnet-version: '8.0.x' # Hoặc version phù hợp với app bạn
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore ZenGarden
 
-      - name: Build app
-        run: dotnet build --configuration Release
+      - name: Debug - Check files
+        run: ls -R
+
+      - name: Build project
+        run: dotnet build ZenGarden --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test ZenGarden --configuration Release --no-build --verbosity normal
 
       - name: Publish app
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish ZenGarden -c Release -o ./publish
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
