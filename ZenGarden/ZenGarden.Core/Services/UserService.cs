@@ -103,14 +103,7 @@ public class UserService(
             ? $"user:email:{email}" 
             : $"user:phone:{phone}";
 
-        var cachedUser = await redisService.GetAsync<UserResponseDto>(cacheKey);
-        if (cachedUser != null)
-        {
-            var userFromDb = await userRepository.GetByIdAsync(cachedUser.UserId);
-            if (userFromDb == null) return null;
-            return PasswordHasher.VerifyPassword(password, userFromDb.Password) ? userFromDb : null;
-        }
-
+        // Try to get user directly from database first
         var user = !string.IsNullOrEmpty(email)
             ? await userRepository.GetByEmailAsync(email)
             : await userRepository.GetByPhoneAsync(phone);
@@ -119,6 +112,7 @@ public class UserService(
 
         if (PasswordHasher.VerifyPassword(password, user.Password))
         {
+            // Cache the user after successful validation
             var userDto = mapper.Map<UserResponseDto>(user);
             await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
             return user;
@@ -274,10 +268,23 @@ public class UserService(
             var userTreeService = scope.ServiceProvider.GetRequiredService<IUserTreeService>();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
+            // Get all user trees in one query
             var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
+            
+            // Create tasks for parallel processing
+            var tasks = new List<Task>();
+            
+            // Add tree health update tasks
             foreach (var tree in userTrees)
-                await userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId);
-            await notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp.");
+            {
+                tasks.Add(userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId));
+            }
+            
+            // Add notification task
+            tasks.Add(notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp."));
+            
+            // Execute all tasks in parallel
+            await Task.WhenAll(tasks);
         }
     }
 
