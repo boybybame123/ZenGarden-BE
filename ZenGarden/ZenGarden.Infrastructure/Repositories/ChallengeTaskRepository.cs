@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class ChallengeTaskRepository(ZenGardenContext context)
-    : GenericRepository<ChallengeTask>(context), IChallengeTaskRepository
+public class ChallengeTaskRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<ChallengeTask>(context, redisService), IChallengeTaskRepository
 {
     private readonly ZenGardenContext _context = context;
 

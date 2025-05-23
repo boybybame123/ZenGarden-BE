@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class WalletRepository(ZenGardenContext context) : GenericRepository<Wallet>(context), IWalletRepository
+public class WalletRepository(ZenGardenContext context, IRedisService redisService) : GenericRepository<Wallet>(context, redisService), IWalletRepository
 {
     private readonly ZenGardenContext _context = context;
 

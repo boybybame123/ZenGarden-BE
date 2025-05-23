@@ -1,12 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class BagItemRepository(ZenGardenContext context) : GenericRepository<BagItem>(context), IBagItemRepository
+public class BagItemRepository(ZenGardenContext context, IRedisService redisService) 
+    : GenericRepository<BagItem>(context, redisService), IBagItemRepository
 {
     private readonly ZenGardenContext _context = context;
 

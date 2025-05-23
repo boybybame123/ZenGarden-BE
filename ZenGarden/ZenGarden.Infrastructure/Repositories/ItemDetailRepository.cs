@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class ItemDetailRepository(ZenGardenContext context)
-    : GenericRepository<ItemDetail>(context), IItemDetailRepository
+public class ItemDetailRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<ItemDetail>(context, redisService), IItemDetailRepository
 {
     private readonly ZenGardenContext _context = context;
 

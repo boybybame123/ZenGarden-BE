@@ -1,17 +1,19 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UnitOfWork(ZenGardenContext context) : IUnitOfWork
+public class UnitOfWork(ZenGardenContext context, IRedisService redisService) : IUnitOfWork
 {
     private readonly ZenGardenContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly IRedisService _redisService = redisService ?? throw new ArgumentNullException(nameof(redisService));
     private IDbContextTransaction? _transaction;
 
     public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : class
     {
-        return new GenericRepository<TEntity>(_context);
+        return new GenericRepository<TEntity>(_context, _redisService);
     }
 
     public async Task<IDbContextTransaction> BeginTransactionAsync()
