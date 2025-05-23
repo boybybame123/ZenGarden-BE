@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TreeXpLogRepository(ZenGardenContext context)
-    : GenericRepository<TreeXpLog>(context), ITreeXpLogRepository
+public class TreeXpLogRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<TreeXpLog>(context, redisService), ITreeXpLogRepository
 {
     private readonly ZenGardenContext _context = context;
 

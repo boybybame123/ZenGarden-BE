@@ -1,19 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TransactionsRepository : GenericRepository<Transactions>, ITransactionsRepository
+public class TransactionsRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<Transactions>(context, redisService), ITransactionsRepository
 {
-    private readonly ZenGardenContext _context;
-
-    public TransactionsRepository(ZenGardenContext context) : base(context)
-    {
-        _context = context;
-    }
+    private readonly ZenGardenContext _context = context;
 
     public async Task<Transactions?> FindByRefAsync(string transactionRef)
     {

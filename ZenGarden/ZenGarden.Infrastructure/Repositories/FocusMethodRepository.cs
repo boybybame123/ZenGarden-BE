@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class FocusMethodRepository(ZenGardenContext context)
-    : GenericRepository<FocusMethod>(context), IFocusMethodRepository
+public class FocusMethodRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<FocusMethod>(context, redisService), IFocusMethodRepository
 {
     private readonly ZenGardenContext _context = context;
 

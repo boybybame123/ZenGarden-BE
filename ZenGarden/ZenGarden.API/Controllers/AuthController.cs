@@ -23,27 +23,39 @@ public class AuthController(
     {
         Console.WriteLine("=== LOGIN START ===");
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var validationResult = await loginValidator.ValidateAsync(loginDto);
+        
+        // Run validation and user validation in parallel
+        var validationTask = loginValidator.ValidateAsync(loginDto);
+        var userTask = userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
+        
+        await Task.WhenAll(validationTask, userTask);
+        
+        var validationResult = validationTask.Result;
+        var user = userTask.Result;
+        
         sw.Stop();
-        Console.WriteLine($"[Login] Validation: {sw.ElapsedMilliseconds}ms");
-        if (!validationResult.IsValid) return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-
-        sw.Restart();
-        var user = await userService.ValidateUserAsync(loginDto.Email, loginDto.Phone, loginDto.Password);
-        sw.Stop();
-        Console.WriteLine($"[Login] ValidateUserAsync: {sw.ElapsedMilliseconds}ms");
+        Console.WriteLine($"[Login] Validation + User Validation: {sw.ElapsedMilliseconds}ms");
+        
+        if (!validationResult.IsValid) 
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+            
         if (user == null)
             return Unauthorized(new { error = "Invalid credentials." });
 
+        // Generate tokens and update refresh token in parallel
         sw.Restart();
-        var tokens = tokenService.GenerateJwtToken(user);
+        var tokenTask = Task.Run(() => tokenService.GenerateJwtToken(user));
+        var updateTokenTask = userService.UpdateUserRefreshTokenAsync(
+            user.UserId, 
+            tokenTask.Result.RefreshToken, 
+            DateTime.UtcNow.AddDays(7)
+        );
+        
+        await Task.WhenAll(tokenTask, updateTokenTask);
+        var tokens = tokenTask.Result;
+        
         sw.Stop();
-        Console.WriteLine($"[Login] GenerateJwtToken: {sw.ElapsedMilliseconds}ms");
-
-        sw.Restart();
-        await userService.UpdateUserRefreshTokenAsync(user.UserId, tokens.RefreshToken, DateTime.UtcNow.AddDays(7));
-        sw.Stop();
-        Console.WriteLine($"[Login] UpdateUserRefreshTokenAsync: {sw.ElapsedMilliseconds}ms");
+        Console.WriteLine($"[Login] Token Generation + Update: {sw.ElapsedMilliseconds}ms");
 
         // Fire and forget login tasks in true background
         _ = Task.Run(() => userService.OnUserLoginAsync(user.UserId));

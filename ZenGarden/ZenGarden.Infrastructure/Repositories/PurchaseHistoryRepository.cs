@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class PurchaseHistoryRepository(ZenGardenContext context)
-    : GenericRepository<PurchaseHistory>(context), IPurchaseHistoryRepository
+public class PurchaseHistoryRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<PurchaseHistory>(context, redisService), IPurchaseHistoryRepository
 {
     private readonly ZenGardenContext _context = context;
 

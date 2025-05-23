@@ -84,7 +84,7 @@ public class ItemService(
             }
 
             // Check if item with same name exists
-            var existingItem = await itemRepository.GetItemByNameAsync(item.Name);
+            var existingItem = await itemRepository.GetItemByNameAsync(item.Name!);
             if (existingItem != null)
             {
                 logger.LogError("Item with name {ItemName} already exists", item.Name);
