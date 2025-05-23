@@ -48,7 +48,7 @@ ConfigurePipeline(app);
 
 app.Run();
 
-public partial class Program
+public static partial class Program
 {
     private static void ConfigureServices(WebApplicationBuilder builder)
     {
@@ -56,7 +56,7 @@ public partial class Program
             .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100).Expand().Filter())
             .AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
                 options.JsonSerializerOptions.MaxDepth = 64;
             });
 
@@ -125,7 +125,12 @@ public partial class Program
 
         // Cấu hình health checks
         builder.Services.AddHealthChecks()
-            .AddDbContextCheck<ZenGardenContext>();
+            .AddDbContextCheck<ZenGardenContext>()
+            .AddRedis(builder.Configuration.GetConnectionString("Redis") ?? 
+                $"redis://{builder.Configuration["Redis:Host"]}:{builder.Configuration["Redis:Port"]},password={builder.Configuration["Redis:Password"]},ssl={builder.Configuration["Redis:UseSSL"]}", 
+                name: "redis",
+                failureStatus: HealthStatus.Degraded,
+                tags: ["redis", "cache"]);
     }
 
     private static void ConfigureAi(WebApplicationBuilder builder)
@@ -142,6 +147,10 @@ public partial class Program
 
     private static void ConfigureRepositories(WebApplicationBuilder builder)
     {
+        // Register Generic Repository with Redis
+        builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+        // Register specific repositories
         builder.Services.AddScoped<ITradeHistoryRepository, TradeHistoryRepository>();
         builder.Services.AddScoped<IBagRepository, BagRepository>();
         builder.Services.AddScoped<IPackagesRepository, PackagesRepository>();
@@ -169,7 +178,6 @@ public partial class Program
         builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
         builder.Services.AddScoped<IPackageRepository, PackageRepository>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-        // other repository registrations
     }
 
     private static void ConfigureDbContext(WebApplicationBuilder builder)
@@ -179,9 +187,18 @@ public partial class Program
                                ?? throw new InvalidOperationException("Database connection string is missing.");
 
         builder.Services.AddDbContext<ZenGardenContext>(options =>
-            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-                x => x.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-        );
+        {
+            options.UseMySql(
+                connectionString,
+                ServerVersion.AutoDetect(connectionString),
+                mySqlOptions => mySqlOptions
+                    .EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null)
+                    .CommandTimeout(60)
+            );
+        });
     }
 
     private static void ConfigureAuthentication(WebApplicationBuilder builder)
@@ -360,11 +377,21 @@ public partial class Program
         // Health checks
         app.MapHealthChecks("/health", new HealthCheckOptions
         {
-            ResultStatusCodes =
+            ResponseWriter = async (context, report) =>
             {
-                [HealthStatus.Healthy] = StatusCodes.Status200OK,
-                [HealthStatus.Degraded] = StatusCodes.Status200OK,
-                [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+                context.Response.ContentType = "application/json";
+                var response = new
+                {
+                    status = report.Status.ToString(),
+                    checks = report.Entries.Select(x => new
+                    {
+                        name = x.Key,
+                        status = x.Value.Status.ToString(),
+                        description = x.Value.Description,
+                        duration = x.Value.Duration.ToString()
+                    })
+                };
+                await context.Response.WriteAsJsonAsync(response);
             }
         });
     }

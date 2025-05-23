@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class TradeHistoryRepository(ZenGardenContext context)
-    : GenericRepository<TradeHistory>(context), ITradeHistoryRepository
+public class TradeHistoryRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<TradeHistory>(context, redisService), ITradeHistoryRepository
 {
     private readonly ZenGardenContext _context = context;
 

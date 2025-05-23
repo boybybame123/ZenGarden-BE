@@ -11,71 +11,126 @@ public class RedisService : IRedisService, IDisposable
     private readonly IDatabase _database;
     private readonly ILogger<RedisService> _logger;
     private readonly ConnectionMultiplexer _redis;
+    private readonly TimeSpan _defaultExpiry;
+    private readonly CircuitBreaker _circuitBreaker;
     private const int MaxRetries = 3;
     private const int RetryDelayMs = 1000;
+    private readonly Dictionary<string, TimeSpan> _defaultExpiryByType;
 
     public RedisService(IConfiguration configuration, ILogger<RedisService> logger)
     {
         _logger = logger;
+        _defaultExpiry = TimeSpan.FromMinutes(30);
+        var instanceName = configuration["Redis:ClientName"] ?? "ZenGardenApp";
+        _circuitBreaker = new CircuitBreaker(5, TimeSpan.FromSeconds(30));
+        
+        _defaultExpiryByType = new Dictionary<string, TimeSpan>
+        {
+            { "user", TimeSpan.FromHours(1) },
+            { "session", TimeSpan.FromMinutes(30) },
+            { "cache", TimeSpan.FromMinutes(15) }
+        };
 
         try
         {
-            // Lấy thông tin kết nối từ appsettings.json
             var host = configuration["Redis:Host"];
             var portStr = configuration["Redis:Port"];
             var password = configuration["Redis:Password"];
             var user = configuration["Redis:User"] ?? "default";
-            var useSsl = bool.Parse(configuration["Redis:UseSSL"] ?? "true");
 
-            // Kiểm tra thông tin cấu hình
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(portStr) || string.IsNullOrEmpty(password))
                 throw new ArgumentException("Redis configuration is missing or incomplete in appsettings.json");
 
-            // Parse port
-            if (!int.TryParse(portStr, out var port)) throw new ArgumentException("Invalid Redis port configuration");
+            if (!int.TryParse(portStr, out var port)) 
+                throw new ArgumentException("Invalid Redis port configuration");
 
-            // Tạo cấu hình kết nối
             var configOptions = new ConfigurationOptions
             {
                 EndPoints = { { host, port } },
                 Password = password,
                 User = user,
                 AbortOnConnectFail = false,
-                ConnectTimeout = int.Parse(configuration["Redis:ConnectTimeout"] ?? "30000"),
-                SyncTimeout = int.Parse(configuration["Redis:SyncTimeout"] ?? "20000"),
-                Ssl = useSsl,
-                ClientName = configuration["Redis:ClientName"] ?? "ZenGardenApp",
+                ConnectTimeout = 10000, // Increased timeout
+                SyncTimeout = 10000,    // Increased timeout
+                Ssl = false,            // Disabled SSL
+                ClientName = instanceName,
                 ReconnectRetryPolicy = new LinearRetry(RetryDelayMs),
                 ConnectRetry = MaxRetries,
-                KeepAlive = 60
+                KeepAlive = 60,
+                AllowAdmin = true,
+                TieBreaker = "",
+                ConfigCheckSeconds = 60
             };
 
             _logger.LogInformation("Attempting to connect to Redis at {host}:{port}", host, port);
-            _redis = ConnectionMultiplexer.Connect(configOptions);
-            _database = _redis.GetDatabase();
+            
+            try
+            {
+                _redis = ConnectionMultiplexer.Connect(configOptions);
+                _database = _redis.GetDatabase();
 
-            _logger.LogInformation("Connected to Redis server successfully.");
+                // Test connection with retry
+                var retryCount = 0;
+                while (retryCount < 3)
+                {
+                    try
+                    {
+                        var pingResult = _database.Ping();
+                        if (pingResult.TotalMilliseconds > 0)
+                        {
+                            _logger.LogInformation("Connected to Redis server successfully. Instance: {InstanceName}", instanceName);
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        retryCount++;
+                        if (retryCount == 3)
+                            throw;
+                        
+                        _logger.LogWarning(ex, "Redis ping attempt {RetryCount} failed, retrying...", retryCount);
+                        Thread.Sleep(1000 * retryCount);
+                    }
+                }
+            }
+            catch (RedisConnectionException ex)
+            {
+                _logger.LogError(ex, "Failed to connect to Redis server. Please check your connection settings.");
+                throw;
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while connecting to the Redis server.");
+            _logger.LogError(ex, "An error occurred while configuring Redis connection");
             throw;
         }
+    }
+
+    private string GetKeyWithPrefix(string key, string prefix)
+    {
+        return $"{prefix}:{key}";
     }
 
     private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> operation, string operationName)
     {
         var retries = 0;
-        while (true)
+        var lastException = default(Exception);
+        var startTime = DateTime.UtcNow;
+
+        while (retries < MaxRetries)
         {
             try
             {
-                return await operation();
+                var result = await _circuitBreaker.ExecuteAsync(operation);
+                LogRedisOperation(operationName, startTime);
+                return result;
             }
-            catch (RedisConnectionException ex) when (retries < MaxRetries)
+            catch (RedisConnectionException ex)
             {
+                lastException = ex;
                 retries++;
-                _logger.LogWarning(ex, "Redis connection error during {Operation}. Retry {Retry} of {MaxRetries}", 
+                _logger.LogWarning(ex, 
+                    "Redis connection error during {Operation}. Retry {Retry} of {MaxRetries}", 
                     operationName, retries, MaxRetries);
                 await Task.Delay(RetryDelayMs * retries);
             }
@@ -85,6 +140,54 @@ public class RedisService : IRedisService, IDisposable
                 throw;
             }
         }
+
+        throw new RedisConnectionException(ConnectionFailureType.UnableToConnect, 
+            $"Failed to execute {operationName} after {MaxRetries} retries", lastException);
+    }
+
+    private void LogRedisOperation(string operation, DateTime startTime)
+    {
+        var duration = DateTime.UtcNow - startTime;
+        _logger.LogInformation(
+            "Redis {Operation} completed in {Duration}ms",
+            operation,
+            duration.TotalMilliseconds
+        );
+    }
+
+    public async Task<bool> AcquireLockAsync(string key, TimeSpan? expiry)
+    {
+        return await ExecuteWithRetryAsync(async () => await _database.StringSetAsync(
+            GetKeyWithPrefix(key, "lock"),
+            Environment.MachineName,
+            expiry,
+            When.NotExists
+        ), "AcquireLock");
+    }
+
+    public async Task ReleaseLockAsync(string key)
+    {
+        await ExecuteWithRetryAsync(async () =>
+        {
+            await _database.KeyDeleteAsync(GetKeyWithPrefix(key, "lock"));
+            return true;
+        }, "ReleaseLock");
+    }
+
+    [Obsolete("Obsolete")]
+    public async Task PublishAsync(string channel, string message)
+    {
+        await ExecuteWithRetryAsync(async () =>
+        {
+            await _redis.GetSubscriber().PublishAsync(channel, message);
+            return true;
+        }, "Publish");
+    }
+
+    [Obsolete("Obsolete")]
+    public void Subscribe(string channel, Action<string> handler)
+    {
+        _redis.GetSubscriber().Subscribe(channel, (_, value) => handler(value!));
     }
 
     public async Task<bool> PingAsync()
@@ -92,7 +195,7 @@ public class RedisService : IRedisService, IDisposable
         return await ExecuteWithRetryAsync(async () =>
         {
             var result = await _database.PingAsync();
-            _logger.LogInformation("Redis ping successful: {Result}", result);
+            _logger.LogInformation("Redis ping successful: {Result}ms", result.TotalMilliseconds);
             return result > TimeSpan.Zero;
         }, "Ping");
     }
@@ -108,58 +211,72 @@ public class RedisService : IRedisService, IDisposable
 
     public async Task<bool> SetStringAsync(string key, string value, TimeSpan? expiry = null)
     {
-        return await ExecuteWithRetryAsync(async () =>
-        {
-            return await _database.StringSetAsync(key, value, expiry);
-        }, "SetString");
+        return await ExecuteWithRetryAsync(async () => await _database.StringSetAsync(key, value, expiry ?? _defaultExpiry), "SetString");
     }
 
     public async Task<bool> KeyExistsAsync(string key)
     {
-        return await _database.KeyExistsAsync(key);
+        return await ExecuteWithRetryAsync(async () => await _database.KeyExistsAsync(key), "KeyExists");
     }
 
     public async Task<bool> DeleteKeyAsync(string key)
     {
-        return await _database.KeyDeleteAsync(key);
+        return await ExecuteWithRetryAsync(async () => await _database.KeyDeleteAsync(key), "DeleteKey");
     }
 
     public async Task<TimeSpan?> GetKeyTimeToLiveAsync(string key)
     {
-        return await _database.KeyTimeToLiveAsync(key);
+        return await ExecuteWithRetryAsync(async () => await _database.KeyTimeToLiveAsync(key), "GetKeyTimeToLive");
     }
 
     public async Task<bool> AddToSortedSetAsync(string setKey, string member, double score)
     {
-        return await _database.SortedSetAddAsync(setKey, member, score);
+        return await ExecuteWithRetryAsync(async () => await _database.SortedSetAddAsync(setKey, member, score), "AddToSortedSet");
     }
 
     public async Task<List<string>> GetTopSortedSetAsync(string setKey, int count)
     {
-        var result = await _database.SortedSetRangeByRankAsync(setKey, 0, count - 1, Order.Descending);
-        return result.Select(x => x.ToString()).ToList();
-    }
-
-    public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> getDataFunc, TimeSpan? expiry = null)
-    {
-        var cached = await _database.StringGetAsync(key);
-        if (!cached.IsNullOrEmpty)
+        return await ExecuteWithRetryAsync(async () =>
         {
-            var cachedString = cached.ToString();
-            return JsonSerializer.Deserialize<T>(cachedString)
-                   ?? throw new InvalidOperationException("Failed to deserialize cached data");
-        }
-
-        var data = await getDataFunc();
-        var json = JsonSerializer.Serialize(data);
-        await _database.StringSetAsync(key, json, expiry);
-        return data;
+            var result = await _database.SortedSetRangeByRankAsync(setKey, 0, count - 1, Order.Descending);
+            return result.Select(x => x.ToString()).ToList();
+        }, "GetTopSortedSet");
     }
 
-    public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null)
+    public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> getDataFunc, TimeSpan? expiry = null, string type = "cache")
     {
-        var json = JsonSerializer.Serialize(value);
-        return await _database.StringSetAsync(key, json, expiry);
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var cached = await _database.StringGetAsync(key);
+            if (!cached.IsNullOrEmpty)
+            {
+                try
+                {
+                    var cachedString = cached.ToString();
+                    return JsonSerializer.Deserialize<T>(cachedString)
+                           ?? throw new InvalidOperationException("Failed to deserialize cached data");
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to deserialize cached data for key {Key}", key);
+                    await _database.KeyDeleteAsync(key);
+                }
+            }
+
+            var data = await getDataFunc();
+            var json = JsonSerializer.Serialize(data);
+            await _database.StringSetAsync(key, json, expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry));
+            return data;
+        }, "GetOrSet");
+    }
+
+    public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null, string type = "cache")
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var json = JsonSerializer.Serialize(value);
+            return await _database.StringSetAsync(key, json, expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry));
+        }, "Set");
     }
 
     public async Task<T?> GetAsync<T>(string key)
@@ -168,28 +285,129 @@ public class RedisService : IRedisService, IDisposable
         {
             var redisValue = await _database.StringGetAsync(key);
             if (redisValue.IsNullOrEmpty) return default;
-            var jsonString = redisValue.ToString();
-            return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
+            
+            try
+            {
+                var jsonString = redisValue.ToString();
+                return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to deserialize data for key {Key}", key);
+                await _database.KeyDeleteAsync(key);
+                return default;
+            }
         }, "Get");
     }
 
     public async Task RemoveAsync(string key)
     {
-        await _database.KeyDeleteAsync(key);
-    }
-
-    public void Dispose()
-    {
-        _redis.Dispose();
-        GC.SuppressFinalize(this);
+        await ExecuteWithRetryAsync(async () =>
+        {
+            await _database.KeyDeleteAsync(key);
+            return true;
+        }, "Remove");
     }
 
     public async Task RemoveByPatternAsync(string pattern)
     {
-        var server = _redis.GetServer(_redis.GetEndPoints().First());
+        await ExecuteWithRetryAsync(async () =>
+        {
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var keys = server.Keys(pattern: pattern).ToArray();
+            
+            if (keys.Length > 0)
+            {
+                await _database.KeyDeleteAsync(keys);
+                _logger.LogInformation("Removed {Count} keys matching pattern {Pattern}", keys.Length, pattern);
+            }
+            
+            return true;
+        }, "RemoveByPattern");
+    }
 
-        var keys = server.Keys(pattern: pattern);
+    public async Task<bool> SetMultipleAsync<T>(IDictionary<string, T> keyValuePairs, TimeSpan? expiry = null, string type = "cache")
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var batch = _database.CreateBatch();
+            var tasks = keyValuePairs.Select(kvp => 
+                batch.StringSetAsync(
+                    kvp.Key, 
+                    JsonSerializer.Serialize(kvp.Value), 
+                    expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry)
+                ));
+            
+            await batch.ExecuteAsync("SET");
+            var results = await Task.WhenAll(tasks);
+            return results.All(x => x);
+        }, "SetMultiple");
+    }
 
-        foreach (var key in keys) await _redis.GetDatabase().KeyDeleteAsync(key);
+    public async Task<IDictionary<string, T?>> GetMultipleAsync<T>(IEnumerable<string> keys)
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var enumerable = keys as string[] ?? keys.ToArray();
+            var redisKeys = enumerable.Select(k => (RedisKey)k).ToArray();
+            var values = await _database.StringGetAsync(redisKeys);
+            
+            var result = new Dictionary<string, T?>();
+            for (var i = 0; i < enumerable.Length; i++)
+            {
+                var key = enumerable.ElementAt(i);
+                var value = values[i];
+                
+                if (!value.IsNullOrEmpty)
+                {
+                    try
+                    {
+                        result[key] = JsonSerializer.Deserialize<T>(value.ToString());
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize data for key {Key}", key);
+                        result[key] = default;
+                    }
+                }
+                else
+                {
+                    result[key] = default;
+                }
+            }
+            
+            return result;
+        }, "GetMultiple");
+    }
+
+    public async Task<RedisMetrics> GetMetricsAsync()
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var info = await server.InfoAsync();
+            
+            return new RedisMetrics
+            {
+                ConnectedClients = info.FirstOrDefault(x => x.Key == "connected_clients")?.ToString(),
+                UsedMemory = info.FirstOrDefault(x => x.Key == "used_memory_human")?.ToString(),
+                TotalConnectionsReceived = info.FirstOrDefault(x => x.Key == "total_connections_received")?.ToString(),
+                TotalCommandsProcessed = info.FirstOrDefault(x => x.Key == "total_commands_processed")?.ToString(),
+                UptimeInSeconds = info.FirstOrDefault(x => x.Key == "uptime_in_seconds")?.ToString()
+            };
+        }, "GetMetrics");
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (!disposing) return;
+        _redis.Close();
+        _redis.Dispose();
     }
 }
