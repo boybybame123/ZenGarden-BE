@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserTreeRepository(ZenGardenContext context) : GenericRepository<UserTree>(context), IUserTreeRepository
+public class UserTreeRepository(ZenGardenContext context, IRedisService redisService) : GenericRepository<UserTree>(context, redisService), IUserTreeRepository
 {
     private readonly ZenGardenContext _context = context;
 

@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
+using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Infrastructure.Persistence;
 
 namespace ZenGarden.Infrastructure.Repositories;
 
-public class UserXpConfigRepository(ZenGardenContext context)
-    : GenericRepository<UserXpConfig>(context), IUserXpConfigRepository
+public class UserXpConfigRepository(ZenGardenContext context, IRedisService redisService)
+    : GenericRepository<UserXpConfig>(context, redisService), IUserXpConfigRepository
 {
     private readonly ZenGardenContext _context = context;
 
