@@ -15,7 +15,7 @@ public class ChallengeRepository(ZenGardenContext context, IRedisService redisSe
     public async Task<List<Challenge>> GetChallengeAll()
     {
         return await _context.Challenge
-            .AsNoTracking()
+            .AsSplitQuery()
             .Include(c => c.ChallengeType)
             .Include(c => c.UserChallenges)
             .Include(c => c.ChallengeTasks)
@@ -26,7 +26,7 @@ public class ChallengeRepository(ZenGardenContext context, IRedisService redisSe
     public async Task<Challenge?> GetByIdChallengeAsync(int id)
     {
         return await _context.Challenge
-            .AsNoTracking()
+            .AsSplitQuery()
             .Include(c => c.ChallengeType)
             .Include(c => c.UserChallenges)
             .Include(c => c.ChallengeTasks)
