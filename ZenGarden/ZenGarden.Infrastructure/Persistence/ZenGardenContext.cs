@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Domain.Enums;
@@ -45,6 +46,8 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
     public virtual DbSet<UserXpLog> UserXpLog { get; set; }
     public virtual DbSet<Wallet> Wallet { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
+    public virtual DbSet<FocusActivity> FocusActivity { get; set; }
+    public virtual DbSet<FocusTracking> FocusTracking { get; set; }
 
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
@@ -52,7 +55,8 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
     {
         if (optionsBuilder.IsConfigured) return;
         var connectionString = GetConnectionString();
-        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.MultipleCollectionIncludeWarning));
     }
 
     private static string GetConnectionString()
@@ -1117,6 +1121,70 @@ public class ZenGardenContext : DbContext, IDataProtectionKeyContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
         });
 
+        modelBuilder.Entity<FocusActivity>(entity =>
+        {
+            entity.HasKey(e => e.ActivityId).HasName("PRIMARY");
+            entity.Property(e => e.ActivityId).HasColumnName("ActivityID").ValueGeneratedOnAdd();
+            entity.Property(e => e.TrackingId).HasColumnName("TrackingID");
+            entity.Property(e => e.Type).HasConversion<int>().IsRequired();
+            entity.Property(e => e.ActivityDetails).HasColumnType("text");
+            entity.Property(e => e.Timestamp).HasColumnType("timestamp").IsRequired();
+            entity.Property(e => e.IsDistraction).HasColumnType("bit").HasDefaultValue(false);
+            entity.Property(e => e.Duration).HasColumnType("int");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            entity.HasOne(d => d.FocusTracking)
+                .WithMany(p => p.FocusActivities)
+                .HasForeignKey(d => d.TrackingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FocusTracking>(entity =>
+        {
+            entity.HasKey(e => e.TrackingId).HasName("PRIMARY");
+            entity.Property(e => e.TrackingId).HasColumnName("TrackingID").ValueGeneratedOnAdd();
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.FocusMethodId).HasColumnName("FocusMethodID");
+            entity.Property(e => e.StartTime).HasColumnType("timestamp").IsRequired();
+            entity.Property(e => e.EndTime).HasColumnType("timestamp");
+            entity.Property(e => e.PlannedDuration).HasColumnType("int").IsRequired();
+            entity.Property(e => e.ActualDuration).HasColumnType("int");
+            entity.Property(e => e.IsCompleted).HasColumnType("bit").HasDefaultValue(false);
+            entity.Property(e => e.TrackingNote).HasColumnType("text");
+            entity.Property(e => e.XpEarned).HasColumnType("double").HasDefaultValue(0);
+            entity.Property(e => e.Status).HasConversion<int>().IsRequired();
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnAdd()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .ValueGeneratedOnUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Task)
+                .WithMany()
+                .HasForeignKey(d => d.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.FocusMethod)
+                .WithMany()
+                .HasForeignKey(d => d.FocusMethodId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         base.OnModelCreating(modelBuilder);
     }

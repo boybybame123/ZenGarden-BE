@@ -52,6 +52,7 @@ public class TaskRepository(ZenGardenContext context, IRedisService redisService
     public async Task<List<Tasks>> GetAllWithDetailsAsync()
     {
         return await _context.Tasks
+            .AsSplitQuery()
             .Include(t => t.TaskType)
             .Include(t => t.FocusMethod)
             .Include(t => t.UserTree)
