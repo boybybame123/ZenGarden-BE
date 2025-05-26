@@ -68,7 +68,7 @@ public class ItemService(
             // Validate item type specific requirements
             if (item.Type == ItemType.XpBoostTree)
             {
-                if (item.ItemDetail.Duration == null || item.ItemDetail.Duration <= 0)
+                if (item.ItemDetail.Duration == null || item.ItemDetail.Duration < 0)
                 {
                     logger.LogError("XpBoostTree item must have a positive Duration");
                     throw new ArgumentException("XpBoostTree item must have a positive Duration");
