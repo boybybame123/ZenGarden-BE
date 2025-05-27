@@ -19,11 +19,7 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             .GreaterThan(0).WithMessage("Task type ID must be greater than 0.");
 
         RuleFor(x => x.StartDate)
-            .NotEmpty().WithMessage("Start date is required.")
-            .Must(startDate => startDate > DateTime.UtcNow)
-            .WithMessage(x =>
-                $"Start date cannot be in the past. Current time: {DateTime.UtcNow:u}, Start date: {x.StartDate:u}");
-
+            .NotEmpty().WithMessage("Start date is required.");
         RuleFor(x => x.EndDate)
             .NotEmpty().WithMessage("End date is required.")
             .GreaterThan(x => x.StartDate)
