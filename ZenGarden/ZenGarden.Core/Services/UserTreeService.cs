@@ -18,7 +18,8 @@ public class UserTreeService(
     IBagItemRepository bagItemRepository,
     IMapper mapper,
     IUserRepository userRepository,
-    IFocusMethodService focusMethodService)
+    IFocusMethodService focusMethodService,
+    IUseItemService useItemService)
     : IUserTreeService
 {
     public async Task<List<UserTreeDto>> GetAllUserTreesAsync()
@@ -257,8 +258,9 @@ public class UserTreeService(
         var itemBagId = await bagRepository.GetItemByHavingUse(userId, ItemType.XpProtect);
         var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
 
-        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1))
+        if (itemBag != null && itemBag.UpdatedAt.Date == lastUpdatedDate.AddDays(1)&& itemBag.Quantity<=1)
         {
+            await useItemService.UseItemXpProtect(userId);
             daysSinceLastCheckIn -= 1;
             Console.WriteLine($"[TreeHealth] XP Protect item used, effective days reduced to {daysSinceLastCheckIn}.");
         }
@@ -381,5 +383,40 @@ public class UserTreeService(
         {
             dto.XpToNextLevel = 0;
         }
+    }
+    public async Task SetTreeWitheredAsync(int userTreeId)
+    {
+        var userTree = await userTreeRepository.GetByIdAsync(userTreeId)
+                       ?? throw new KeyNotFoundException("UserTree not found");
+
+        if (userTree.TreeStatus == TreeStatus.Withered)
+            return;
+       
+        var ownerId = userTree.TreeOwnerId ?? -1;
+        if (ownerId == -1)
+        {
+            userTree.TreeStatus = TreeStatus.Withered;
+        }
+        else
+        {
+            // Check if the user has an XpProtect item and use it if available
+            var itemBagId = await bagRepository.GetItemByHavingUse(ownerId, ItemType.XpProtect);
+            if (itemBagId != -1)
+            {
+                var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
+                if (itemBag != null&& itemBag.Quantity <=1)
+                {
+                    await useItemService.UseItemXpProtect(ownerId);
+                    // Mark the item as used (for example, update its UpdatedAt or status;
+                    await unitOfWork.CommitAsync();
+                    return;
+                }
+            }
+            userTree.TreeStatus = TreeStatus.Withered;
+        }
+        
+        userTree.UpdatedAt = DateTime.UtcNow;
+        userTreeRepository.Update(userTree);
+        await unitOfWork.CommitAsync();
     }
 }

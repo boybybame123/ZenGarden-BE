@@ -7,4 +7,5 @@ public interface IUseItemService
     Task Cancel(int bagItemId);
     Task<string> GiftRandomItemFromListAsync(int userId);
     Task<(int? ItemId, long RemainingSeconds)> GetXpBoostTreeRemainingTimeAsync(int userId);
+    Task UseItemXpProtect(int userId);
 }
