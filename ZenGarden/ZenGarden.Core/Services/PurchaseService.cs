@@ -20,7 +20,7 @@ public class PurchaseService(
 {
     public async Task<string> PurchaseItem(int userId, int itemId)
     {
-        await unitOfWork.BeginTransactionAsync();
+     
 
         try
         {

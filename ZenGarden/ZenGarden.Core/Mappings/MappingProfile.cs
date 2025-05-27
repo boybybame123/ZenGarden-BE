@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using ZenGarden.Domain.DTOs;
+using ZenGarden.Domain.DTOs.FocusTracking;
 using ZenGarden.Domain.Entities;
 using ZenGarden.Shared.Helpers;
 
@@ -78,6 +79,15 @@ public class MappingProfile : Profile
 
         CreateMap<Users, UserResponseDto>()
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role != null ? src.Role.RoleName : string.Empty));
+
+        CreateMap<FocusActivity, FocusActivityDto>().ReverseMap();
+        CreateMap<CreateFocusActivityDto, FocusActivity>();
+
+        CreateMap<FocusTracking, FocusTrackingDto>()
+            .ForMember(dest => dest.Activities, opt => opt.MapFrom(src => src.FocusActivities));
+        CreateMap<CreateFocusTrackingDto, FocusTracking>();
+        CreateMap<UpdateFocusTrackingDto, FocusTracking>()
+            .ForAllMembers(opts => opts.Condition((_, _, srcMember) => srcMember != null));
     }
 
     private static double CalculateXpToNextLevel(UserTree userTree)
