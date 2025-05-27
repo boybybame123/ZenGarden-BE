@@ -376,10 +376,6 @@ public class TaskService(
 
     private async Task ValidateTaskStartConditions(Tasks task, DateTime now, int userId, int taskId)
     {
-        if (now < task.StartDate)
-            throw new InvalidOperationException(
-                $"Task has not started yet. Current time: {now:u}, StartDate: {task.StartDate:u}");
-
         if (now > task.EndDate)
             throw new InvalidOperationException(
                 $"Task deadline has passed. Current time: {now:u}, EndDate: {task.EndDate:u}");
