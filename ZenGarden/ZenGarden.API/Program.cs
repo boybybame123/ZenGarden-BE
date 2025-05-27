@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerUI;
 using ZenGarden.API.Filters;
 using ZenGarden.API.Middleware;
 using ZenGarden.API.Services;
@@ -262,10 +261,6 @@ public static partial class Program
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "ZenGarden API", Version = "v1" });
             c.OperationFilter<SwaggerFileOperationFilter>();
 
-            // Cache the Swagger document
-            c.CustomSchemaIds(type => type.FullName);
-            c.DocumentFilter<SwaggerDocumentFilter>();
-
             c.MapType<FileObject>(() => new OpenApiSchema
             {
                 Type = "object",
@@ -375,19 +370,9 @@ public static partial class Program
         app.MapHub<NotificationHub>("/hubs/notification");
         app.MapHub<TaskHub>("/hubs/task");
 
-        // Swagger with caching
-        app.UseSwagger(c =>
-        {
-            c.SerializeAsV2 = true;
-            c.RouteTemplate = "swagger/{documentName}/swagger.json";
-        });
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "ZenGarden API v1");
-            c.RoutePrefix = "swagger";
-            c.DocExpansion(DocExpansion.None);
-            c.DefaultModelsExpandDepth(-1);
-        });
+        // Swagger
+        app.UseSwagger();
+        app.UseSwaggerUI();
 
         // Health checks
         app.MapHealthChecks("/health", new HealthCheckOptions
