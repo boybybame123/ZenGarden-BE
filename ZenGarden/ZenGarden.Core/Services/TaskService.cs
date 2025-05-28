@@ -528,7 +528,7 @@ public class TaskService(
                 if (task.UserTree != null) userTreeRepository.Update(task.UserTree);
 
                 await unitOfWork.CommitAsync();
-                await transaction.CommitAsync();
+               
 
                 await UpdateChallengeProgress(task);
 
