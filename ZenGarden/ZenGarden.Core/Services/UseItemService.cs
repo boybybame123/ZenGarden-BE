@@ -45,12 +45,6 @@ public class UseItemService(
                 logger.LogWarning($"Bag not found for item {itembagId}");
                 throw new KeyNotFoundException("Bag not found");
             }
-            if (bag == null)
-            {
-                logger.LogWarning($"Bag not found for item {itembagId}");
-                throw new KeyNotFoundException("Bag not found");
-            }
-
             if (bag.UserId != userId)
             {
                 logger.LogWarning($"User {userId} not authorized to use item {itembagId}");
