@@ -367,9 +367,12 @@ public static partial class Program
 
         // Endpoints
         app.MapControllers();
-        app.MapHub<NotificationHub>("/hubs/notification");
-        app.MapHub<TaskHub>("/hubs/task");
 
+
+        app.MapHub<NotificationHub>("/hubs/notification")
+              .RequireCors("AllowAll");
+        app.MapHub<TaskHub>("/hubs/task")
+             .RequireCors("AllowAll");
         // Swagger
         app.UseSwagger();
         app.UseSwaggerUI();
