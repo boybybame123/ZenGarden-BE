@@ -39,7 +39,12 @@ public class UseItemService(
                 throw new InvalidOperationException("Item quantity is zero");
             }
 
-            var bag = await bagRepository.GetByIdAsync(item.BagId);
+            var bag = await bagRepository.GetAsync(b => b.BagId == item.BagId, trackChanges: false);
+            if (bag == null)
+            {
+                logger.LogWarning($"Bag not found for item {itembagId}");
+                throw new KeyNotFoundException("Bag not found");
+            }
             if (bag == null)
             {
                 logger.LogWarning($"Bag not found for item {itembagId}");
