@@ -348,10 +348,10 @@ public static partial class Program
         app.UseMiddleware<ValidationMiddleware>();
         app.UseMiddleware<PerformanceMiddleware>();
 
+
+        app.UseRouting();
         // CORS & Routing
         app.UseCors("AllowAll");
-        app.UseRouting();
-
         // Authentication & Authorization
         app.UseAuthentication();
         app.UseAuthorization();
