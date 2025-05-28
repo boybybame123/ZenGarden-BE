@@ -43,7 +43,6 @@ public class BagRepository(ZenGardenContext context, IRedisService redisService)
 
     public async Task UnequipZeroQuantityItems(int userId)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
             var affectedRows = await _context.BagItem
@@ -53,14 +52,15 @@ public class BagRepository(ZenGardenContext context, IRedisService redisService)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(bi => bi.isEquipped, false));
 
-            if (affectedRows == 0) throw new InvalidOperationException("No items found to unequip.");
+            if (affectedRows == 0)
+                throw new InvalidOperationException("No items found to unequip.");
 
-            await transaction.CommitAsync();
+            // Ensure changes are persisted
+            await _context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            throw new Exception($"Failed to unequipped items for user {userId}.", ex);
+            throw new Exception($"Failed to unequip items for user {userId}.", ex);
         }
     }
 
