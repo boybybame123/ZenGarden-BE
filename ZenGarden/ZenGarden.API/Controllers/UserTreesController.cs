@@ -79,4 +79,13 @@ public class UserTreesController(IUserTreeService userTreeService) : ControllerB
         await userTreeService.UpdateSpecificTreeHealthAsync(userTreeId);
         return Ok("Update executed.");
     }
+
+    [HttpPost("check-and-set-max-level/{userTreeId:int}")]
+    public async Task<IActionResult> CheckAndSetMaxLevel(int userTreeId)
+    {
+        var userTree = await userTreeService.GetUserTreeByIdAsync(userTreeId);
+
+        await userTreeService.CheckAndSetMaxLevelAsync(userTree);
+        return Ok(userTree);
+    }
 }

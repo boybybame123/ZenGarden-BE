@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Text;
@@ -46,40 +47,72 @@ public partial class FocusMethodService : IFocusMethodService
     {
         try
         {
-            var prompt = $"""
-                          Given the task details:
+            const int maxRetries = 3;
+            var currentRetry = 0;
+            var prompt = GeneratePrompt(dto);
+            string[]? lines = null;
+            string[]? parts = null;
+            bool isValidMethod = false;
+            int minWorkDuration = 0;
+            int maxWorkDuration = 0;
+            int minBreak = 0;
+            int maxBreak = 0;
+            int defaultWorkDuration = 0;
+            int defaultBreak = 0;
 
-                          - **Task Name**: {dto.TaskName}
-                          - **Task Description**: {dto.TaskDescription}
-                          - **Total Duration**: {dto.TotalDuration} minutes
-                          - **Start Date**: {dto.StartDate:yyyy-MM-dd}
-                          - **End Date**: {dto.EndDate:yyyy-MM-dd}
+            while (currentRetry < maxRetries && !isValidMethod)
+            {
+                var aiResponse = await CallOpenAiApi(prompt);
+                if (string.IsNullOrWhiteSpace(aiResponse))
+                    throw new InvalidOperationException("OpenAI returned an empty response.");
 
-                          Suggest a focus method that strictly fits within the total duration.
-                          You must ensure that the sum of the default work duration and default break duration does not exceed the task's total duration.
-                          Prefer short, flexible methods for very short tasks.
+                lines = aiResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
+                
+                if (parts.Length != 9)
+                {
+                    currentRetry++;
+                    continue;
+                }
 
-                          Return the result in EXACTLY the following format:
+                minWorkDuration = ExtractNumber(parts[1], 15);
+                maxWorkDuration = ExtractNumber(parts[2], 120);
+                minBreak = ExtractNumber(parts[3], 5);
+                maxBreak = ExtractNumber(parts[4], 30);
+                defaultWorkDuration = ExtractNumber(parts[5], 45);
+                defaultBreak = ExtractNumber(parts[6], 10);
 
-                          1. First line: Name - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description
+                // Validate durations
+                if (dto.TotalDuration.HasValue)
+                {
+                    var minTotal = minWorkDuration + minBreak;
+                    var maxTotal = maxWorkDuration + maxBreak;
 
-                          2. Second part (on new lines): Reason: [explain in 1-3 sentences why this method is suitable for this task]
+                    if (minTotal <= dto.TotalDuration.Value && maxTotal <= dto.TotalDuration.Value)
+                    {
+                        isValidMethod = true;
+                    }
+                    else
+                    {
+                        currentRetry++;
+                    }
+                }
+                else
+                {
+                    isValidMethod = true;
+                }
+            }
 
-                          Example:
-                          Quick Burst - 10 - 25 - 1 - 5 - 20 - 5 - 1.1 - A short method for tight schedules with a small break.
-                          Reason: This method fits well within the 30-minute window, allowing one full cycle of focused work and recovery.
-                          """;
-            var aiResponse = await CallOpenAiApi(prompt);
-            if (string.IsNullOrWhiteSpace(aiResponse))
-                throw new InvalidOperationException("OpenAI returned an empty response.");
-
-            var lines = aiResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (!isValidMethod)
+            {
+                throw new InvalidOperationException(
+                    $"Could not find a suitable focus method for the given total duration of {dto.TotalDuration} minutes after {maxRetries} attempts. Please increase the total duration or choose a different focus method manually.");
+            }
 
             string reason;
-            if (lines.Length > 1)
+            if (lines is { Length: > 1 })
             {
                 var remainingLines = lines.Skip(1).ToArray();
-
                 var firstReasonLine = remainingLines[0].Trim();
                 if (firstReasonLine.StartsWith("Reason:", StringComparison.OrdinalIgnoreCase))
                     remainingLines[0] = firstReasonLine.Substring("Reason:".Length).Trim();
@@ -94,21 +127,18 @@ public partial class FocusMethodService : IFocusMethodService
             if (string.IsNullOrWhiteSpace(reason))
                 reason = $"This method is recommended by AI based on the characteristics of the task '{dto.TaskName}'.";
 
+            var suggestedMethodName = parts?[0];
 
-            var parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
-            if (parts.Length != 9)
-                throw new InvalidDataException($"Invalid method format: {lines[0]}");
-
-            var suggestedMethodName = parts[0];
+            Debug.Assert(parts != null, nameof(parts) + " != null");
             var newMethod = new FocusMethod
             {
                 Name = suggestedMethodName,
-                MinDuration = ExtractNumber(parts[1], 15),
-                MaxDuration = ExtractNumber(parts[2], 120),
-                MinBreak = ExtractNumber(parts[3], 5),
-                MaxBreak = ExtractNumber(parts[4], 30),
-                DefaultDuration = ExtractNumber(parts[5], 45),
-                DefaultBreak = ExtractNumber(parts[6], 10),
+                MinDuration = minWorkDuration,
+                MaxDuration = maxWorkDuration,
+                MinBreak = minBreak,
+                MaxBreak = maxBreak,
+                DefaultDuration = defaultWorkDuration,
+                DefaultBreak = defaultBreak,
                 XpMultiplier = ExtractDouble(parts[7], 1.0),
                 Description = parts.Length > 8 ? parts[8] : "",
                 IsActive = true
@@ -122,17 +152,27 @@ public partial class FocusMethodService : IFocusMethodService
             }
             else
             {
-                existing.MinDuration = newMethod.MinDuration;
-                existing.MaxDuration = newMethod.MaxDuration;
-                existing.MinBreak = newMethod.MinBreak;
-                existing.MaxBreak = newMethod.MaxBreak;
-                existing.DefaultDuration = newMethod.DefaultDuration;
-                existing.DefaultBreak = newMethod.DefaultBreak;
-                existing.XpMultiplier = newMethod.XpMultiplier;
-                existing.Description = newMethod.Description;
-                existing.IsActive = true;
+                if (existing.MinDuration != newMethod.MinDuration ||
+                    existing.MaxDuration != newMethod.MaxDuration ||
+                    existing.MinBreak != newMethod.MinBreak ||
+                    existing.MaxBreak != newMethod.MaxBreak ||
+                    existing.DefaultDuration != newMethod.DefaultDuration ||
+                    existing.DefaultBreak != newMethod.DefaultBreak)
+                {
+                    existing.MinDuration = newMethod.MinDuration;
+                    existing.MaxDuration = newMethod.MaxDuration;
+                    existing.MinBreak = newMethod.MinBreak;
+                    existing.MaxBreak = newMethod.MaxBreak;
+                    existing.DefaultDuration = newMethod.DefaultDuration;
+                    existing.DefaultBreak = newMethod.DefaultBreak;
+                    existing.XpMultiplier = newMethod.XpMultiplier;
+                    existing.Description = newMethod.Description;
+                    existing.IsActive = true;
+                    existing.UpdatedAt = DateTime.UtcNow;
 
-                _focusMethodRepository.Update(existing);
+                    _focusMethodRepository.Update(existing);
+                    await _unitOfWork.CommitAsync();
+                }
             }
 
             await _unitOfWork.CommitAsync();
@@ -163,6 +203,11 @@ public partial class FocusMethodService : IFocusMethodService
         }
     }
 
+    public async Task<List<FocusMethodDto>> GetAllFocusMethodsAsync()
+    {
+        var focusMethods = await _focusMethodRepository.GetAllAsync();
+        return _mapper.Map<List<FocusMethodDto>>(focusMethods);
+    }
 
     private async Task<string?> CallOpenAiApi(string prompt)
     {
@@ -267,6 +312,34 @@ public partial class FocusMethodService : IFocusMethodService
         return double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var result)
             ? result
             : defaultValue;
+    }
+
+    private static string GeneratePrompt(SuggestFocusMethodDto dto)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Based on the following task details, suggest a focus method that fits within the total duration:");
+        sb.AppendLine($"Task Name: {dto.TaskName}");
+        sb.AppendLine($"Task Description: {dto.TaskDescription}");
+        sb.AppendLine($"Total Duration: {dto.TotalDuration} minutes");
+        sb.AppendLine($"Start Date: {dto.StartDate}");
+        sb.AppendLine($"End Date: {dto.EndDate}");
+        sb.AppendLine();
+        sb.AppendLine("Please suggest a focus method in the following format:");
+        sb.AppendLine("MethodName-MinWorkDuration-MaxWorkDuration-MinBreak-MaxBreak-DefaultWorkDuration-DefaultBreak-XpMultiplier-Description");
+        sb.AppendLine();
+        sb.AppendLine("Important constraints:");
+        sb.AppendLine($"1. The sum of work duration and break time (both minimum and maximum) MUST be less than or equal to {dto.TotalDuration} minutes");
+        sb.AppendLine("2. MinWorkDuration should be less than MaxWorkDuration");
+        sb.AppendLine("3. MinBreak should be less than MaxBreak");
+        sb.AppendLine("4. DefaultWorkDuration should be between MinWorkDuration and MaxWorkDuration");
+        sb.AppendLine("5. DefaultBreak should be between MinBreak and MaxBreak");
+        sb.AppendLine();
+        sb.AppendLine("Example format:");
+        sb.AppendLine("Pomodoro Classic-25-25-5-5-25-5-1.0-A traditional method with fixed intervals");
+        sb.AppendLine();
+        sb.AppendLine("After the method suggestion, provide a detailed reason for your choice, starting with 'Reason:'");
+
+        return sb.ToString();
     }
 
     [GeneratedRegex(@"\d+")]

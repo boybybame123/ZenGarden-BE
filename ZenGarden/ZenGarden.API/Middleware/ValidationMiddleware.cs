@@ -7,6 +7,12 @@ public class ValidationMiddleware(RequestDelegate next)
 {
     public async Task Invoke(HttpContext context)
     {
+        if (context.Request.Path.StartsWithSegments("/hubs"))
+        {
+            await next(context);
+            return;
+        }
+
         if (context.Request.ContentType != null &&
             context.Request.ContentType.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase))
         {

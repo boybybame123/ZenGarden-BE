@@ -46,6 +46,10 @@ public class ChallengeService(
 
         var challenge = mapper.Map<Challenge>(dto);
         challenge.CreatedAt = DateTime.UtcNow;
+        
+        // Set status based on user role
+        challenge.Status = user.Role?.RoleId is 1 or 3 ? ChallengeStatus.Active : ChallengeStatus.Pending;
+        
         await challengeRepository.CreateAsync(challenge);
         await unitOfWork.CommitAsync();
 
@@ -60,6 +64,25 @@ public class ChallengeService(
         await userChallengeRepository.CreateAsync(userChallenge);
         await unitOfWork.CommitAsync();
         await ClearChallengeCachesAsync(challenge.ChallengeId);
+
+        // Send notification based on status
+        if (challenge.Status == ChallengeStatus.Active)
+        {
+            await notificationService.PushNotificationAsync(
+                userId,
+                "Challenge Created",
+                $"Your challenge '{challenge.ChallengeName}' has been created and activated. Join now!"
+            );
+        }
+        else
+        {
+            await notificationService.PushNotificationAsync(
+                userId,
+                "Challenge Created",
+                $"Your challenge '{challenge.ChallengeName}' has been created and is pending approval."
+            );
+        }
+
         return mapper.Map<ChallengeDto>(challenge);
     }
 
@@ -93,59 +116,57 @@ public class ChallengeService(
         if (challenge.MaxParticipants.HasValue && participantCount >= challenge.MaxParticipants.Value)
             throw new InvalidOperationException("Challenge has reached the maximum number of participants.");
 
-
         await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
 
-        await using var transaction = await unitOfWork.BeginTransactionAsync();
-        try
-        {
-            await userChallengeRepository.CreateAsync(new UserChallenge
+        var strategy = unitOfWork.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(
+            new object(),
+            async (_, _, _) =>
             {
-                ChallengeId = challengeId,
-                UserId = userId,
-                ChallengeRole = UserChallengeRole.Participant,
-                Status = UserChallengeStatus.InProgress,
-                JoinedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-
-            var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
-            var taskList = new List<Tasks>();
-
-            foreach (var ct in challengeTasks)
-            {
-                if (ct.Tasks == null) continue;
-                var newTask = new Tasks
+                await userChallengeRepository.CreateAsync(new UserChallenge
                 {
-                    CloneFromTaskId = ct.TaskId,
-                    TaskTypeId = ct.Tasks.TaskTypeId,
-                    UserTreeId = joinChallengeDto.UserTreeId,
-                    TaskName = ct.Tasks.TaskName,
-                    TaskDescription = ct.Tasks.TaskDescription,
-                    TotalDuration = ct.Tasks.TotalDuration,
-                    StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
-                    EndDate = ct.Tasks.EndDate ?? challenge.EndDate,
-                    WorkDuration = ct.Tasks.WorkDuration,
-                    BreakTime = ct.Tasks.BreakTime,
-                    FocusMethodId = ct.Tasks.FocusMethodId
-                };
+                    ChallengeId = challengeId,
+                    UserId = userId,
+                    ChallengeRole = UserChallengeRole.Participant,
+                    Status = UserChallengeStatus.InProgress,
+                    JoinedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
 
-                taskList.Add(newTask);
-            }
+                var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
+                var taskList = new List<Tasks>();
 
-            if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
+                foreach (var ct in challengeTasks)
+                {
+                    if (ct.Tasks == null) continue;
+                    var newTask = new Tasks
+                    {
+                        CloneFromTaskId = ct.TaskId,
+                        TaskTypeId = ct.Tasks.TaskTypeId,
+                        UserTreeId = joinChallengeDto.UserTreeId,
+                        TaskName = ct.Tasks.TaskName,
+                        TaskDescription = ct.Tasks.TaskDescription,
+                        TotalDuration = ct.Tasks.TotalDuration,
+                        StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
+                        EndDate = ct.Tasks.EndDate ?? challenge.EndDate,
+                        WorkDuration = ct.Tasks.WorkDuration,
+                        BreakTime = ct.Tasks.BreakTime,
+                        FocusMethodId = ct.Tasks.FocusMethodId
+                    };
 
-            await unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
-            await NotifyOngoingChallenges();
-            await ClearChallengeCachesAsync(challengeId);
-            return true;
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+                    taskList.Add(newTask);
+                }
+
+                if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
+
+                await unitOfWork.CommitAsync();
+                await NotifyOngoingChallenges();
+                await ClearChallengeCachesAsync(challengeId);
+                return true;
+            },
+            null,
+            CancellationToken.None
+        );
     }
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
@@ -377,25 +398,57 @@ public class ChallengeService(
         if (user == null)
             throw new KeyNotFoundException("User not found.");
 
-        if (user.Role is { RoleId: 2 })
-            throw new InvalidOperationException("Only users with role 1 or 3 change challenge status.");
-
         var challenge = await challengeRepository.GetByIdAsync(challengeId);
         if (challenge == null)
             throw new KeyNotFoundException("Challenge not found.");
 
-        if (challenge.Status != ChallengeStatus.Pending) return "Challenge status is already Active or Canceled";
-        await ClearChallengeCachesAsync(challengeId);
-        challenge.Status = ChallengeStatus.Active;
-        challenge.UpdatedAt = DateTime.UtcNow;
+        if (challenge.Status != ChallengeStatus.Pending) 
+            return "Challenge status is already Active or Canceled";
 
-        challengeRepository.Update(challenge);
+        // Get the challenge creator's user challenge record
+        var creatorChallenge = await userChallengeRepository.GetUserChallengeAsync(userId, challengeId);
+        if (creatorChallenge == null)
+            throw new KeyNotFoundException("Challenge creator not found.");
+
+        // Check if there are any participants
+        var participants = await userChallengeRepository.GetAllUsersInChallengeAsync(challengeId);
+        var hasParticipants = participants.Any(p => p.ChallengeRole == UserChallengeRole.Participant);
+
+        // If creator is role 2 (player), only role 1 and 3 can approve
+        if (creatorChallenge.User?.Role?.RoleId == 2)
+        {
+            if (user.Role?.RoleId is not (1 or 3))
+                throw new UnauthorizedAccessException("Only administrators can approve challenges created by players.");
+
+            // If challenge is rejected, refund the creator
+            if (!hasParticipants)
+            {
+                var creatorWallet = await walletRepository.GetByUserIdAsync(creatorChallenge.UserId);
+                if (creatorWallet != null)
+                {
+                    creatorWallet.Balance += challenge.Reward;
+                    creatorWallet.UpdatedAt = DateTime.UtcNow;
+                    walletRepository.Update(creatorWallet);
+                }
+
+                challenge.Status = ChallengeStatus.Canceled;
+                challenge.UpdatedAt = DateTime.UtcNow;
+                challengeRepository.Update(challenge);
+
+                await notificationService.PushNotificationAsync(
+                    creatorChallenge.UserId,
+                    "Challenge Rejected",
+                    $"Your challenge '{challenge.ChallengeName}' has been rejected and the reward has been refunded to your wallet."
+                );
+
+                await unitOfWork.CommitAsync();
+                await ClearChallengeCachesAsync(challengeId);
+                return "Challenge has been rejected and reward refunded";
+            }
+        }
 
         await unitOfWork.CommitAsync();
-        await notificationService.PushNotificationToAllAsync(
-            "Challenge Status Changed",
-            $"The challenge '{challenge.ChallengeName}' has been activated. Join now!"
-        );
+        await ClearChallengeCachesAsync(challengeId);
         return "Challenge status changed to Active";
     }
 
