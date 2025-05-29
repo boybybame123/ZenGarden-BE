@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Text;
@@ -46,56 +47,72 @@ public partial class FocusMethodService : IFocusMethodService
     {
         try
         {
-            var prompt = $"""
-                          Given the task details:
+            const int maxRetries = 3;
+            var currentRetry = 0;
+            var prompt = GeneratePrompt(dto);
+            string[]? lines = null;
+            string[]? parts = null;
+            bool isValidMethod = false;
+            int minWorkDuration = 0;
+            int maxWorkDuration = 0;
+            int minBreak = 0;
+            int maxBreak = 0;
+            int defaultWorkDuration = 0;
+            int defaultBreak = 0;
 
-                          - **Task Name**: {dto.TaskName}
-                          - **Task Description**: {dto.TaskDescription}
-                          - **Total Duration**: {dto.TotalDuration} minutes
-                          - **Start Date**: {dto.StartDate:yyyy-MM-dd}
-                          - **End Date**: {dto.EndDate:yyyy-MM-dd}
+            while (currentRetry < maxRetries && !isValidMethod)
+            {
+                var aiResponse = await CallOpenAiApi(prompt);
+                if (string.IsNullOrWhiteSpace(aiResponse))
+                    throw new InvalidOperationException("OpenAI returned an empty response.");
 
-                          Suggest the most suitable focus method from these options based on the task characteristics:
+                lines = aiResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
+                
+                if (parts.Length != 9)
+                {
+                    currentRetry++;
+                    continue;
+                }
 
-                          1. Pomodoro Classic (25-25-5-5): Best for standard tasks requiring moderate focus
-                          2. Flow Time (60-120-10-20): Best for deep work and complex tasks
-                          3. Quick Burst (10-20-2-5): Best for short, simple tasks
-                          4. Deep Work (90-180-20-45): Best for complex, creative tasks
-                          5. Sprint Method (30-60-5-15): Best for project sprints and deadlines
-                          6. Power Hour (45-75-5-15): Best for high-intensity tasks
-                          7. Micro Focus (5-15-1-3): Best for very short tasks
-                          8. Marathon Mode (120-240-15-30): Best for long-duration tasks
-                          9. Study Block (40-60-5-15): Best for learning and studying
-                          10. Creative Flow (45-90-10-25): Best for creative work
+                minWorkDuration = ExtractNumber(parts[1], 15);
+                maxWorkDuration = ExtractNumber(parts[2], 120);
+                minBreak = ExtractNumber(parts[3], 5);
+                maxBreak = ExtractNumber(parts[4], 30);
+                defaultWorkDuration = ExtractNumber(parts[5], 45);
+                defaultBreak = ExtractNumber(parts[6], 10);
 
-                          Consider these factors when suggesting:
-                          - Task complexity and type
-                          - Total duration available
-                          - Need for breaks
-                          - Level of focus required
-                          - Whether it's creative or analytical work
+                // Validate durations
+                if (dto.TotalDuration.HasValue)
+                {
+                    var minTotal = minWorkDuration + minBreak;
+                    var maxTotal = maxWorkDuration + maxBreak;
 
-                          Return the result in EXACTLY the following format:
+                    if (minTotal <= dto.TotalDuration.Value && maxTotal <= dto.TotalDuration.Value)
+                    {
+                        isValidMethod = true;
+                    }
+                    else
+                    {
+                        currentRetry++;
+                    }
+                }
+                else
+                {
+                    isValidMethod = true;
+                }
+            }
 
-                          1. First line: Name - MinWorkDuration - MaxWorkDuration - MinBreak - MaxBreak - DefaultWorkDuration - DefaultBreak - XpMultiplier - Description
-
-                          2. Second part (on new lines): Reason: [explain in 1-3 sentences why this method is suitable for this task]
-
-                          Example:
-                          Quick Burst - 10 - 25 - 1 - 5 - 20 - 5 - 1.1 - A short method for tight schedules with a small break.
-                          Reason: This method fits well within the 30-minute window, allowing one full cycle of focused work and recovery.
-                          """;
-            var aiResponse = await CallOpenAiApi(prompt);
-            if (string.IsNullOrWhiteSpace(aiResponse))
-                throw new InvalidOperationException("OpenAI returned an empty response.");
-
-            var lines = aiResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (!isValidMethod)
+            {
+                throw new InvalidOperationException(
+                    $"Could not find a suitable focus method for the given total duration of {dto.TotalDuration} minutes after {maxRetries} attempts. Please increase the total duration or choose a different focus method manually.");
+            }
 
             string reason;
-            if (lines.Length > 1)
+            if (lines is { Length: > 1 })
             {
                 var remainingLines = lines.Skip(1).ToArray();
-
                 var firstReasonLine = remainingLines[0].Trim();
                 if (firstReasonLine.StartsWith("Reason:", StringComparison.OrdinalIgnoreCase))
                     remainingLines[0] = firstReasonLine.Substring("Reason:".Length).Trim();
@@ -110,21 +127,18 @@ public partial class FocusMethodService : IFocusMethodService
             if (string.IsNullOrWhiteSpace(reason))
                 reason = $"This method is recommended by AI based on the characteristics of the task '{dto.TaskName}'.";
 
+            var suggestedMethodName = parts?[0];
 
-            var parts = lines[0].Split('-', 9).Select(p => p.Trim()).ToArray();
-            if (parts.Length != 9)
-                throw new InvalidDataException($"Invalid method format: {lines[0]}");
-
-            var suggestedMethodName = parts[0];
+            Debug.Assert(parts != null, nameof(parts) + " != null");
             var newMethod = new FocusMethod
             {
                 Name = suggestedMethodName,
-                MinDuration = ExtractNumber(parts[1], 15),
-                MaxDuration = ExtractNumber(parts[2], 120),
-                MinBreak = ExtractNumber(parts[3], 5),
-                MaxBreak = ExtractNumber(parts[4], 30),
-                DefaultDuration = ExtractNumber(parts[5], 45),
-                DefaultBreak = ExtractNumber(parts[6], 10),
+                MinDuration = minWorkDuration,
+                MaxDuration = maxWorkDuration,
+                MinBreak = minBreak,
+                MaxBreak = maxBreak,
+                DefaultDuration = defaultWorkDuration,
+                DefaultBreak = defaultBreak,
                 XpMultiplier = ExtractDouble(parts[7], 1.0),
                 Description = parts.Length > 8 ? parts[8] : "",
                 IsActive = true
@@ -298,6 +312,34 @@ public partial class FocusMethodService : IFocusMethodService
         return double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var result)
             ? result
             : defaultValue;
+    }
+
+    private static string GeneratePrompt(SuggestFocusMethodDto dto)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Based on the following task details, suggest a focus method that fits within the total duration:");
+        sb.AppendLine($"Task Name: {dto.TaskName}");
+        sb.AppendLine($"Task Description: {dto.TaskDescription}");
+        sb.AppendLine($"Total Duration: {dto.TotalDuration} minutes");
+        sb.AppendLine($"Start Date: {dto.StartDate}");
+        sb.AppendLine($"End Date: {dto.EndDate}");
+        sb.AppendLine();
+        sb.AppendLine("Please suggest a focus method in the following format:");
+        sb.AppendLine("MethodName-MinWorkDuration-MaxWorkDuration-MinBreak-MaxBreak-DefaultWorkDuration-DefaultBreak-XpMultiplier-Description");
+        sb.AppendLine();
+        sb.AppendLine("Important constraints:");
+        sb.AppendLine($"1. The sum of work duration and break time (both minimum and maximum) MUST be less than or equal to {dto.TotalDuration} minutes");
+        sb.AppendLine("2. MinWorkDuration should be less than MaxWorkDuration");
+        sb.AppendLine("3. MinBreak should be less than MaxBreak");
+        sb.AppendLine("4. DefaultWorkDuration should be between MinWorkDuration and MaxWorkDuration");
+        sb.AppendLine("5. DefaultBreak should be between MinBreak and MaxBreak");
+        sb.AppendLine();
+        sb.AppendLine("Example format:");
+        sb.AppendLine("Pomodoro Classic-25-25-5-5-25-5-1.0-A traditional method with fixed intervals");
+        sb.AppendLine();
+        sb.AppendLine("After the method suggestion, provide a detailed reason for your choice, starting with 'Reason:'");
+
+        return sb.ToString();
     }
 
     [GeneratedRegex(@"\d+")]

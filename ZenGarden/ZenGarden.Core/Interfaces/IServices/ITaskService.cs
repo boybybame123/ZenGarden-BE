@@ -9,6 +9,7 @@ public interface ITaskService
     Task<List<TaskDto>> GetAllTaskAsync();
     Task<TaskDto?> GetTaskByIdAsync(int taskId);
     Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto);
+    Task<List<TaskDto>> CreateMultipleTasksWithSuggestedMethodAsync(List<CreateTaskDto> dtos);
     Task UpdateTaskAsync(int taskId, UpdateTaskDto updateTaskDto);
     Task DeleteTaskAsync(int taskId);
     Task StartTaskAsync(int taskId, int userId);

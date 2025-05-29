@@ -131,94 +131,109 @@ public class TaskService(
 
     public async Task<TaskDto> CreateTaskWithSuggestedMethodAsync(CreateTaskDto dto)
     {
-        // Validate using FluentValidation
-        var validationResult = await createTaskValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
+        var result = await CreateMultipleTasksWithSuggestedMethodAsync([dto]);
+        return result.First();
+    }
 
-        // Validate task type exists
-        if (await taskTypeRepository.GetByIdAsync(dto.TaskTypeId) == null)
-            throw new KeyNotFoundException($"TaskType with ID {dto.TaskTypeId} not found.");
-        
-        // Validate a user tree if provided
-        if (dto.UserTreeId.HasValue)
+    public async Task<List<TaskDto>> CreateMultipleTasksWithSuggestedMethodAsync(List<CreateTaskDto> dtos)
+    {
+        var createdTasks = new List<TaskDto>();
+        var tasksToCreate = new List<Tasks>();
+        var nextPriorities = new Dictionary<int, int>();
+
+        // Validate all tasks first
+        foreach (var dto in dtos)
         {
-            var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value)
-                           ?? throw new KeyNotFoundException($"UserTree with ID {dto.UserTreeId.Value} not found.");
+            var validationResult = await createTaskValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+                throw new ValidationException(validationResult.Errors);
 
-            if (userTree.UserId == null)
-                throw new InvalidOperationException("UserId is null in UserTree.");
-        }
+            if (await taskTypeRepository.GetByIdAsync(dto.TaskTypeId) == null)
+                throw new KeyNotFoundException($"TaskType with ID {dto.TaskTypeId} not found.");
 
-        // Validate focus method settings if provided
-        if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
-        {
-            var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value)
-                         ?? throw new KeyNotFoundException($"FocusMethod with ID {dto.FocusMethodId} not found.");
-
-            if (dto.WorkDuration.HasValue && method is { MinDuration: not null, MaxDuration: not null })
+            if (dto.UserTreeId.HasValue)
             {
-                if (dto.WorkDuration.Value < method.MinDuration.Value)
-                    throw new InvalidOperationException(
-                        $"Work duration must be at least {method.MinDuration.Value} minutes for the selected focus method.");
-                if (dto.WorkDuration.Value > method.MaxDuration.Value)
-                    throw new InvalidOperationException(
-                        $"Work duration cannot exceed {method.MaxDuration.Value} minutes for the selected focus method.");
+                var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value)
+                               ?? throw new KeyNotFoundException($"UserTree with ID {dto.UserTreeId.Value} not found.");
+
+                if (userTree.UserId == null)
+                    throw new InvalidOperationException("UserId is null in UserTree.");
+
+                // Get next priority for this tree if needed
+                if (dto.TaskTypeId is 2 or 3 && !nextPriorities.ContainsKey(dto.UserTreeId.Value))
+                {
+                    nextPriorities[dto.UserTreeId.Value] = await taskRepository.GetNextPriorityForTreeAsync(dto.UserTreeId.Value);
+                }
             }
 
-            if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
+            if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
             {
-                if (dto.BreakTime.Value < method.MinBreak.Value)
-                    throw new InvalidOperationException(
-                        $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method.");
-                if (dto.BreakTime.Value > method.MaxBreak.Value)
-                    throw new InvalidOperationException(
-                        $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method.");
+                var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value)
+                             ?? throw new KeyNotFoundException($"FocusMethod with ID {dto.FocusMethodId} not found.");
+
+                if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
+                {
+                    if (dto.BreakTime.Value < method.MinBreak.Value)
+                        throw new InvalidOperationException(
+                            $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method.");
+                    if (dto.BreakTime.Value > method.MaxBreak.Value)
+                        throw new InvalidOperationException(
+                            $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method.");
+                }
             }
         }
 
-        var selectedMethod = await GetFocusMethodAsync(dto);
-
-        await xpConfigService.EnsureXpConfigExists(
-            selectedMethod.FocusMethodId,
-            dto.TaskTypeId,
-            dto.TotalDuration ?? 30
-        );
-
-        int? nextPriority = null;
-        if (dto.TaskTypeId is 2 or 3 && dto.UserTreeId != null)
-            nextPriority = await taskRepository.GetNextPriorityForTreeAsync(dto.UserTreeId.Value);
-
-        var newTask = new Tasks
+        // Create all tasks
+        foreach (var dto in dtos)
         {
-            TaskTypeId = dto.TaskTypeId,
-            UserTreeId = dto.UserTreeId,
-            FocusMethodId = selectedMethod.FocusMethodId,
-            TaskName = dto.TaskName,
-            TaskDescription = dto.TaskDescription,
-            TotalDuration = dto.TotalDuration,
-            WorkDuration = dto.WorkDuration ?? selectedMethod.DefaultDuration ?? 25,
-            BreakTime = dto.BreakTime ?? selectedMethod.DefaultBreak ?? 5,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            Priority = nextPriority ?? 0,
-            CreatedAt = DateTime.UtcNow,
-            Status = TasksStatus.NotStarted,
-            IsSuggested = dto.WorkDuration == null && dto.BreakTime == null
-        };
+            var selectedMethod = await GetFocusMethodAsync(dto);
 
-        await taskRepository.CreateAsync(newTask);
+            await xpConfigService.EnsureXpConfigExists(
+                selectedMethod.FocusMethodId,
+                dto.TaskTypeId,
+                dto.TotalDuration ?? 30
+            );
+
+            var newTask = new Tasks
+            {
+                TaskTypeId = dto.TaskTypeId,
+                UserTreeId = dto.UserTreeId,
+                FocusMethodId = selectedMethod.FocusMethodId,
+                TaskName = dto.TaskName,
+                TaskDescription = dto.TaskDescription,
+                TotalDuration = dto.TotalDuration,
+                WorkDuration = dto.WorkDuration ?? selectedMethod.DefaultDuration ?? 25,
+                BreakTime = dto.BreakTime ?? selectedMethod.DefaultBreak ?? 5,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                Priority = dto is { UserTreeId: not null, TaskTypeId: 2 or 3 } ? nextPriorities[dto.UserTreeId.Value]++ : 0,
+                CreatedAt = DateTime.UtcNow,
+                Status = TasksStatus.NotStarted,
+                IsSuggested = dto.WorkDuration == null && dto.BreakTime == null
+            };
+
+            tasksToCreate.Add(newTask);
+        }
+
+        // Save all tasks at once
+        await taskRepository.AddRangeAsync(tasksToCreate);
         await unitOfWork.CommitAsync();
-        await InvalidateTaskCaches(newTask);
 
-        var taskDto = mapper.Map<TaskDto>(newTask);
-        var remainingSeconds = CalculateRemainingSeconds(newTask);
-        taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
-        var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
-        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+        // Create DTOs and notify
+        foreach (var task in tasksToCreate)
+        {
+            await InvalidateTaskCaches(task);
+            var taskDto = mapper.Map<TaskDto>(task);
+            var remainingSeconds = CalculateRemainingSeconds(task);
+            taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+            var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
+            taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
 
-        await taskRealtimeService.NotifyTaskCreated(taskDto);
-        return taskDto;
+            await taskRealtimeService.NotifyTaskCreated(taskDto);
+            createdTasks.Add(taskDto);
+        }
+
+        return createdTasks;
     }
 
     public async Task UpdateTaskAsync(int taskId, UpdateTaskDto updateTaskDto)
