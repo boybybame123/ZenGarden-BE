@@ -151,7 +151,8 @@ public class TaskService(
             if (await taskTypeRepository.GetByIdAsync(dto.TaskTypeId) == null)
                 throw new KeyNotFoundException($"TaskType with ID {dto.TaskTypeId} not found.");
 
-            if (dto.UserTreeId.HasValue)
+            // Skip UserTreeId and UserId validation for challenge tasks (TaskTypeId = 4)
+            if (dto.UserTreeId.HasValue && dto.TaskTypeId != 4)
             {
                 var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value)
                                ?? throw new KeyNotFoundException($"UserTree with ID {dto.UserTreeId.Value} not found.");
