@@ -22,6 +22,7 @@ public class TradeHistoryRepository(ZenGardenContext context, IRedisService redi
     public async Task<List<TradeHistory>> GetAllTradeHistoriesbyStatutsAsync(int status)
     {
         return await _context.TradeHistory
+            .AsNoTracking()
             .Where(th => th.Status == (TradeStatus)status)
             .ToListAsync();
     }
