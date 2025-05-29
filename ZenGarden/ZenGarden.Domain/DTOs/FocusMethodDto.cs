@@ -4,6 +4,7 @@ public class FocusMethodDto
 {
     public int FocusMethodId { get; set; }
     public string? FocusMethodName { get; set; }
+    public string? Description { get; set; }
     public int? MinDuration { get; set; }
     public int? MaxDuration { get; set; }
     public int? MinBreak { get; set; }

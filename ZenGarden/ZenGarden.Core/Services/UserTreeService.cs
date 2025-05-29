@@ -18,7 +18,6 @@ public class UserTreeService(
     IBagItemRepository bagItemRepository,
     IMapper mapper,
     IUserRepository userRepository,
-    IFocusMethodService focusMethodService,
     IUseItemService useItemService)
     : IUserTreeService
 {
@@ -66,84 +65,6 @@ public class UserTreeService(
         };
 
         await userTreeRepository.CreateAsync(newUserTree);
-        await unitOfWork.CommitAsync();
-
-        // Create default tasks with AI-suggested focus methods
-        var defaultTasks = new List<Tasks>
-        {
-            new()
-            {
-                TaskName = "Water your tree",
-                TaskDescription = "Take care of your tree by watering it regularly",
-                TaskTypeId = 1, // Daily task
-                UserTreeId = newUserTree.UserTreeId,
-                TotalDuration = 5,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
-                CreatedAt = DateTime.UtcNow,
-                Status = TasksStatus.NotStarted
-            },
-            new()
-            {
-                TaskName = "Prune your tree",
-                TaskDescription = "Keep your tree healthy by pruning it",
-                TaskTypeId = 1, 
-                UserTreeId = newUserTree.UserTreeId,
-                TotalDuration = 15,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddDays(7),
-                CreatedAt = DateTime.UtcNow,
-                Status = TasksStatus.NotStarted
-            },
-            new()
-            {
-                TaskName = "Fertilize your tree",
-                TaskDescription = "Give your tree nutrients to help it grow",
-                TaskTypeId = 1,
-                UserTreeId = newUserTree.UserTreeId,
-                TotalDuration = 30,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddMonths(1),
-                CreatedAt = DateTime.UtcNow,
-                Status = TasksStatus.NotStarted
-            },
-            new()
-            {
-                TaskName = "Check tree health",
-                TaskDescription = "Inspect your tree for any signs of disease or pests",
-                TaskTypeId = 1,
-                UserTreeId = newUserTree.UserTreeId,
-                TotalDuration = 10,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1),
-                CreatedAt = DateTime.UtcNow,
-                Status = TasksStatus.NotStarted
-            }
-        };
-
-        // Get AI suggestions for each task
-        foreach (var task in defaultTasks)
-        {
-            var suggestedMethod = await focusMethodService.SuggestFocusMethodAsync(new SuggestFocusMethodDto
-            {
-                TaskName = task.TaskName,
-                TaskDescription = task.TaskDescription,
-                TotalDuration = task.TotalDuration,
-                StartDate = task.StartDate ?? DateTime.UtcNow,
-                EndDate = task.EndDate ?? DateTime.UtcNow.AddDays(1)
-            });
-
-            task.FocusMethodId = suggestedMethod.FocusMethodId;
-            task.WorkDuration = suggestedMethod.DefaultDuration ?? 25;
-            task.BreakTime = suggestedMethod.DefaultBreak ?? 5;
-            task.IsSuggested = true;
-        }
-
-        // Create tasks one by one
-        foreach (var task in defaultTasks)
-        {
-            await taskRepository.CreateAsync(task);
-        }
         await unitOfWork.CommitAsync();
     }
 
@@ -345,15 +266,12 @@ public class UserTreeService(
         return userTreeDto;
     }
 
-    public async Task<UserTreeDto> GetUserTreeByIdAsync(int userTreeId)
+    public async Task<UserTree> GetUserTreeByIdAsync(int userTreeId)
     {
         var userTree = await userTreeRepository.GetByIdAsync(userTreeId)
                        ?? throw new KeyNotFoundException("UserTree not found");
-
-        var userTreeDto = mapper.Map<UserTreeDto>(userTree);
-
-
-        return userTreeDto;
+        
+        return userTree;
     }
 
 

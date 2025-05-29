@@ -28,6 +28,7 @@ public class FocusMethodRepository(ZenGardenContext context, IRedisService redis
             {
                 FocusMethodId = f.FocusMethodId,
                 FocusMethodName = f.Name,
+                Description = f.Description,
                 MinDuration = f.MinDuration,
                 MaxDuration = f.MaxDuration,
                 MinBreak = f.MinBreak,
@@ -50,7 +51,7 @@ public class FocusMethodRepository(ZenGardenContext context, IRedisService redis
             .FirstOrDefault();
     }
 
-    public async Task<FocusMethod?> GetByNameAsync(string name)
+    public async Task<FocusMethod?> GetByNameAsync(string? name)
     {
         return await _context.FocusMethod
             .Where(fm => fm.Name == name)

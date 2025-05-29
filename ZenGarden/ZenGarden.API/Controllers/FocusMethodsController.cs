@@ -8,6 +8,13 @@ namespace ZenGarden.API.Controllers;
 [ApiController]
 public class FocusMethodsController(IFocusMethodService focusMethodService) : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetAllFocusMethods()
+    {
+        var focusMethods = await focusMethodService.GetAllFocusMethodsAsync();
+        return Ok(focusMethods);
+    }
+
     [HttpPost("suggest")]
     public async Task<IActionResult> SuggestFocusMethod([FromBody] SuggestFocusMethodDto dto)
     {

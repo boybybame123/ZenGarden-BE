@@ -70,6 +70,13 @@ public class TaskController(
         return Ok(createdTask);
     }
 
+    [HttpPost("create-multiple-tasks")]
+    public async Task<IActionResult> CreateMultipleTasks([FromBody] List<CreateTaskDto> dtos)
+    {
+        var createdTasks = await _taskService.CreateMultipleTasksWithSuggestedMethodAsync(dtos);
+        return Ok(createdTasks);
+    }
+
     [Authorize]
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
@@ -190,5 +197,12 @@ public class TaskController(
 
         await _taskService.UpdateTaskResultAsync(taskId, updateTaskResultDto);
         return Ok(new { Message = "Task result updated successfully" });
+    }
+
+    [HttpGet("{taskId:int}/xp")]
+    public async Task<ActionResult<TaskXpInfoDto>> GetTaskXpInfo(int taskId)
+    { 
+        var xpInfo = await _taskService.GetTaskXpInfoAsync(taskId); 
+        return Ok(xpInfo);
     }
 }

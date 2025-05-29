@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Infrastructure.Persistence;
@@ -14,6 +15,11 @@ public class UnitOfWork(ZenGardenContext context, IRedisService redisService) : 
     public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : class
     {
         return new GenericRepository<TEntity>(_context, _redisService);
+    }
+
+    public IExecutionStrategy CreateExecutionStrategy()
+    {
+        return _context.Database.CreateExecutionStrategy();
     }
 
     public async Task<IDbContextTransaction> BeginTransactionAsync()
