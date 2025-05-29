@@ -41,6 +41,12 @@ public class TaskRealtimeService
         await _hubContext.Clients.Group($"Task_{task.TaskId}")
             .SendAsync("TaskCreated", task);
 
+        // Skip User ID validation for challenge tasks (TaskTypeId = 4)
+        if (task.TaskTypeName == "Challenge")
+        {
+            return;
+        }
+
         var userid = await _taskRepository.GetUserIdByTaskIdAsync(task.TaskId)
                    ?? throw new InvalidOperationException($"User ID not found for Task ID {task.TaskId}");
         var userTreeId = await _taskRepository.GetUserTreeIdByTaskIdAsync(task.TaskId);

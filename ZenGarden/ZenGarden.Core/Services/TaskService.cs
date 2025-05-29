@@ -140,8 +140,8 @@ public class TaskService(
          if (await taskTypeRepository.GetByIdAsync(dto.TaskTypeId) == null)
              throw new KeyNotFoundException($"TaskType with ID {dto.TaskTypeId} not found.");
 
-         // Validate a user tree if provided
-         if (dto.UserTreeId.HasValue)
+         // Skip UserTreeId and UserId validation for challenge tasks (TaskTypeId = 4)
+         if (dto.UserTreeId.HasValue && dto.TaskTypeId != 4)
          {
              var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value)
                             ?? throw new KeyNotFoundException($"UserTree with ID {dto.UserTreeId.Value} not found.");
@@ -211,7 +211,9 @@ public class TaskService(
          await unitOfWork.CommitAsync();
          await InvalidateTaskCaches(newTask);
 
-         var taskDto = mapper.Map<TaskDto>(newTask);
+         // Load task with TaskType for mapping
+         var taskWithDetails = await taskRepository.GetTaskWithDetailsAsync(newTask.TaskId);
+         var taskDto = mapper.Map<TaskDto>(taskWithDetails);
          var remainingSeconds = CalculateRemainingSeconds(newTask);
          taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
          var accumulatedSeconds = (int)((newTask.AccumulatedTime ?? 0) * 60);
@@ -238,7 +240,7 @@ public class TaskService(
                 throw new KeyNotFoundException($"TaskType with ID {dto.TaskTypeId} not found.");
 
             // Skip UserTreeId and UserId validation for challenge tasks (TaskTypeId = 4)
-            if (dto.UserTreeId.HasValue)
+            if (dto.UserTreeId.HasValue && dto.TaskTypeId != 4)
             {
                 var userTree = await userTreeRepository.GetByIdAsync(dto.UserTreeId.Value)
                                ?? throw new KeyNotFoundException($"UserTree with ID {dto.UserTreeId.Value} not found.");
