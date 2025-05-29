@@ -198,4 +198,11 @@ public class TaskController(
         await _taskService.UpdateTaskResultAsync(taskId, updateTaskResultDto);
         return Ok(new { Message = "Task result updated successfully" });
     }
+
+    [HttpGet("{taskId:int}/xp")]
+    public async Task<ActionResult<TaskXpInfoDto>> GetTaskXpInfo(int taskId)
+    { 
+        var xpInfo = await _taskService.GetTaskXpInfoAsync(taskId); 
+        return Ok(xpInfo);
+    }
 }

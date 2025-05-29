@@ -1217,4 +1217,114 @@ public class TaskService(
         var taskDto = mapper.Map<TaskDto>(existingTask);
         await taskRealtimeService.NotifyTaskUpdated(taskDto);
     }
+
+    public async Task<TaskXpInfoDto> GetTaskXpInfoAsync(int taskId)
+    {
+        var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
+
+        var xpLog = await treeXpLogRepository.GetTreeXpLogByTaskIdAsync(taskId);
+        if (xpLog.Count == 0)
+        {
+            // If no XP log exists, calculate potential XP
+            var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId ?? 0)
+                          ?? throw new KeyNotFoundException("XP configuration not found for this task.");
+
+            var baseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
+            baseXp = CalculateXpWithPriorityDecay(task, baseXp);
+
+            // Calculate potential bonus XP from equipped items
+            double? bonusXp = null;
+            string? bonusItemName = null;
+            if (task.UserTree?.UserId == null)
+                return new TaskXpInfoDto
+                {
+                    TaskId = task.TaskId,
+                    TaskName = task.TaskName,
+                    BaseXp = baseXp,
+                    BonusXp = bonusXp,
+                    BonusItemName = bonusItemName,
+                    TotalXp = bonusXp.HasValue ? baseXp + bonusXp.Value : baseXp,
+                    ActivityType = ActivityType.TaskXp,
+                    CreatedAt = DateTime.UtcNow
+                };
+            try
+            {
+                var equippedItem = await bagRepository.GetEquippedItemAsync(task.UserTree.UserId.Value, ItemType.XpBoostTree);
+                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
+                    effectPercent > 0)
+                {
+                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+                    bonusItemName = equippedItem.Item.Name;
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore item errors when calculating potential XP
+            }
+
+            return new TaskXpInfoDto
+            {
+                TaskId = task.TaskId,
+                TaskName = task.TaskName,
+                BaseXp = baseXp,
+                BonusXp = bonusXp,
+                BonusItemName = bonusItemName,
+                TotalXp = bonusXp.HasValue ? baseXp + bonusXp.Value : baseXp,
+                ActivityType = ActivityType.TaskXp,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        // If task is completed, get the actual XP earned
+        var latestXpLog = xpLog.OrderByDescending(x => x.CreatedAt).First();
+        var actualBaseXp = latestXpLog.XpAmount;
+
+        // Try to get bonus XP information from the task completion
+        double? actualBonusXp = null;
+        string? actualBonusItemName = null;
+        if (task.UserTree?.UserId == null)
+            return new TaskXpInfoDto
+            {
+                TaskId = task.TaskId,
+                TaskName = task.TaskName,
+                BaseXp = actualBaseXp,
+                BonusXp = actualBonusXp,
+                BonusItemName = actualBonusItemName,
+                TotalXp = actualBonusXp.HasValue ? actualBaseXp + actualBonusXp.Value : actualBaseXp,
+                ActivityType = latestXpLog.ActivityType,
+                CreatedAt = latestXpLog.CreatedAt
+            };
+        {
+            try
+            {
+                var itemId = await useItemService.UseItemXpBoostTree(task.UserTree.UserId.Value);
+                var activeItem = await itemRepository.GetByIdAsync(itemId);
+                if (activeItem?.ItemDetail?.Effect != null && 
+                    double.TryParse(activeItem.ItemDetail.Effect, out var effectPercent) && 
+                    effectPercent > 0)
+                {
+                    actualBonusXp = Math.Round(actualBaseXp * (effectPercent / 100), 2);
+                    actualBonusItemName = activeItem.Name;
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore item errors when getting actual XP
+            }
+        }
+
+        return new TaskXpInfoDto
+        {
+            TaskId = task.TaskId,
+            TaskName = task.TaskName,
+            BaseXp = actualBaseXp,
+            BonusXp = actualBonusXp,
+            BonusItemName = actualBonusItemName,
+            TotalXp = actualBonusXp.HasValue ? actualBaseXp + actualBonusXp.Value : actualBaseXp,
+            ActivityType = latestXpLog.ActivityType,
+            CreatedAt = latestXpLog.CreatedAt
+        };
+    }
 }
