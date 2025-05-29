@@ -85,16 +85,32 @@ public partial class FocusMethodService : IFocusMethodService
                 // Validate durations
                 if (dto.TotalDuration.HasValue)
                 {
-                    var minTotal = minWorkDuration + minBreak;
-                    var maxTotal = maxWorkDuration + maxBreak;
-
-                    if (minTotal <= dto.TotalDuration.Value && maxTotal <= dto.TotalDuration.Value)
+                    // For short tasks (30 minutes or less), be more flexible with the validation
+                    if (dto.TotalDuration.Value <= 30)
                     {
-                        isValidMethod = true;
+                        // Allow the default work duration to be equal to total duration
+                        if (defaultWorkDuration <= dto.TotalDuration.Value)
+                        {
+                            isValidMethod = true;
+                        }
+                        else
+                        {
+                            currentRetry++;
+                        }
                     }
                     else
                     {
-                        currentRetry++;
+                        var minTotal = minWorkDuration + minBreak;
+                        var maxTotal = maxWorkDuration + maxBreak;
+
+                        if (minTotal <= dto.TotalDuration.Value && maxTotal <= dto.TotalDuration.Value)
+                        {
+                            isValidMethod = true;
+                        }
+                        else
+                        {
+                            currentRetry++;
+                        }
                     }
                 }
                 else
@@ -105,6 +121,35 @@ public partial class FocusMethodService : IFocusMethodService
 
             if (!isValidMethod)
             {
+                // For short tasks, provide a default focus method
+                if (dto.TotalDuration.HasValue && dto.TotalDuration.Value <= 30)
+                {
+                    var defaultMethod = new FocusMethod
+                    {
+                        Name = "Quick Focus",
+                        MinDuration = 15,
+                        MaxDuration = 30,
+                        MinBreak = 5,
+                        MaxBreak = 10,
+                        DefaultDuration = dto.TotalDuration.Value,
+                        DefaultBreak = 5,
+                        XpMultiplier = 1.0,
+                        Description = "A flexible focus method for short tasks",
+                        IsActive = true
+                    };
+
+                    var existingQuickFocus = await _focusMethodRepository.GetByNameAsync(defaultMethod.Name);
+                    if (existingQuickFocus == null)
+                    {
+                        await _focusMethodRepository.CreateAsync(defaultMethod);
+                        await _unitOfWork.CommitAsync();
+                    }
+
+                    var quickFocusResultDto = _mapper.Map<FocusMethodWithReasonDto>(existingQuickFocus ?? defaultMethod);
+                    quickFocusResultDto.Reason = "Using default Quick Focus method for short tasks.";
+                    return quickFocusResultDto;
+                }
+
                 throw new InvalidOperationException(
                     $"Could not find a suitable focus method for the given total duration of {dto.TotalDuration} minutes after {maxRetries} attempts. Please increase the total duration or choose a different focus method manually.");
             }
