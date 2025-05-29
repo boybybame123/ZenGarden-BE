@@ -484,7 +484,6 @@ public class TaskService(
 
         if (task.FocusMethodId != null)
         {
-            
             try
             {
                 var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
@@ -499,24 +498,15 @@ public class TaskService(
                 string? activeBoostItemName = null;
                 double effectPercentage = 0;
 
-                // Try to use XP Boost Tree item
-                try 
+                var itemId = await useItemService.UseItemXpBoostTree(userid);
+                var activeItem = await itemRepository.GetByIdAsync(itemId);
+                if (activeItem?.ItemDetail?.Effect != null && 
+                    double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
+                    parsedEffect > 0)
                 {
-                    var itemId = await useItemService.UseItemXpBoostTree(userid);
-                    var activeItem = await itemRepository.GetByIdAsync(itemId);
-                    if (activeItem?.ItemDetail?.Effect != null && 
-                        double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
-                        parsedEffect > 0)
-                    {
-                        effectPercentage = parsedEffect;
-                        activeBoostItemName = activeItem.Name;
-                        bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Log the error but continue with base XP if XP Boost Tree usage fails
-                    throw new InvalidOperationException($"Failed to use XP Boost Tree item: {ex.Message}", ex);
+                    effectPercentage = parsedEffect;
+                    activeBoostItemName = activeItem.Name;
+                    bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
                 }
                 
                 xpEarned = Math.Round(baseXp + bonusXp, 2);
