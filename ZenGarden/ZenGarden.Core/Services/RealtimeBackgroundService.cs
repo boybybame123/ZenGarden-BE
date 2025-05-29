@@ -18,7 +18,7 @@ public class RealtimeBackgroundService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var delayTime = configuration.GetValue("RealtimeSettings:DelayInSeconds", 10) * 1000;
-        var transactionCheckInterval = TimeSpan.FromMinutes(1); // 15-minute interval
+        var transactionCheckInterval = TimeSpan.FromMinutes(15); // 15-minute interval
         var lastTransactionCheck = DateTime.UtcNow;
 
         logger.LogInformation("RealtimeBackgroundService started at {Time}", DateTime.UtcNow);
