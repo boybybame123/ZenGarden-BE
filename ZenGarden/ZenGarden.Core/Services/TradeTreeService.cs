@@ -232,7 +232,10 @@ public class TradeTreeService(
             if (trade.TreeAid.HasValue)
             {
                 var userTree = await userTreeRepository.GetByIdAsync(trade.TreeAid.Value);
-                finalTreeId = userTree?.FinalTreeId;
+                if (userTree != null)
+                {
+                    finalTreeId = userTree.FinalTreeId;
+                }
             }
 
             tradeHistoryDtos.Add(new TradeHistoryDto
@@ -248,7 +251,7 @@ public class TradeTreeService(
                 CreatedAt = trade.CreatedAt,
                 UpdatedAt = trade.UpdatedAt,
                 Status = trade.Status,
-                FinalTreeId = finalTreeId // Populate FinalTreeId
+                FinalTreeId = finalTreeId
             });
         }
 
