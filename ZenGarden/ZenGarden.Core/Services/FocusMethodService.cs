@@ -163,6 +163,11 @@ public partial class FocusMethodService : IFocusMethodService
         }
     }
 
+    public async Task<List<FocusMethodDto>> GetAllFocusMethodsAsync()
+    {
+        var focusMethods = await _focusMethodRepository.GetAllAsync();
+        return _mapper.Map<List<FocusMethodDto>>(focusMethods);
+    }
 
     private async Task<string?> CallOpenAiApi(string prompt)
     {
