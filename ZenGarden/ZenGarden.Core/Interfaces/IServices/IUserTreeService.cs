@@ -17,5 +17,5 @@ public interface IUserTreeService
     Task<List<UserTree>> ListUserTreeByOwner(int ownerId);
     Task<List<UserTree>> GetAllUserTreesHavingMaxLevelByOwnerIdAsync(int userId);
     Task<List<UserTreeDto>> GetActiveUserTreeAsync(int userId);
-    Task<UserTreeDto> GetUserTreeByIdAsync(int userTreeId);
+    Task<UserTree> GetUserTreeByIdAsync(int userTreeId);
 }

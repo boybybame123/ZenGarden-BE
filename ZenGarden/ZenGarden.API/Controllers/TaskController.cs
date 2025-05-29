@@ -70,6 +70,13 @@ public class TaskController(
         return Ok(createdTask);
     }
 
+    [HttpPost("create-multiple-tasks")]
+    public async Task<IActionResult> CreateMultipleTasks([FromBody] List<CreateTaskDto> dtos)
+    {
+        var createdTasks = await _taskService.CreateMultipleTasksWithSuggestedMethodAsync(dtos);
+        return Ok(createdTasks);
+    }
+
     [Authorize]
     [HttpPost("start-task/{taskId:int}")]
     public async Task<IActionResult> StartTask(int taskId)
