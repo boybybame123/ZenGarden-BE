@@ -607,7 +607,7 @@ public class TaskService(
     public async Task<double> CalculateTaskXpAsync(int taskId)
     {
         var task = await taskRepository.GetTaskWithDetailsAsync(taskId)
-                   ?? throw new KeyNotFoundException("Task not found.");
+                   ?? throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
         if (task.FocusMethodId == null)
             throw new InvalidOperationException("Task does not have an assigned FocusMethod.");
@@ -618,7 +618,9 @@ public class TaskService(
         if (xpConfig.BaseXp <= 0)
             throw new InvalidOperationException("Invalid BaseXp value in XP configuration.");
 
-        return xpConfig.BaseXp * xpConfig.XpMultiplier;
+        var baseXp = xpConfig.BaseXp * xpConfig.XpMultiplier;
+        baseXp = CalculateXpWithPriorityDecay(task, baseXp);
+        return Math.Round(baseXp, 2);
     }
 
     public async Task PauseTaskAsync(int taskId)
@@ -1230,38 +1232,40 @@ public class TaskService(
             var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId ?? 0)
                           ?? throw new KeyNotFoundException("XP configuration not found for this task.");
 
-            var baseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
-            baseXp = CalculateXpWithPriorityDecay(task, baseXp);
+            var originalBaseXp = Math.Round(xpConfig.BaseXp * xpConfig.XpMultiplier, 2);
+            var baseXp = CalculateXpWithPriorityDecay(task, originalBaseXp);
+
+            // Calculate priority effect
+            double? priorityMultiplier = null;
+            string? priorityEffect = null;
+            if (task.TaskTypeId is 2 or 3 && task.Priority.HasValue)
+            {
+                const double decayFactor = 0.1;
+                var priorityIndex = task.Priority.Value - 1;
+                priorityMultiplier = Math.Exp(-decayFactor * priorityIndex);
+                priorityEffect = $"Priority {task.Priority} reduces XP by {Math.Round((1 - priorityMultiplier.Value) * 100, 1)}%";
+            }
 
             // Calculate potential bonus XP from equipped items
             double? bonusXp = null;
             string? bonusItemName = null;
-            if (task.UserTree?.UserId == null)
-                return new TaskXpInfoDto
-                {
-                    TaskId = task.TaskId,
-                    TaskName = task.TaskName,
-                    BaseXp = baseXp,
-                    BonusXp = bonusXp,
-                    BonusItemName = bonusItemName,
-                    TotalXp = bonusXp.HasValue ? baseXp + bonusXp.Value : baseXp,
-                    ActivityType = ActivityType.TaskXp,
-                    CreatedAt = DateTime.UtcNow
-                };
-            try
+            if (task.UserTree?.UserId != null)
             {
-                var equippedItem = await bagRepository.GetEquippedItemAsync(task.UserTree.UserId.Value, ItemType.XpBoostTree);
-                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
-                    effectPercent > 0)
+                try
                 {
-                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
-                    bonusItemName = equippedItem.Item.Name;
+                    var equippedItem = await bagRepository.GetEquippedItemAsync(task.UserTree.UserId.Value, ItemType.XpBoostTree);
+                    if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                        double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
+                        effectPercent > 0)
+                    {
+                        bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+                        bonusItemName = equippedItem.Item.Name;
+                    }
                 }
-            }
-            catch (Exception)
-            {
-                // Ignore item errors when calculating potential XP
+                catch (Exception)
+                {
+                    // Ignore item errors when calculating potential XP
+                }
             }
 
             return new TaskXpInfoDto
@@ -1273,7 +1277,11 @@ public class TaskService(
                 BonusItemName = bonusItemName,
                 TotalXp = bonusXp.HasValue ? baseXp + bonusXp.Value : baseXp,
                 ActivityType = ActivityType.TaskXp,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Priority = task.Priority,
+                PriorityMultiplier = priorityMultiplier,
+                OriginalBaseXp = originalBaseXp,
+                PriorityEffect = priorityEffect
             };
         }
 
@@ -1281,32 +1289,31 @@ public class TaskService(
         var latestXpLog = xpLog.OrderByDescending(x => x.CreatedAt).First();
         var actualBaseXp = latestXpLog.XpAmount;
 
+        // Calculate priority effect for completed task
+        double? actualPriorityMultiplier = null;
+        string? actualPriorityEffect = null;
+        if (task.TaskTypeId is 2 or 3 && task.Priority.HasValue)
+        {
+            const double decayFactor = 0.1;
+            var priorityIndex = task.Priority.Value - 1;
+            actualPriorityMultiplier = Math.Exp(-decayFactor * priorityIndex);
+            actualPriorityEffect = $"Priority {task.Priority} reduced XP by {Math.Round((1 - actualPriorityMultiplier.Value) * 100, 1)}%";
+        }
+
         // Try to get bonus XP information from the task completion
         double? actualBonusXp = null;
         string? actualBonusItemName = null;
-        if (task.UserTree?.UserId == null)
-            return new TaskXpInfoDto
-            {
-                TaskId = task.TaskId,
-                TaskName = task.TaskName,
-                BaseXp = actualBaseXp,
-                BonusXp = actualBonusXp,
-                BonusItemName = actualBonusItemName,
-                TotalXp = actualBonusXp.HasValue ? actualBaseXp + actualBonusXp.Value : actualBaseXp,
-                ActivityType = latestXpLog.ActivityType,
-                CreatedAt = latestXpLog.CreatedAt
-            };
+        if (task.UserTree?.UserId != null)
         {
             try
             {
-                var itemId = await useItemService.UseItemXpBoostTree(task.UserTree.UserId.Value);
-                var activeItem = await itemRepository.GetByIdAsync(itemId);
-                if (activeItem?.ItemDetail?.Effect != null && 
-                    double.TryParse(activeItem.ItemDetail.Effect, out var effectPercent) && 
+                var equippedItem = await bagRepository.GetEquippedItemAsync(task.UserTree.UserId.Value, ItemType.XpBoostTree);
+                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
                     effectPercent > 0)
                 {
                     actualBonusXp = Math.Round(actualBaseXp * (effectPercent / 100), 2);
-                    actualBonusItemName = activeItem.Name;
+                    actualBonusItemName = equippedItem.Item.Name;
                 }
             }
             catch (Exception)
@@ -1324,7 +1331,11 @@ public class TaskService(
             BonusItemName = actualBonusItemName,
             TotalXp = actualBonusXp.HasValue ? actualBaseXp + actualBonusXp.Value : actualBaseXp,
             ActivityType = latestXpLog.ActivityType,
-            CreatedAt = latestXpLog.CreatedAt
+            CreatedAt = latestXpLog.CreatedAt,
+            Priority = task.Priority,
+            PriorityMultiplier = actualPriorityMultiplier,
+            OriginalBaseXp = actualBaseXp / (actualPriorityMultiplier ?? 1),
+            PriorityEffect = actualPriorityEffect
         };
     }
 }

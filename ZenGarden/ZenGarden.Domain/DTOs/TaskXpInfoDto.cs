@@ -12,4 +12,10 @@ public class TaskXpInfoDto
     public double TotalXp { get; set; }
     public ActivityType ActivityType { get; set; }
     public DateTime CreatedAt { get; set; }
+    
+    // Priority-related XP information
+    public int? Priority { get; set; }
+    public double? PriorityMultiplier { get; set; }
+    public double? OriginalBaseXp { get; set; }
+    public string? PriorityEffect { get; set; }
 } 
