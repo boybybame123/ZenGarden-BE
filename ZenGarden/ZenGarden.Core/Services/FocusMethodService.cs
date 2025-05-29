@@ -55,9 +55,25 @@ public partial class FocusMethodService : IFocusMethodService
                           - **Start Date**: {dto.StartDate:yyyy-MM-dd}
                           - **End Date**: {dto.EndDate:yyyy-MM-dd}
 
-                          Suggest a focus method that strictly fits within the total duration.
-                          You must ensure that the sum of the default work duration and default break duration does not exceed the task's total duration.
-                          Prefer short, flexible methods for very short tasks.
+                          Suggest the most suitable focus method from these options based on the task characteristics:
+
+                          1. Pomodoro Classic (25-25-5-5): Best for standard tasks requiring moderate focus
+                          2. Flow Time (60-120-10-20): Best for deep work and complex tasks
+                          3. Quick Burst (10-20-2-5): Best for short, simple tasks
+                          4. Deep Work (90-180-20-45): Best for complex, creative tasks
+                          5. Sprint Method (30-60-5-15): Best for project sprints and deadlines
+                          6. Power Hour (45-75-5-15): Best for high-intensity tasks
+                          7. Micro Focus (5-15-1-3): Best for very short tasks
+                          8. Marathon Mode (120-240-15-30): Best for long-duration tasks
+                          9. Study Block (40-60-5-15): Best for learning and studying
+                          10. Creative Flow (45-90-10-25): Best for creative work
+
+                          Consider these factors when suggesting:
+                          - Task complexity and type
+                          - Total duration available
+                          - Need for breaks
+                          - Level of focus required
+                          - Whether it's creative or analytical work
 
                           Return the result in EXACTLY the following format:
 
@@ -122,17 +138,27 @@ public partial class FocusMethodService : IFocusMethodService
             }
             else
             {
-                existing.MinDuration = newMethod.MinDuration;
-                existing.MaxDuration = newMethod.MaxDuration;
-                existing.MinBreak = newMethod.MinBreak;
-                existing.MaxBreak = newMethod.MaxBreak;
-                existing.DefaultDuration = newMethod.DefaultDuration;
-                existing.DefaultBreak = newMethod.DefaultBreak;
-                existing.XpMultiplier = newMethod.XpMultiplier;
-                existing.Description = newMethod.Description;
-                existing.IsActive = true;
+                if (existing.MinDuration != newMethod.MinDuration ||
+                    existing.MaxDuration != newMethod.MaxDuration ||
+                    existing.MinBreak != newMethod.MinBreak ||
+                    existing.MaxBreak != newMethod.MaxBreak ||
+                    existing.DefaultDuration != newMethod.DefaultDuration ||
+                    existing.DefaultBreak != newMethod.DefaultBreak)
+                {
+                    existing.MinDuration = newMethod.MinDuration;
+                    existing.MaxDuration = newMethod.MaxDuration;
+                    existing.MinBreak = newMethod.MinBreak;
+                    existing.MaxBreak = newMethod.MaxBreak;
+                    existing.DefaultDuration = newMethod.DefaultDuration;
+                    existing.DefaultBreak = newMethod.DefaultBreak;
+                    existing.XpMultiplier = newMethod.XpMultiplier;
+                    existing.Description = newMethod.Description;
+                    existing.IsActive = true;
+                    existing.UpdatedAt = DateTime.UtcNow;
 
-                _focusMethodRepository.Update(existing);
+                    _focusMethodRepository.Update(existing);
+                    await _unitOfWork.CommitAsync();
+                }
             }
 
             await _unitOfWork.CommitAsync();

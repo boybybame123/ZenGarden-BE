@@ -116,59 +116,57 @@ public class ChallengeService(
         if (challenge.MaxParticipants.HasValue && participantCount >= challenge.MaxParticipants.Value)
             throw new InvalidOperationException("Challenge has reached the maximum number of participants.");
 
-
         await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
 
-        await using var transaction = await unitOfWork.BeginTransactionAsync();
-        try
-        {
-            await userChallengeRepository.CreateAsync(new UserChallenge
+        var strategy = unitOfWork.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(
+            new object(),
+            async (_, _, _) =>
             {
-                ChallengeId = challengeId,
-                UserId = userId,
-                ChallengeRole = UserChallengeRole.Participant,
-                Status = UserChallengeStatus.InProgress,
-                JoinedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-
-            var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
-            var taskList = new List<Tasks>();
-
-            foreach (var ct in challengeTasks)
-            {
-                if (ct.Tasks == null) continue;
-                var newTask = new Tasks
+                await userChallengeRepository.CreateAsync(new UserChallenge
                 {
-                    CloneFromTaskId = ct.TaskId,
-                    TaskTypeId = ct.Tasks.TaskTypeId,
-                    UserTreeId = joinChallengeDto.UserTreeId,
-                    TaskName = ct.Tasks.TaskName,
-                    TaskDescription = ct.Tasks.TaskDescription,
-                    TotalDuration = ct.Tasks.TotalDuration,
-                    StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
-                    EndDate = ct.Tasks.EndDate ?? challenge.EndDate,
-                    WorkDuration = ct.Tasks.WorkDuration,
-                    BreakTime = ct.Tasks.BreakTime,
-                    FocusMethodId = ct.Tasks.FocusMethodId
-                };
+                    ChallengeId = challengeId,
+                    UserId = userId,
+                    ChallengeRole = UserChallengeRole.Participant,
+                    Status = UserChallengeStatus.InProgress,
+                    JoinedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
 
-                taskList.Add(newTask);
-            }
+                var challengeTasks = await challengeTaskRepository.GetTasksByChallengeIdAsync(challengeId);
+                var taskList = new List<Tasks>();
 
-            if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
+                foreach (var ct in challengeTasks)
+                {
+                    if (ct.Tasks == null) continue;
+                    var newTask = new Tasks
+                    {
+                        CloneFromTaskId = ct.TaskId,
+                        TaskTypeId = ct.Tasks.TaskTypeId,
+                        UserTreeId = joinChallengeDto.UserTreeId,
+                        TaskName = ct.Tasks.TaskName,
+                        TaskDescription = ct.Tasks.TaskDescription,
+                        TotalDuration = ct.Tasks.TotalDuration,
+                        StartDate = ct.Tasks.StartDate ?? challenge.StartDate,
+                        EndDate = ct.Tasks.EndDate ?? challenge.EndDate,
+                        WorkDuration = ct.Tasks.WorkDuration,
+                        BreakTime = ct.Tasks.BreakTime,
+                        FocusMethodId = ct.Tasks.FocusMethodId
+                    };
 
-            await unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
-            await NotifyOngoingChallenges();
-            await ClearChallengeCachesAsync(challengeId);
-            return true;
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+                    taskList.Add(newTask);
+                }
+
+                if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
+
+                await unitOfWork.CommitAsync();
+                await NotifyOngoingChallenges();
+                await ClearChallengeCachesAsync(challengeId);
+                return true;
+            },
+            null,
+            CancellationToken.None
+        );
     }
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
