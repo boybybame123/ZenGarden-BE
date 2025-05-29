@@ -498,15 +498,20 @@ public class TaskService(
                 string? activeBoostItemName = null;
                 double effectPercentage = 0;
 
-                var itemId = await useItemService.UseItemXpBoostTree(userid);
-                var activeItem = await itemRepository.GetByIdAsync(itemId);
-                if (activeItem?.ItemDetail?.Effect != null && 
-                    double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
-                    parsedEffect > 0)
+                // Check if user has equipped XP Boost Tree
+                var hasEquippedXpBoostTree = await bagRepository.HasUsedXpBoostItemAsync(userid);
+                if (hasEquippedXpBoostTree)
                 {
-                    effectPercentage = parsedEffect;
-                    activeBoostItemName = activeItem.Name;
-                    bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
+                    var itemId = await useItemService.UseItemXpBoostTree(userid);
+                    var activeItem = await itemRepository.GetByIdAsync(itemId);
+                    if (activeItem?.ItemDetail?.Effect != null && 
+                        double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
+                        parsedEffect > 0)
+                    {
+                        effectPercentage = parsedEffect;
+                        activeBoostItemName = activeItem.Name;
+                        bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
+                    }
                 }
                 
                 xpEarned = Math.Round(baseXp + bonusXp, 2);
