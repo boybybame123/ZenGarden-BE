@@ -163,7 +163,7 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
 
-        await unitOfWork.BeginTransactionAsync();
+       
         try
         {
             await userRepository.CreateAsync(newUser);
@@ -208,7 +208,7 @@ public class UserService(
 
             await Task.WhenAll(createTasks);
             await unitOfWork.CommitAsync();
-            await unitOfWork.CommitTransactionAsync();
+        
             return newUser;
         }
         catch

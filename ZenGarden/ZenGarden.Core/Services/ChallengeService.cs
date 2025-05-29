@@ -118,10 +118,12 @@ public class ChallengeService(
 
         await ValidateJoinChallenge(challenge, userId, joinChallengeDto);
 
+
         var strategy = unitOfWork.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(
             new object(),
             async (_, _, _) =>
+
             {
                 await userChallengeRepository.CreateAsync(new UserChallenge
                 {
@@ -159,6 +161,7 @@ public class ChallengeService(
 
                 if (taskList.Count != 0) await taskRepository.AddRangeAsync(taskList);
 
+
                 await unitOfWork.CommitAsync();
                 await NotifyOngoingChallenges();
                 await ClearChallengeCachesAsync(challengeId);
@@ -167,6 +170,7 @@ public class ChallengeService(
             null,
             CancellationToken.None
         );
+
     }
 
     public async Task<List<ChallengeDto>> GetAllChallengesAsync()
@@ -265,7 +269,7 @@ public class ChallengeService(
         if (userChallenge.ChallengeRole == UserChallengeRole.Organizer)
             throw new InvalidOperationException("Organizer cannot leave the challenge.");
         var userTasks = await taskRepository.GetClonedTasksByUserChallengeAsync(userId, challengeId);
-        await using var transaction = await unitOfWork.BeginTransactionAsync();
+       
 
         switch (userTasks.Count)
         {
@@ -288,7 +292,7 @@ public class ChallengeService(
         userChallenge.UpdatedAt = DateTime.UtcNow;
         userChallengeRepository.Update(userChallenge);
         await unitOfWork.CommitAsync();
-        await transaction.CommitAsync();
+      
         await ClearChallengeCachesAsync(challengeId);
         return true;
     }
@@ -303,7 +307,7 @@ public class ChallengeService(
         if (userChallenge is not { ChallengeRole: UserChallengeRole.Organizer })
             throw new UnauthorizedAccessException("Only the organizer can cancel this challenge.");
 
-        await using var transaction = await unitOfWork.BeginTransactionAsync();
+        
         try
         {
             challenge.Status = ChallengeStatus.Canceled;
@@ -331,14 +335,14 @@ public class ChallengeService(
             await taskRepository.UpdateRangeAsync(tasks);
 
             await unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
+            
             await ClearChallengeCachesAsync(challengeId);
 
             return true;
         }
         catch
         {
-            await transaction.RollbackAsync();
+           
             throw;
         }
     }
