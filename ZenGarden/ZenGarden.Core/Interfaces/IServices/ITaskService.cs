@@ -15,6 +15,7 @@ public interface ITaskService
     Task StartTaskAsync(int taskId, int userId);
     Task UpdateOverdueTasksAsync();
     Task<double> CalculateTaskXpAsync(int taskId);
+    Task<TaskXpInfoDto> GetTaskXpInfoAsync(int taskId);
     Task<List<TaskDto>> GetTaskByUserTreeIdAsync(int userTreeId);
     Task<List<TaskDto>> GetTaskByUserIdAsync(int userId);
     Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId);

@@ -28,6 +28,7 @@ public class FocusMethodRepository(ZenGardenContext context, IRedisService redis
             {
                 FocusMethodId = f.FocusMethodId,
                 FocusMethodName = f.Name,
+                Description = f.Description,
                 MinDuration = f.MinDuration,
                 MaxDuration = f.MaxDuration,
                 MinBreak = f.MinBreak,
