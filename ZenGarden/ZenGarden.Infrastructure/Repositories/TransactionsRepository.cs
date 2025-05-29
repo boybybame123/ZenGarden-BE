@@ -15,6 +15,7 @@ public class TransactionsRepository(ZenGardenContext context, IRedisService redi
     public async Task<Transactions?> FindByRefAsync(string transactionRef)
     {
         return await _context.Set<Transactions>()
+            .AsNoTracking()
             .FirstOrDefaultAsync(t => t.TransactionRef == transactionRef);
     }
 
