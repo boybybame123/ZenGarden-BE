@@ -469,7 +469,7 @@ public class TaskService(
 
         if (task.FocusMethodId != null)
         {
-            await using var transaction = await unitOfWork.BeginTransactionAsync();
+            
             try
             {
                 var xpConfig = await xpConfigRepository.GetXpConfigAsync(task.TaskTypeId, task.FocusMethodId.Value)
@@ -540,7 +540,7 @@ public class TaskService(
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                
                 throw new InvalidOperationException($"Failed to complete task: {ex.Message}", ex);
             }
         }
