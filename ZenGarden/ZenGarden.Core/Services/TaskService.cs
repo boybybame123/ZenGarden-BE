@@ -255,20 +255,18 @@ public class TaskService(
                 }
             }
 
-            if (dto.FocusMethodId.HasValue && (dto.WorkDuration.HasValue || dto.BreakTime.HasValue))
-            {
-                var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value)
-                             ?? throw new KeyNotFoundException($"FocusMethod with ID {dto.FocusMethodId} not found.");
+            if (!dto.FocusMethodId.HasValue || (!dto.WorkDuration.HasValue && !dto.BreakTime.HasValue)) continue;
+            var method = await focusMethodRepository.GetByIdAsync(dto.FocusMethodId.Value)
+                         ?? throw new KeyNotFoundException($"FocusMethod with ID {dto.FocusMethodId} not found.");
 
-                if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
-                {
-                    if (dto.BreakTime.Value < method.MinBreak.Value)
-                        throw new InvalidOperationException(
-                            $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method.");
-                    if (dto.BreakTime.Value > method.MaxBreak.Value)
-                        throw new InvalidOperationException(
-                            $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method.");
-                }
+            if (dto.BreakTime.HasValue && method is { MinBreak: not null, MaxBreak: not null })
+            {
+                if (dto.BreakTime.Value < method.MinBreak.Value)
+                    throw new InvalidOperationException(
+                        $"Break time must be at least {method.MinBreak.Value} minutes for the selected focus method.");
+                if (dto.BreakTime.Value > method.MaxBreak.Value)
+                    throw new InvalidOperationException(
+                        $"Break time cannot exceed {method.MaxBreak.Value} minutes for the selected focus method.");
             }
         }
 
