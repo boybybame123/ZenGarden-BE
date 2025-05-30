@@ -427,6 +427,18 @@ public class TaskService(
         
         var userId = task.UserTree?.UserId;
         var treeId = task.UserTreeId;
+
+        // Delete associated challenge tasks first
+        var challengeTasks = await challengeTaskRepository.GetAllByTaskIdAsync(taskId);
+        
+        if (challengeTasks.Count != 0)
+        {
+            foreach (var challengeTask in challengeTasks)
+            {
+                await challengeTaskRepository.RemoveAsync(challengeTask);
+            }
+            await unitOfWork.CommitAsync();
+        }
         
         await InvalidateTaskCaches(task);
         await taskRepository.RemoveAsync(task);
