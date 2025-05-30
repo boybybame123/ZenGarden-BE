@@ -387,82 +387,30 @@ public class ChallengeService(
         return result;
     }
 
-    public async Task<string> ChangeStatusChallenge(int userId, int challengeId, bool isApproved, string? rejectionReason = null)
+    public async Task<string> ChangeStatusChallenge(int userId, int challengeId)
     {
         var user = await userRepository.GetByIdAsync(userId);
         if (user == null)
             throw new KeyNotFoundException("User not found.");
 
+        if (user.Role is { RoleId: 2 })
+            throw new InvalidOperationException("Only users with role 1 or 3 change challenge status.");
+
         var challenge = await challengeRepository.GetByIdAsync(challengeId);
         if (challenge == null)
             throw new KeyNotFoundException("Challenge not found.");
 
-        if (challenge.Status != ChallengeStatus.Pending) 
-            return "Challenge status is already Active or Canceled";
-
-        // Get all users in the challenge to debug
-        var allUsersInChallenge = await userChallengeRepository.GetAllUsersInChallengeAsync(challengeId);
-        Console.WriteLine($"Debug - All users in challenge {challengeId}:");
-        foreach (var uc in allUsersInChallenge)
-        {
-            Console.WriteLine($"User ID: {uc.UserId}, Role: {uc.ChallengeRole}, Status: {uc.Status}");
-        }
-
-        // Find the creator of the challenge
-        var creatorChallenge = allUsersInChallenge.FirstOrDefault(uc => uc.ChallengeRole == UserChallengeRole.Organizer);
-        if (creatorChallenge == null)
-            throw new KeyNotFoundException("Challenge creator not found.");
-
-        // If creator is role 2 (player), only role 1 and 3 can approve/reject
-        if (creatorChallenge.User?.Role?.RoleId == 2)
-        {
-            if (user.Role?.RoleId is not (1 or 3))
-                throw new UnauthorizedAccessException("Only administrators can approve/reject challenges created by players.");
-        }
-
-        if (!isApproved)
-        {
-            // Reject the challenge
-            challenge.Status = ChallengeStatus.Canceled;
-            challenge.UpdatedAt = DateTime.UtcNow;
-            challengeRepository.Update(challenge);
-
-            // Refund the creator if they are a player
-            if (creatorChallenge.User?.Role?.RoleId == 2)
-            {
-                var creatorWallet = await walletRepository.GetByUserIdAsync(creatorChallenge.UserId);
-                if (creatorWallet != null)
-                {
-                    creatorWallet.Balance += challenge.Reward;
-                    creatorWallet.UpdatedAt = DateTime.UtcNow;
-                    walletRepository.Update(creatorWallet);
-                }
-            }
-
-            await notificationService.PushNotificationAsync(
-                creatorChallenge.UserId,
-                "Challenge Rejected",
-                $"Your challenge '{challenge.ChallengeName}' has been rejected.\nReason: {rejectionReason ?? "No reason provided"}"
-            );
-
-            await unitOfWork.CommitAsync();
-            await ClearChallengeCachesAsync(challengeId);
-            return "Challenge has been rejected and reward refunded";
-        }
-
-        // Approve the challenge
+        if (challenge.Status != ChallengeStatus.Pending) return "Challenge status is already Active or Rejected";
+        await ClearChallengeCachesAsync(challengeId);
         challenge.Status = ChallengeStatus.Active;
         challenge.UpdatedAt = DateTime.UtcNow;
+
         challengeRepository.Update(challenge);
-
-        await notificationService.PushNotificationAsync(
-            creatorChallenge.UserId,
-            "Challenge Approved",
-            $"Your challenge '{challenge.ChallengeName}' has been approved and is now active."
-        );
-
         await unitOfWork.CommitAsync();
-        await ClearChallengeCachesAsync(challengeId);
+        await notificationService.PushNotificationToAllAsync(
+            "Challenge Status Changed",
+            $"The challenge '{challenge.ChallengeName}' has been activated. Join now!"
+        );
         return "Challenge status changed to Active";
     }
 
@@ -635,5 +583,53 @@ public class ChallengeService(
         await redisService.RemoveAsync("not_started_challenges");
         await redisService.RemoveAsync($"challenge_rankings_{challengeId}");
         if (userId.HasValue) await redisService.RemoveAsync($"user_challenge_progress_{userId.Value}_{challengeId}");
+    }
+
+    public async Task<string> RejectChallengeAsync(int userId, int challengeId)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new KeyNotFoundException("User not found.");
+
+        if (user.Role is { RoleId: 2 })
+            throw new InvalidOperationException("Only users with role 1 or 3 can reject challenges.");
+
+        var challenge = await challengeRepository.GetByIdAsync(challengeId);
+        if (challenge == null)
+            throw new KeyNotFoundException("Challenge not found.");
+
+        if (challenge.Status != ChallengeStatus.Pending) 
+            return "Challenge status is already Active or Rejected";
+
+        // Get the challenge creator's user challenge record
+        var creatorChallenge = await userChallengeRepository.GetOrganizerByChallengeIdAsync(challengeId);
+        if (creatorChallenge == null)
+            throw new KeyNotFoundException("Challenge creator not found.");
+
+        // If creator is role 2 (player), refund the reward
+        if (creatorChallenge.User?.Role?.RoleId == 2)
+        {
+            var creatorWallet = await walletRepository.GetByUserIdAsync(creatorChallenge.UserId);
+            if (creatorWallet != null)
+            {
+                creatorWallet.Balance += challenge.Reward;
+                creatorWallet.UpdatedAt = DateTime.UtcNow;
+                walletRepository.Update(creatorWallet);
+            }
+        }
+
+        challenge.Status = ChallengeStatus.Rejected;
+        challenge.UpdatedAt = DateTime.UtcNow;
+        challengeRepository.Update(challenge);
+
+        await notificationService.PushNotificationAsync(
+            creatorChallenge.UserId,
+            "Challenge Rejected",
+            $"Your challenge '{challenge.ChallengeName}' has been rejected and the reward has been refunded to your wallet."
+        );
+
+        await unitOfWork.CommitAsync();
+        await ClearChallengeCachesAsync(challengeId);
+        return "Challenge has been rejected and reward refunded";
     }
 }

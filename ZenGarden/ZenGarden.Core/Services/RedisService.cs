@@ -16,6 +16,7 @@ public class RedisService : IRedisService, IDisposable
     private const int MaxRetries = 3;
     private const int RetryDelayMs = 1000;
     private readonly Dictionary<string, TimeSpan> _defaultExpiryByType;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public RedisService(IConfiguration configuration, ILogger<RedisService> logger)
     {
@@ -23,6 +24,12 @@ public class RedisService : IRedisService, IDisposable
         _defaultExpiry = TimeSpan.FromMinutes(30);
         var instanceName = configuration["Redis:ClientName"] ?? "ZenGardenApp";
         _circuitBreaker = new CircuitBreaker(5, TimeSpan.FromSeconds(30));
+        
+        _jsonOptions = new JsonSerializerOptions
+        {
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
+            WriteIndented = true
+        };
         
         _defaultExpiryByType = new Dictionary<string, TimeSpan>
         {
@@ -245,59 +252,61 @@ public class RedisService : IRedisService, IDisposable
 
     public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> getDataFunc, TimeSpan? expiry = null, string type = "cache")
     {
-        return await ExecuteWithRetryAsync(async () =>
+        try
         {
-            var cached = await _database.StringGetAsync(key);
-            if (!cached.IsNullOrEmpty)
+            var cachedValue = await GetAsync<T>(key);
+            if (cachedValue != null)
             {
-                try
-                {
-                    var cachedString = cached.ToString();
-                    return JsonSerializer.Deserialize<T>(cachedString)
-                           ?? throw new InvalidOperationException("Failed to deserialize cached data");
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to deserialize cached data for key {Key}", key);
-                    await _database.KeyDeleteAsync(key);
-                }
+                _logger.LogInformation("Cache hit for key: {Key}", key);
+                return cachedValue;
             }
 
+            _logger.LogInformation("Cache miss for key: {Key}, fetching data...", key);
             var data = await getDataFunc();
-            var json = JsonSerializer.Serialize(data);
-            await _database.StringSetAsync(key, json, expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry));
+            if (data != null)
+            {
+                var effectiveExpiry = expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry);
+                await SetAsync(key, data, effectiveExpiry, type);
+            }
             return data;
-        }, "GetOrSet");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Redis operation GetOrSet");
+            throw;
+        }
     }
 
     public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null, string type = "cache")
     {
-        return await ExecuteWithRetryAsync(async () =>
+        try
         {
-            var json = JsonSerializer.Serialize(value);
-            return await _database.StringSetAsync(key, json, expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry));
-        }, "Set");
+            var json = JsonSerializer.Serialize(value, _jsonOptions);
+            var effectiveExpiry = expiry ?? _defaultExpiryByType.GetValueOrDefault(type, _defaultExpiry);
+            return await _database.StringSetAsync(key, json, effectiveExpiry);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Redis operation Set");
+            throw;
+        }
     }
 
     public async Task<T?> GetAsync<T>(string key)
     {
-        return await ExecuteWithRetryAsync(async () =>
+        try
         {
-            var redisValue = await _database.StringGetAsync(key);
-            if (redisValue.IsNullOrEmpty) return default;
-            
-            try
-            {
-                var jsonString = redisValue.ToString();
-                return string.IsNullOrEmpty(jsonString) ? default : JsonSerializer.Deserialize<T>(jsonString);
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogWarning(ex, "Failed to deserialize data for key {Key}", key);
-                await _database.KeyDeleteAsync(key);
+            var value = await _database.StringGetAsync(key);
+            if (!value.HasValue)
                 return default;
-            }
-        }, "Get");
+
+            return JsonSerializer.Deserialize<T>(value!, _jsonOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Redis operation Get");
+            throw;
+        }
     }
 
     public async Task RemoveAsync(string key)

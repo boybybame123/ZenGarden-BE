@@ -63,4 +63,14 @@ public class UserChallengeRepository(ZenGardenContext context, IRedisService red
 
         return [..list];
     }
+
+    public async Task<UserChallenge?> GetOrganizerByChallengeIdAsync(int challengeId)
+    {
+        return await _context.UserChallenges
+            .Include(uc => uc.User)
+            .ThenInclude(u => u.Role)
+            .FirstOrDefaultAsync(uc => 
+                uc.ChallengeId == challengeId && 
+                uc.ChallengeRole == UserChallengeRole.Organizer);
+    }
 }

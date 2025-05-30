@@ -273,7 +273,6 @@ public class UserService(
         using var scope = scopeFactory.CreateScope();
         var userTreeRepository = scope.ServiceProvider.GetRequiredService<IUserTreeRepository>();
         var userTreeService = scope.ServiceProvider.GetRequiredService<IUserTreeService>();
-        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         // Get all user trees in one query
         var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
@@ -286,9 +285,6 @@ public class UserService(
         {
             tasks.Add(userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId));
         }
-            
-        // Add notification task
-        tasks.Add(notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp."));
             
         // Execute all tasks in parallel
         await Task.WhenAll(tasks);
