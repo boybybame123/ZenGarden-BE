@@ -43,44 +43,29 @@ public class UserTreeService(
 
     public async Task AddAsync(CreateUserTreeDto createUserTreeDto)
     {
-        var strategy = unitOfWork.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
+        var user = await userRepository.GetByIdAsync(createUserTreeDto.UserId)
+                   ?? throw new KeyNotFoundException($"User with ID {createUserTreeDto.UserId} not found.");
+
+        var defaultTreeXpConfig = await treeXpConfigRepository.GetByIdAsync(1)
+                                 ?? throw new KeyNotFoundException("Default TreeXpConfig not found.");
+
+        var newUserTree = new UserTree
         {
-            await unitOfWork.BeginTransactionAsync();
+            Name = createUserTreeDto.Name,
+            UserId = createUserTreeDto.UserId,
+            TreeOwnerId = createUserTreeDto.UserId,
+            LevelId = defaultTreeXpConfig.LevelId,
+            TotalXp = 0,
+            IsMaxLevel = false,
+            TreeStatus = TreeStatus.Seed,
+            User = user,
+            TreeOwner = user,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
 
-            try
-            {
-                var user = await userRepository.GetByIdAsync(createUserTreeDto.UserId)
-                           ?? throw new KeyNotFoundException($"User with ID {createUserTreeDto.UserId} not found.");
-
-                var defaultTreeXpConfig = await treeXpConfigRepository.GetByIdAsync(1)
-                                         ?? throw new KeyNotFoundException("Default TreeXpConfig not found.");
-
-                var newUserTree = new UserTree
-                {
-                    Name = createUserTreeDto.Name,
-                    UserId = createUserTreeDto.UserId,
-                    TreeOwnerId = createUserTreeDto.UserId,
-                    LevelId = 1,
-                    TotalXp = 0,
-                    IsMaxLevel = false,
-                    TreeStatus = TreeStatus.Seed,
-                    TreeXpConfig = defaultTreeXpConfig,
-                    User = user,
-                    TreeOwner = user,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                await userTreeRepository.CreateAsync(newUserTree);
-                await unitOfWork.CommitTransactionAsync();
-            }
-            catch (Exception)
-            {
-                await unitOfWork.RollbackTransactionAsync();
-                throw;
-            }
-        });
+        await userTreeRepository.CreateAsync(newUserTree);
+        await unitOfWork.CommitAsync();
     }
 
 
