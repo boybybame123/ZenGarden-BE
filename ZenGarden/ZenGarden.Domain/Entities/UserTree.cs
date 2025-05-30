@@ -22,7 +22,7 @@ public partial class UserTree
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public virtual Tree? FinalTree { get; set; }
-    public virtual required TreeXpConfig TreeXpConfig { get; set; }
+    public virtual TreeXpConfig? TreeXpConfig { get; set; }
     public virtual ICollection<TradeHistory> TradeHistory { get; set; } = new List<TradeHistory>();
 
     public virtual ICollection<Tasks> Tasks { get; set; } = new List<Tasks>();
