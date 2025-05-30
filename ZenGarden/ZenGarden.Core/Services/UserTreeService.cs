@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -42,30 +43,44 @@ public class UserTreeService(
 
     public async Task AddAsync(CreateUserTreeDto createUserTreeDto)
     {
-        var user = await userRepository.GetByIdAsync(createUserTreeDto.UserId)
-                   ?? throw new KeyNotFoundException($"User with ID {createUserTreeDto.UserId} not found.");
-
-        var defaultTreeXpConfig = await treeXpConfigRepository.GetByIdAsync(1)
-                                 ?? throw new KeyNotFoundException("Default TreeXpConfig not found.");
-
-        var newUserTree = new UserTree
+        var strategy = unitOfWork.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            Name = createUserTreeDto.Name,
-            UserId = createUserTreeDto.UserId,
-            TreeOwnerId = createUserTreeDto.UserId,
-            LevelId = 1,
-            TotalXp = 0,
-            IsMaxLevel = false,
-            TreeStatus = TreeStatus.Seed,
-            TreeXpConfig = defaultTreeXpConfig,
-            User = user,
-            TreeOwner = user,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            await unitOfWork.BeginTransactionAsync();
 
-        await userTreeRepository.CreateAsync(newUserTree);
-        await unitOfWork.CommitAsync();
+            try
+            {
+                var user = await userRepository.GetByIdAsync(createUserTreeDto.UserId)
+                           ?? throw new KeyNotFoundException($"User with ID {createUserTreeDto.UserId} not found.");
+
+                var defaultTreeXpConfig = await treeXpConfigRepository.GetByIdAsync(1)
+                                         ?? throw new KeyNotFoundException("Default TreeXpConfig not found.");
+
+                var newUserTree = new UserTree
+                {
+                    Name = createUserTreeDto.Name,
+                    UserId = createUserTreeDto.UserId,
+                    TreeOwnerId = createUserTreeDto.UserId,
+                    LevelId = 1,
+                    TotalXp = 0,
+                    IsMaxLevel = false,
+                    TreeStatus = TreeStatus.Seed,
+                    TreeXpConfig = defaultTreeXpConfig,
+                    User = user,
+                    TreeOwner = user,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await userTreeRepository.CreateAsync(newUserTree);
+                await unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception)
+            {
+                await unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        });
     }
 
 
