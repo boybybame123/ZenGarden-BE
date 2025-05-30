@@ -101,7 +101,7 @@ public static partial class Program
         builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         builder.Services.AddScoped<IRedisService, RedisService>();
         builder.Services.AddScoped<PaymentService>();
-
+        builder.Services.AddScoped<IFocusTrackingService, FocusTrackingService>();
 
         builder.Services.AddScoped<ZenGardenContext>();
 
