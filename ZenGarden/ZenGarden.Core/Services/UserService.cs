@@ -168,62 +168,60 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
 
-        try
-        {
-            // Start transaction
-            await unitOfWork.BeginTransactionAsync();
-
-            // Create user
-            await userRepository.CreateAsync(newUser);
-
-            // Create related entities
-            var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
-            var bag = new Bag { UserId = newUser.UserId };
-
-            var levelOneConfig = await userXpConfigRepository.GetByIdAsync(1)
-                                 ?? throw new Exception("UserLevelConfig is missing Level 1!");
-
-            var userExperience = new UserExperience
+        var executionStrategy = unitOfWork.CreateExecutionStrategy();
+        
+        return await executionStrategy.ExecuteAsync<Users, Users?>(
+            newUser,
+            async (_, state, _) =>
             {
-                UserId = newUser.UserId,
-                TotalXp = 0,
-                XpToNextLevel = levelOneConfig.XpThreshold,
-                LevelId = 1,
-                IsMaxLevel = false,
-                StreakDays = 0,
-                CreatedAt = DateTime.UtcNow
-            };
+                // Create user first
+                await userRepository.CreateAsync(state);
+                await unitOfWork.CommitAsync(); // Commit to get UserId
 
-            var userConfig = new UserConfig
-            {
-                UserId = newUser.UserId,
-                BackgroundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/OIP.jpg?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441883&Signature=LNL9h7zMH2%2BeZpQdBdDhnoCVi1k%3D",
-                SoundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/sound-design-elements-sfx-ps-022-302865.mp3?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441777&Signature=mMR0vRZRqJQvQmeJ4qYTh6xMkp0%3D",
-                ImageUrl = "https://hcm.ss.bfcplatform.vn/zengarden/male.png?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441822&Signature=DJNiWS8ebIWoyCqDEqfccJocY5I%3D",
-                CreatedAt = DateTime.UtcNow
-            };
+                // Create related entities
+                var wallet = new Wallet { UserId = state.UserId, Balance = 0 };
+                var bag = new Bag { UserId = state.UserId };
 
-            // Create all entities in parallel
-            var createTasks = new[]
-            {
-                walletRepository.CreateAsync(wallet),
-                bagRepository.CreateAsync(bag),
-                userExperienceRepository.CreateAsync(userExperience),
-                userConfigRepository.CreateAsync(userConfig)
-            };
+                var levelOneConfig = await userXpConfigRepository.GetByIdAsync(1)
+                                     ?? throw new Exception("UserLevelConfig is missing Level 1!");
 
-            await Task.WhenAll(createTasks);
+                var userExperience = new UserExperience
+                {
+                    UserId = state.UserId,
+                    TotalXp = 0,
+                    XpToNextLevel = levelOneConfig.XpThreshold,
+                    LevelId = 1,
+                    IsMaxLevel = false,
+                    StreakDays = 0,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            // Commit transaction
-            await unitOfWork.CommitTransactionAsync();
-            
-            return newUser;
-        }
-        catch
-        {
-            await unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
+                var userConfig = new UserConfig
+                {
+                    UserId = state.UserId,
+                    BackgroundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/OIP.jpg?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441883&Signature=LNL9h7zMH2%2BeZpQdBdDhnoCVi1k%3D",
+                    SoundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/sound-design-elements-sfx-ps-022-302865.mp3?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441777&Signature=mMR0vRZRqJQvQmeJ4qYTh6xMkp0%3D",
+                    ImageUrl = "https://hcm.ss.bfcplatform.vn/zengarden/male.png?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441822&Signature=DJNiWS8ebIWoyCqDEqfccJocY5I%3D",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Create all entities in parallel
+                var createTasks = new[]
+                {
+                    walletRepository.CreateAsync(wallet),
+                    bagRepository.CreateAsync(bag),
+                    userExperienceRepository.CreateAsync(userExperience),
+                    userConfigRepository.CreateAsync(userConfig)
+                };
+
+                await Task.WhenAll(createTasks);
+                await unitOfWork.CommitAsync();
+                
+                return state;
+            },
+            null,
+            CancellationToken.None
+        );
     }
 
     public async Task<string> GenerateAndSaveOtpAsync(string email)
