@@ -385,8 +385,11 @@ public class TaskService(
             existingTask.UserTreeId = updateTaskDto.UserTreeId.Value;
         }
 
-        existingTask.TaskResult =
-            await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userId);
+        var newTaskResult = await HandleTaskResultUpdate(updateTaskDto.TaskFile, updateTaskDto.TaskResult, userId);
+        if (newTaskResult != null)
+        {
+            existingTask.TaskResult = newTaskResult;
+        }
 
         var needUpdateXpConfig = updateTaskDto.TotalDuration.HasValue
                                  || updateTaskDto.TaskTypeId.HasValue
@@ -1028,12 +1031,12 @@ public class TaskService(
             );
     }
 
-    private async Task<string> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl, int userid)
+    private async Task<string?> HandleTaskResultUpdate(IFormFile? taskResultFile, string? taskResultUrl, int userid)
     {
         if (taskResultFile != null)
             return await s3Service.UploadFileToTaskUserFolderAsync(taskResultFile, userid);
 
-        if (string.IsNullOrWhiteSpace(taskResultUrl)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(taskResultUrl)) return null;
         if (Uri.IsWellFormedUriString(taskResultUrl, UriKind.Absolute))
             return taskResultUrl;
         throw new ArgumentException("Invalid TaskResult URL.");
