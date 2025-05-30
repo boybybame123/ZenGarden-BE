@@ -15,6 +15,11 @@ public class RegisterValidator : AbstractValidator<RegisterDto>
             .EmailAddress().WithMessage("Invalid email format.")
             .When(x => !string.IsNullOrEmpty(x.Email));
 
+        RuleFor(x => x.Phone)
+            .NotEmpty().WithMessage("Phone number is required.")
+            .Matches(@"^\d{10,15}$").WithMessage("Phone number must be between 10 and 15 digits.")
+            .When(x => !string.IsNullOrEmpty(x.Phone));
+
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters long.")

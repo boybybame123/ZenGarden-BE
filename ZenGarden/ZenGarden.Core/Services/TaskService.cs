@@ -561,10 +561,7 @@ public class TaskService(
         // Only require TaskResult for challenge tasks (tasks cloned from a challenge)
         if (task.CloneFromTaskId != null && string.IsNullOrWhiteSpace(task.TaskResult))
             throw new InvalidOperationException("TaskResult is required for challenge tasks.");
-
-        if (await IsDailyTaskAlreadyCompleted(task))
-            throw new InvalidOperationException("You have already completed this daily task today.");
-
+        
         await UpdateUserTreeIfNeeded(task, completeTaskDto);
 
         ValidateTaskForCompletion(task);
@@ -583,7 +580,6 @@ public class TaskService(
 
                 var bonusXp = 0.0;
                 string? activeBoostItemName = null;
-                double effectPercentage = 0;
 
                 // Check if user has equipped XP Boost Tree
                 var hasEquippedXpBoostTree = await bagRepository.HasUsedXpBoostItemAsync(userid);
@@ -595,7 +591,7 @@ public class TaskService(
                         double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
                         parsedEffect > 0)
                     {
-                        effectPercentage = parsedEffect;
+                        double effectPercentage = parsedEffect;
                         activeBoostItemName = activeItem.Name;
                         bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
                     }
@@ -821,54 +817,6 @@ public class TaskService(
         foreach (var treeId in affectedTreeIds)
             await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{treeId}");
 
-        // To be extra safe, also invalidate all user and tree caches
-        await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
-        await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
-    }
-
-    public async Task ResetDailyTasksAsync()
-    {
-        var dailyTasks = await taskRepository.GetDailyTasksAsync();
-        var affectedUserIds = new HashSet<int>();
-        var affectedTreeIds = new HashSet<int>();
-
-        foreach (var task in dailyTasks)
-        {
-            task.CompletedAt = null;
-            task.Status = TasksStatus.NotStarted;
-            task.StartedAt = null;
-            task.PausedAt = null;
-            task.AccumulatedTime = 0;
-            task.StartDate = DateTime.UtcNow;
-            task.EndDate = DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1);
-
-            // Collect affected user and tree IDs
-            if (task.UserTree?.UserId != null)
-                affectedUserIds.Add(task.UserTree.UserId.Value);
-
-            if (task.UserTreeId != null)
-                affectedTreeIds.Add(task.UserTreeId.Value);
-
-            // Invalidate individual task cache
-            await redisService.RemoveAsync($"{TaskCacheKeyPrefix}{task.TaskId}");
-        }
-
-        await taskRepository.UpdateRangeAsync(dailyTasks);
-        await unitOfWork.CommitAsync();
-
-        // Invalidate all task cache
-        await redisService.RemoveAsync(AllTasksCacheKey);
-
-        // Invalidate specific user and tree caches
-        foreach (var userId in affectedUserIds)
-            await redisService.RemoveAsync($"{UserTasksCacheKeyPrefix}{userId}");
-
-        foreach (var treeId in affectedTreeIds)
-            await redisService.RemoveAsync($"{TreeTasksCacheKeyPrefix}{treeId}");
-        await notificationService.PushNotificationToAllAsync(
-            "Daily Tasks Reset",
-            "All daily tasks have been reset. You can now start fresh!"
-        );
         // To be extra safe, also invalidate all user and tree caches
         await redisService.RemoveByPatternAsync($"{UserTasksCacheKeyPrefix}*");
         await redisService.RemoveByPatternAsync($"{TreeTasksCacheKeyPrefix}*");
@@ -1125,35 +1073,7 @@ public class TaskService(
 
         if (task.StartedAt == null)
             throw new InvalidOperationException("Task must have a start time to be completed.");
-
     }
-
-    private async Task<int?> GetDailyTaskTypeIdAsync()
-    {
-        try
-        {
-            return await taskTypeRepository.GetTaskTypeIdByNameAsync("daily");
-        }
-        catch (KeyNotFoundException)
-        {
-            return null;
-        }
-    }
-
-    private async Task<bool> IsDailyTaskAlreadyCompleted(Tasks task)
-    {
-        var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
-
-        if (!dailyTaskTypeId.HasValue || task.TaskTypeId != dailyTaskTypeId.Value)
-            return false;
-        return task.CompletedAt.HasValue && task.CompletedAt.Value.Date == DateTime.UtcNow.Date;
-    }
-
-    // private async Task<bool> IsDailyTask(int taskTypeId)
-    // {
-    //     var dailyTaskTypeId = await GetDailyTaskTypeIdAsync();
-    //     return taskTypeId == dailyTaskTypeId;
-    // }
 
     private static int CalculateRemainingSeconds(Tasks task)
     {
@@ -1188,19 +1108,6 @@ public class TaskService(
         return (int)Math.Max(remaining.TotalSeconds, 0);
     }
 
-    private async Task<double> CalculateXpWithBoostAsync(Tasks task, double baseXp)
-    {
-        var userId = task.UserTree.UserId ?? throw new InvalidOperationException("UserId is null.");
-
-        var equippedItem = await bagRepository.GetEquippedItemAsync(userId, ItemType.XpBoostTree);
-        if (equippedItem == null ||
-            !double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) ||
-            !(effectPercent > 0)) return Math.Round(baseXp, 2);
-        
-        var bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
-        return Math.Round(baseXp + bonusXp, 2);
-    }
-
     private async Task InvalidateTaskCaches(Tasks task)
     {
         var cacheKeys = new List<string>
@@ -1216,7 +1123,7 @@ public class TaskService(
         if (userId.HasValue)
             cacheKeys.Add($"{UserTasksCacheKeyPrefix}{userId}");
 
-        await Task.WhenAll(cacheKeys.Select(key => redisService.RemoveAsync(key)));
+        await Task.WhenAll(cacheKeys.Select(redisService.RemoveAsync));
     }
 
     private async Task ForceUpdateTaskStatusAsync(Tasks task, TasksStatus newStatus)

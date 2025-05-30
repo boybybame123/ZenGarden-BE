@@ -326,7 +326,6 @@ public static partial class Program
     {
         // builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
-        builder.Services.AddHostedService<DailyTaskResetJob>();
         builder.Services.AddHostedService<HandleExpiredChallengesJob>();
         builder.Services.AddHostedService<WeeklyTaskResetJob>();
         builder.Services.AddHostedService<TaskNotifierService>();
