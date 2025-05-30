@@ -172,4 +172,16 @@ public class ChallengesController(IChallengeService challengeService) : Controll
         await _challengeService.HandleExpiredChallengesAsync();
         return Ok(new { message = "Expired challenges handled successfully (manual trigger)." });
     }
+
+    [Authorize]
+    [HttpPut("reject/{challengeId:int}")]
+    public async Task<IActionResult> RejectChallenge(int challengeId)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var result = await _challengeService.RejectChallengeAsync(userId, challengeId);
+        return Ok(new { Message = result });
+    }
 }

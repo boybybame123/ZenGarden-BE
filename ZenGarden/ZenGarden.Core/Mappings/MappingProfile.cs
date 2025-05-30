@@ -86,7 +86,11 @@ public class MappingProfile : Profile
 
         CreateMap<FocusTracking, FocusTrackingDto>()
             .ForMember(dest => dest.Activities, opt => opt.MapFrom(src => src.FocusActivities));
-        CreateMap<CreateFocusTrackingDto, FocusTracking>();
+        CreateMap<CreateFocusTrackingDto, FocusTracking>()
+            .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
         CreateMap<UpdateFocusTrackingDto, FocusTracking>()
             .ForAllMembers(opts => opts.Condition((_, _, srcMember) => srcMember != null));
     }

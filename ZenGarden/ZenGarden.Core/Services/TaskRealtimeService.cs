@@ -41,6 +41,12 @@ public class TaskRealtimeService
         await _hubContext.Clients.Group($"Task_{task.TaskId}")
             .SendAsync("TaskCreated", task);
 
+        // Skip User ID validation for challenge tasks (TaskTypeId = 4)
+        if (task.TaskTypeName == "Challenge")
+        {
+            return;
+        }
+
         var userid = await _taskRepository.GetUserIdByTaskIdAsync(task.TaskId)
                    ?? throw new InvalidOperationException($"User ID not found for Task ID {task.TaskId}");
         var userTreeId = await _taskRepository.GetUserTreeIdByTaskIdAsync(task.TaskId);
@@ -63,18 +69,17 @@ public class TaskRealtimeService
         await _hubContext.Clients.Group($"Task_{taskId}")
             .SendAsync("TaskDeleted", taskId);
 
-        var userid = await _taskRepository.GetUserIdByTaskIdAsync(taskId)
-                   ?? throw new InvalidOperationException($"User ID not found for Task ID {taskId}");
-        var userTreeId = await _taskRepository.GetUserTreeIdByTaskIdAsync(taskId);
-
-        // Notify user's tasks group
-        await _hubContext.Clients.Group($"UserTasks_{userid}")
-            .SendAsync("UserTaskDeleted", taskId);
-
-        // Notify tree's tasks group if tree exists
-        if (userTreeId != null)
+        // If userId is provided, notify user's tasks group
+        if (userId.HasValue)
         {
-            await _hubContext.Clients.Group($"TreeTasks_{userTreeId}")
+            await _hubContext.Clients.Group($"UserTasks_{userId}")
+                .SendAsync("UserTaskDeleted", taskId);
+        }
+
+        // If treeId is provided, notify tree's tasks group
+        if (treeId.HasValue)
+        {
+            await _hubContext.Clients.Group($"TreeTasks_{treeId}")
                 .SendAsync("TreeTaskDeleted", taskId);
         }
     }
@@ -85,16 +90,18 @@ public class TaskRealtimeService
         await _hubContext.Clients.Group($"Task_{task.TaskId}")
             .SendAsync("TaskStatusChanged", task);
 
-        var userid = await _taskRepository.GetUserIdByTaskIdAsync(task.TaskId)
-                   ?? throw new InvalidOperationException($"User ID not found for Task ID {task.TaskId}");
+        var userid = await _taskRepository.GetUserIdByTaskIdAsync(task.TaskId);
         var userTreeId = await _taskRepository.GetUserTreeIdByTaskIdAsync(task.TaskId);
 
-        // Notify user's tasks group
-        await _hubContext.Clients.Group($"UserTasks_{userid}")
-            .SendAsync("UserTaskStatusChanged", task);
+        // Notify user's tasks group if userId exists
+        if (userid.HasValue)
+        {
+            await _hubContext.Clients.Group($"UserTasks_{userid}")
+                .SendAsync("UserTaskStatusChanged", task);
+        }
 
         // Notify tree's tasks group if tree exists
-        if (userTreeId != null)
+        if (userTreeId.HasValue)
         {
             await _hubContext.Clients.Group($"TreeTasks_{userTreeId}")
                 .SendAsync("TreeTaskStatusChanged", task);

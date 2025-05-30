@@ -41,7 +41,7 @@ public class CreateTaskValidator : AbstractValidator<CreateTaskDto>
             .WithMessage("Break time must be greater than 0.");
 
         RuleFor(x => x.UserTreeId)
-            .GreaterThan(0).When(x => x.UserTreeId.HasValue)
+            .GreaterThan(0).When(x => x.UserTreeId.HasValue && x.TaskTypeId != 4)
             .WithMessage("User tree ID must be greater than 0.");
 
         RuleFor(x => x.FocusMethodId)

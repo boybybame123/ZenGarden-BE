@@ -101,7 +101,8 @@ public static partial class Program
         builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         builder.Services.AddScoped<IRedisService, RedisService>();
         builder.Services.AddScoped<PaymentService>();
-
+        builder.Services.AddScoped<IFocusTrackingService, FocusTrackingService>();
+        builder.Services.AddScoped<FocusTrackingStatusService>();
 
         builder.Services.AddScoped<ZenGardenContext>();
 
@@ -178,6 +179,8 @@ public static partial class Program
         builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
         builder.Services.AddScoped<IPackageRepository, PackageRepository>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+        builder.Services.AddScoped<IFocusTrackingRepository, FocusTrackingRepository>();
+        builder.Services.AddScoped<IFocusActivityRepository, FocusActivityRepository>();
     }
 
     private static void ConfigureDbContext(WebApplicationBuilder builder)
@@ -326,7 +329,6 @@ public static partial class Program
     {
         // builder.Services.AddHostedService<AutoPauseTaskJob>();
         builder.Services.AddHostedService<OverdueTaskJob>();
-        builder.Services.AddHostedService<DailyTaskResetJob>();
         builder.Services.AddHostedService<HandleExpiredChallengesJob>();
         builder.Services.AddHostedService<WeeklyTaskResetJob>();
         builder.Services.AddHostedService<TaskNotifierService>();
