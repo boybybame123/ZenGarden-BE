@@ -24,23 +24,36 @@ public class UnitOfWork(ZenGardenContext context, IRedisService redisService) : 
 
     public async Task<IDbContextTransaction> BeginTransactionAsync()
     {
+        if (_transaction != null)
+        {
+            return _transaction;
+        }
+
         _transaction = await _context.Database.BeginTransactionAsync();
         return _transaction;
     }
 
     public async Task CommitTransactionAsync()
     {
-        if (_transaction is not null)
+        try
         {
-            await _transaction.CommitAsync();
-            await _transaction.DisposeAsync();
-            _transaction = null;
+            if (_transaction != null)
+            {
+                await _transaction.CommitAsync();
+                await _transaction.DisposeAsync();
+                _transaction = null;
+            }
+        }
+        catch
+        {
+            await RollbackTransactionAsync();
+            throw;
         }
     }
 
     public async Task RollbackTransactionAsync()
     {
-        if (_transaction is not null)
+        if (_transaction != null)
         {
             await _transaction.RollbackAsync();
             await _transaction.DisposeAsync();
@@ -50,7 +63,15 @@ public class UnitOfWork(ZenGardenContext context, IRedisService redisService) : 
 
     public async Task<int> CommitAsync()
     {
-        return await _context.SaveChangesAsync();
+        try
+        {
+            return await _context.SaveChangesAsync();
+        }
+        catch
+        {
+            await RollbackTransactionAsync();
+            throw;
+        }
     }
 
     public void Dispose()
