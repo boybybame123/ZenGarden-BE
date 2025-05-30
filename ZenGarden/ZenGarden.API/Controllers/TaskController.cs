@@ -165,13 +165,6 @@ public class TaskController(
         return Ok(new { message = "Auto pause executed successfully." });
     }
 
-    [HttpPost("reset-daily-status")]
-    public async Task<IActionResult> ResetDailyTaskStatus()
-    {
-        await _taskService.ResetDailyTasksAsync();
-        return Ok(new { message = "Daily task statuses reset successfully." });
-    }
-
     [HttpPatch("{taskId:int}/duration")]
     public async Task<IActionResult> UpdateTaskDurationOnly(int taskId, [FromBody] UpdateTaskSimpleDto dto)
     {

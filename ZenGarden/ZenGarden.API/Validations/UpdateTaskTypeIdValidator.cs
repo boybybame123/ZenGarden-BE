@@ -14,11 +14,10 @@ public class UpdateTaskTypeIdValidator : AbstractValidator<UpdateTaskTypeIdDto>
             .GreaterThan(0).WithMessage("NewDuration must be greater than 0.")
             .Must((dto, duration) =>
             {
-                // Validate duration based on task type
+                // Validate duration based on a task type
                 return dto.NewTaskTypeId switch
                 {
-                    1 => duration is >= 30 and <= 180, // Daily task: 30-180 minutes
-                    2 => duration >= 180, // Weekly task: >= 180 minutes
+                    2 => duration >= 30, // Weekly task: >= 30 minutes
                     3 => duration >= 180, // Monthly task: >= 180 minutes
                     4 => duration >= 30, // Challenge task: >= 30 minutes
                     _ => false
