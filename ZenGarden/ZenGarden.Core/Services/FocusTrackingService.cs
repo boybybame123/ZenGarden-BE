@@ -2,7 +2,6 @@ using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs.FocusTracking;
 using ZenGarden.Domain.Entities;
-using ZenGarden.Domain.Enums;
 using AutoMapper;
 
 namespace ZenGarden.Core.Services;
@@ -10,7 +9,8 @@ namespace ZenGarden.Core.Services;
 public class FocusTrackingService(
     IFocusTrackingRepository trackingRepository,
     IFocusActivityRepository activityRepository,
-    IMapper mapper)
+    IMapper mapper,
+    IUnitOfWork unitOfWork)
     : IFocusTrackingService
 {
     public async Task<FocusTrackingDto> StartTrackingAsync(int userId, CreateFocusTrackingDto dto)
@@ -19,7 +19,19 @@ public class FocusTrackingService(
         tracking.UserId = userId;
 
         await trackingRepository.CreateAsync(tracking);
-        return await GetTrackingByIdAsync(tracking.TrackingId);
+        await unitOfWork.CommitAsync();
+
+        // Get the tracking with the generated ID
+        var createdTracking = await trackingRepository.GetAsync(t => 
+            t.UserId == userId && 
+            t.StartTime == tracking.StartTime && 
+            t.TaskId == tracking.TaskId
+        );
+
+        if (createdTracking == null)
+            throw new Exception("Failed to create tracking");
+
+        return await GetTrackingByIdAsync(createdTracking.TrackingId);
     }
 
     public async Task<FocusTrackingDto> EndTrackingAsync(int trackingId, UpdateFocusTrackingDto dto)
@@ -50,6 +62,11 @@ public class FocusTrackingService(
 
     public async Task<FocusActivityDto> AddActivityAsync(CreateFocusActivityDto dto)
     {
+        // Check if tracking exists
+        var tracking = await trackingRepository.GetByIdAsync(dto.TrackingId);
+        if (tracking == null)
+            throw new KeyNotFoundException($"Tracking with ID {dto.TrackingId} not found");
+
         var activity = mapper.Map<FocusActivity>(dto);
         await activityRepository.CreateAsync(activity);
         return mapper.Map<FocusActivityDto>(activity);
