@@ -1198,11 +1198,16 @@ public class TaskService(
         if (!string.IsNullOrWhiteSpace(updateTaskResultDto.TaskNote))
             existingTask.TaskNote = updateTaskResultDto.TaskNote;
 
-        existingTask.TaskResult = await HandleTaskResultUpdate(
+        var newTaskResult = await HandleTaskResultUpdate(
             updateTaskResultDto.TaskFile,
             updateTaskResultDto.TaskResult,
             userId
         );
+        
+        if (newTaskResult != null)
+        {
+            existingTask.TaskResult = newTaskResult;
+        }
 
         existingTask.UpdatedAt = DateTime.UtcNow;
         taskRepository.Update(existingTask);
