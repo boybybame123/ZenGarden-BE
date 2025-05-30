@@ -129,13 +129,28 @@ public class ChallengesController(IChallengeService challengeService) : Controll
 
     [Authorize]
     [HttpPut("change-status/{challengeId:int}")]
-    public async Task<IActionResult> ChangeStatusChallenge(int challengeId)
+    public async Task<IActionResult> ChangeStatusChallenge(int challengeId, [FromBody] ChangeStatusDto dto)
     {
-        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
-            return Unauthorized();
-        var result = await _challengeService.ChangeStatusChallenge(userId, challengeId);
-        return Ok(result);
+        
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+                return Unauthorized(new { message = "User not authenticated" });
+
+            await _challengeService.ChangeStatusChallenge(userId, challengeId, dto.IsApproved, dto.RejectionReason);
+            
+            if (dto.IsApproved)
+            {
+                return Ok(new { 
+                    message = "Challenge approved successfully",
+                    status = "Active"
+                });
+            }
+
+            return Ok(new { 
+                message = "Challenge rejected successfully",
+                status = "Canceled",
+                rejectionReason = dto.RejectionReason
+            });
     }
 
     [Authorize]
