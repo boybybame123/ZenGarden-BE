@@ -178,6 +178,8 @@ public static partial class Program
         builder.Services.AddScoped<ITransactionsRepository, TransactionsRepository>();
         builder.Services.AddScoped<IPackageRepository, PackageRepository>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+        builder.Services.AddScoped<IFocusTrackingRepository, FocusTrackingRepository>();
+        builder.Services.AddScoped<IFocusActivityRepository, FocusActivityRepository>();
     }
 
     private static void ConfigureDbContext(WebApplicationBuilder builder)
