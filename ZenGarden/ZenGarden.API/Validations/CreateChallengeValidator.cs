@@ -23,8 +23,7 @@ public class CreateChallengeValidator : AbstractValidator<CreateChallengeDto>
 
         RuleFor(x => x.StartDate)
             .NotNull().WithMessage("Start date is required.")
-            .Must(BeAValidDate).WithMessage("Start date is invalid.")
-            .GreaterThanOrEqualTo(DateTime.UtcNow).WithMessage("Start date cannot be in the past.");
+            .Must(BeAValidDate).WithMessage("Start date is invalid.");
 
         RuleFor(x => x.EndDate)
             .Must((dto, endDate) => endDate == null || (dto.StartDate != null && endDate > dto.StartDate))
