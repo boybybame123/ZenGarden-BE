@@ -17,4 +17,11 @@ public class BagItemsController(IBagItemService bagItemService) : ControllerBase
         if (bag == null) return NotFound();
         return Ok(bag);
     }
+    [HttpGet("user/{userId:int}")]
+    public async Task<IActionResult> GetListBagItemByUserId(int userId)
+    {
+        var bag = await _bagItemService.GetListItemsByUserIdAsync(userId);
+        if (bag == null) return NotFound();
+        return Ok(bag);
+    }
 }
