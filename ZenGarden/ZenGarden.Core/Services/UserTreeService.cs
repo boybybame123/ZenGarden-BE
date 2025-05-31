@@ -33,6 +33,7 @@ public class UserTreeService(
         var userTree = await userTreeRepository.GetUserTreeDetailAsync(userTreeId)
                        ?? throw new KeyNotFoundException("UserTree not found");
 
+        await CheckAndSetMaxLevelAsync(userTree);
         var userTreeDto = mapper.Map<UserTreeDto>(userTree);
         await SetXpToNextLevelAsync(userTree, userTreeDto);
 
@@ -81,6 +82,7 @@ public class UserTreeService(
         if (existingUserTree is { IsMaxLevel: true, FinalTreeId: null })
             existingUserTree.FinalTreeId = await AssignRandomFinalTreeIdAsync();
 
+        await CheckAndSetMaxLevelAsync(existingUserTree);
         userTreeRepository.Update(existingUserTree);
         await unitOfWork.CommitAsync();
     }
@@ -137,6 +139,7 @@ public class UserTreeService(
 
         foreach (var userTree in userTrees)
         {
+            await CheckAndSetMaxLevelAsync(userTree);
             var dto = mapper.Map<UserTreeDto>(userTree);
             await SetXpToNextLevelAsync(userTree, dto);
             userTreeDto.Add(dto);
