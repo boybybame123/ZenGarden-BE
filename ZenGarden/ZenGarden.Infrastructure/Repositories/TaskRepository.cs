@@ -254,6 +254,11 @@ public class TaskRepository(ZenGardenContext context, IRedisService redisService
 
     }
 
-
-    
+    public async Task<List<Tasks>> GetTasksInProgressAsync()
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t => t.Status == TasksStatus.InProgress)
+            .ToListAsync();
+    }
 }

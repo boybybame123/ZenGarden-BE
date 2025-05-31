@@ -98,6 +98,7 @@ public class MappingProfile : Profile
     private static double CalculateXpToNextLevel(UserTree userTree)
     {
         if (userTree.IsMaxLevel) return 0;
+        if (userTree.TreeXpConfig == null) return 0;
 
         return userTree.TreeXpConfig.XpThreshold - userTree.TotalXp;
     }
