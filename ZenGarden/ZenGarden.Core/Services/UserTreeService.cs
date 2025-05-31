@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -100,14 +99,12 @@ public class UserTreeService(
 
     public async Task CheckAndSetMaxLevelAsync(UserTree userTree)
     {
-        while (true)
-        {
-            var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
-            if (nextLevelConfig == null || userTree.TotalXp < nextLevelConfig.XpThreshold)
-                break;
+        var allLevelConfigs = await treeXpConfigRepository.GetAllAsync();
+        var sortedLevelConfigs = allLevelConfigs.OrderBy(c => c.XpThreshold).ToList();
 
-            userTree.LevelId = nextLevelConfig.LevelId;
-        }
+        // Tìm level phù hợp với XP hiện tại
+        var targetLevel = sortedLevelConfigs.LastOrDefault(c => userTree.TotalXp >= c.XpThreshold);
+        userTree.LevelId = targetLevel?.LevelId ?? 1; // Nếu XP < 50 thì về level 1
 
         if (userTree is { TreeStatus: TreeStatus.Seed, TotalXp: > 0 })
             userTree.TreeStatus = TreeStatus.Growing;
@@ -122,6 +119,14 @@ public class UserTreeService(
             if (finalTreeId != null)
                 userTree.FinalTreeId = finalTreeId;
         }
+        else
+        {
+            userTree.IsMaxLevel = false;
+            userTree.TreeStatus = TreeStatus.Growing;
+        }
+
+        userTreeRepository.Update(userTree);
+        await unitOfWork.CommitAsync();
     }
 
 
@@ -285,15 +290,14 @@ public class UserTreeService(
 
     private async Task SetXpToNextLevelAsync(UserTree userTree, UserTreeDto dto)
     {
-        var maxLevelConfig = await treeXpConfigRepository.GetMaxLevelConfigAsync();
-        var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
-
-        if (userTree.IsMaxLevel && maxLevelConfig != null)
+        if (userTree.IsMaxLevel)
         {
-            dto.LevelId = maxLevelConfig.LevelId + 1;
             dto.XpToNextLevel = 0;
+            return;
         }
-        else if (nextLevelConfig != null)
+
+        var nextLevelConfig = await treeXpConfigRepository.GetNextLevelConfigAsync(userTree.LevelId);
+        if (nextLevelConfig != null)
         {
             dto.XpToNextLevel = nextLevelConfig.XpThreshold - userTree.TotalXp;
         }
@@ -322,7 +326,7 @@ public class UserTreeService(
             if (itemBagId != -1)
             {
                 var itemBag = await bagItemRepository.GetByIdAsync(itemBagId);
-                if (itemBag != null&& itemBag.Quantity <=1)
+                if (itemBag is { Quantity: <= 1 })
                 {
                     await useItemService.UseItemXpProtect(ownerId);
                     // Mark the item as used (for example, update its UpdatedAt or status;
