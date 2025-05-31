@@ -117,9 +117,13 @@ public class UserTreeService(
             userTree.TreeStatus = TreeStatus.MaxLevel;
             userTree.IsMaxLevel = true;
 
-            var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
-            if (finalTreeId != null)
-                userTree.FinalTreeId = finalTreeId;
+            // Only assign finalTreeId if it hasn't been assigned yet
+            if (!userTree.FinalTreeId.HasValue)
+            {
+                var finalTreeId = await treeRepository.GetRandomFinalTreeIdAsync();
+                if (finalTreeId != null)
+                    userTree.FinalTreeId = finalTreeId;
+            }
         }
         else
         {
@@ -139,7 +143,6 @@ public class UserTreeService(
 
         foreach (var userTree in userTrees)
         {
-            await CheckAndSetMaxLevelAsync(userTree);
             var dto = mapper.Map<UserTreeDto>(userTree);
             await SetXpToNextLevelAsync(userTree, dto);
             userTreeDto.Add(dto);
