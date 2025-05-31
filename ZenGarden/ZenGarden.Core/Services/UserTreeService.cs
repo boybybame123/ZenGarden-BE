@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -53,15 +54,14 @@ public class UserTreeService(
             Name = createUserTreeDto.Name,
             UserId = createUserTreeDto.UserId,
             TreeOwnerId = createUserTreeDto.UserId,
-            LevelId = 1,
+            LevelId = defaultTreeXpConfig.LevelId,
             TotalXp = 0,
             IsMaxLevel = false,
             TreeStatus = TreeStatus.Seed,
-            TreeXpConfig = defaultTreeXpConfig,
             User = user,
             TreeOwner = user,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         await userTreeRepository.CreateAsync(newUserTree);
