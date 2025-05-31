@@ -956,6 +956,23 @@ public class TaskService(
         var urgentTasks = await taskRepository.GetTasksWithEndDateMatchingAsync(fiveMinutesLater, false);
         tasksToNotify.AddRange(urgentTasks);
 
+        // Trường hợp 5: Thông báo khi task sắp hết TotalDuration
+        var inProgressTasks = await taskRepository.GetTasksInProgressAsync();
+        foreach (var task in inProgressTasks)
+        {
+            if (!task.TotalDuration.HasValue || !task.StartedAt.HasValue) continue;
+            
+            var accumulatedMinutes = task.AccumulatedTime ?? 0;
+            var currentSessionMinutes = (currentTime - task.StartedAt.Value).TotalMinutes;
+            var totalElapsedTime = accumulatedMinutes + currentSessionMinutes;
+            var remainingTime = task.TotalDuration.Value - totalElapsedTime;
+                
+            if (remainingTime is <= 5 and > 0)
+            {
+                tasksToNotify.Add(task);
+            }
+        }
+
         return tasksToNotify;
     }
 
@@ -1346,5 +1363,19 @@ public class TaskService(
             OriginalBaseXp = actualBaseXp / (actualPriorityMultiplier ?? 1),
             PriorityEffect = actualPriorityEffect
         };
+    }
+
+    public async Task<TaskDto?> GetActiveTaskByUserIdAsync(int userId)
+    {
+        var task = await taskRepository.GetUserTaskInProgressAsync(userId);
+        if (task == null) return null;
+
+        var taskDto = mapper.Map<TaskDto>(task);
+        var remainingSeconds = CalculateRemainingSeconds(task);
+        taskDto.RemainingTime = StringHelper.FormatSecondsToTime(remainingSeconds);
+        var accumulatedSeconds = (int)((task.AccumulatedTime ?? 0) * 60);
+        taskDto.AccumulatedTime = StringHelper.FormatSecondsToTime(accumulatedSeconds);
+
+        return taskDto;
     }
 }

@@ -29,4 +29,5 @@ public interface ITaskService
     Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime);
     Task UpdateTaskSimpleAsync(int taskId, UpdateTaskSimpleDto updateTaskDto);
     Task UpdateTaskResultAsync(int taskId, UpdateTaskResultDto updateTaskResultDto);
+    Task<TaskDto?> GetActiveTaskByUserIdAsync(int userId);
 }

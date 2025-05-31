@@ -313,7 +313,7 @@ public static partial class Program
                     new RateLimitRule
                     {
                         Endpoint = "*",
-                        Limit = 100,
+                        Limit = 1000,
                         Period = "1m"
                     }
                 ];

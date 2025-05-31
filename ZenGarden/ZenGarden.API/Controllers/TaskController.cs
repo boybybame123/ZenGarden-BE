@@ -158,6 +158,7 @@ public class TaskController(
         return NoContent();
     }
 
+    [Authorize]
     [HttpPost("auto-pause")]
     public async Task<IActionResult> AutoPauseTasks()
     {
@@ -197,5 +198,15 @@ public class TaskController(
     { 
         var xpInfo = await _taskService.GetTaskXpInfoAsync(taskId); 
         return Ok(xpInfo);
+    }
+
+    [HttpGet("active/{userId:int}")]
+    public async Task<ActionResult<TaskDto>> GetActiveTaskByUserId(int userId)
+    {
+        var task = await _taskService.GetActiveTaskByUserIdAsync(userId);
+        if (task == null)
+            return NotFound($"No active task found for user {userId}");
+
+        return Ok(task);
     }
 }
