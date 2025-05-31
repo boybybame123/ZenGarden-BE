@@ -21,8 +21,8 @@ public class BagItemService(
         if (cachedBagItems != null) return cachedBagItems;
 
         var bagItems = await bagItemRepository.GetBagItemsByBagIdAsync(bagId);
-        //if (bagItems == null || !bagItems.Any())
-        //    throw new KeyNotFoundException($"No items found for bag with ID {bagId}.");
+        if (bagItems == null || !bagItems.Any())
+            return new List<BagItemDto>();
 
         var bagItemDtos = mapper.Map<List<BagItemDto>>(bagItems);
         await redisService.SetAsync(cacheKey, bagItemDtos, TimeSpan.FromMinutes(10));
