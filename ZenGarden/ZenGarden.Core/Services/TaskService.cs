@@ -32,7 +32,8 @@ public class TaskService(
     IValidator<CreateTaskDto> createTaskValidator,
     TaskRealtimeService taskRealtimeService,
     IUseItemService useItemService,
-    IItemRepository itemRepository
+    IItemRepository itemRepository,
+    ItemDetailService itemDetailService
     ) : ITaskService
 {
     private const string TaskCacheKeyPrefix = "task:";
@@ -602,13 +603,12 @@ public class TaskService(
                 {
                     var itemId = await useItemService.UseItemXpBoostTree(userid);
                     var activeItem = await itemRepository.GetByIdAsync(itemId);
-                    if (activeItem?.ItemDetail?.Effect != null && 
-                        double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
-                        parsedEffect > 0)
+                    if (activeItem?.ItemDetail?.Effect != null)
                     {
-                        double effectPercentage = parsedEffect;
+                        var effect = await itemDetailService.EffectItem(activeItem.ItemId);
+                     
                         activeBoostItemName = activeItem.Name;
-                        bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
+                        bonusXp = Math.Round(baseXp * (effect / 100), 2);
                     }
                 }
                 
