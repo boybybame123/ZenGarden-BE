@@ -1275,23 +1275,36 @@ public class TaskService(
             // Calculate potential bonus XP from equipped items
             double? bonusXp = null;
             string? bonusItemName = null;
-            if (task.UserTree?.UserId != null)
+            if (task.UserTree?.UserId == null)
+                return new TaskXpInfoDto
+                {
+                    TaskId = task.TaskId,
+                    TaskName = task.TaskName,
+                    BaseXp = baseXp,
+                    BonusXp = bonusXp,
+                    BonusItemName = bonusItemName,
+                    TotalXp = bonusXp.HasValue ? baseXp + bonusXp.Value : baseXp,
+                    ActivityType = ActivityType.TaskXp,
+                    CreatedAt = DateTime.UtcNow,
+                    Priority = task.Priority,
+                    PriorityMultiplier = priorityMultiplier,
+                    OriginalBaseXp = originalBaseXp,
+                    PriorityEffect = priorityEffect
+                };
+            try
             {
-                try
+                var equippedItem = await bagRepository.GetEquippedItemAsync(task.UserTree.UserId.Value, ItemType.XpBoostTree);
+                if (equippedItem?.Item?.ItemDetail?.Effect != null && 
+                    double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
+                    effectPercent > 0)
                 {
-                    var equippedItem = await bagRepository.GetEquippedItemAsync(task.UserTree.UserId.Value, ItemType.XpBoostTree);
-                    if (equippedItem?.Item?.ItemDetail?.Effect != null && 
-                        double.TryParse(equippedItem.Item.ItemDetail.Effect, out var effectPercent) && 
-                        effectPercent > 0)
-                    {
-                        bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
-                        bonusItemName = equippedItem.Item.Name;
-                    }
+                    bonusXp = Math.Round(baseXp * (effectPercent / 100), 2);
+                    bonusItemName = equippedItem.Item.Name;
                 }
-                catch (Exception)
-                {
-                    // Ignore item errors when calculating potential XP
-                }
+            }
+            catch (Exception)
+            {
+                // Ignore item errors when calculating potential XP
             }
 
             return new TaskXpInfoDto
