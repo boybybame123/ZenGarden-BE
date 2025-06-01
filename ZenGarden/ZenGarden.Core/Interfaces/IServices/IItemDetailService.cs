@@ -11,4 +11,5 @@ public interface IItemDetailService
     Task<ItemDetail> UpdateItemDetailAsync(UpdateItemDetailDto itemDetail);
     Task DeleteItemDetailAsync(int itemDetailId);
     string GetFolderNameByItemType(ItemType type);
+    Task<int> EffectItem(int itemId);
 }
