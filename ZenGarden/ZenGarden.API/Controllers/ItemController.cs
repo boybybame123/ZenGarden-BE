@@ -239,4 +239,25 @@ public class ItemController : ControllerBase
             return StatusCode(500, new { message = "Error creating item", error = ex.Message });
         }
     }
+
+    [HttpGet("item-details/{itemId:int}")]
+    public async Task<IActionResult> Effect (int itemId)
+    {
+        if (itemId <= 0)
+            return BadRequest(new { message = "Invalid item ID" });
+        try
+        {
+            var effect = await _itemDetailService.EffectItem(itemId);
+            return Ok(new { effect });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error retrieving item effect", error = ex.Message });
+        }
+    }
+
 }

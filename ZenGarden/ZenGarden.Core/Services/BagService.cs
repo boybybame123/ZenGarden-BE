@@ -11,4 +11,9 @@ public class BagService(IBagRepository bagRepository) : IBagService
         return await bagRepository.GetByIdAsync(bagId)
                ?? throw new KeyNotFoundException($"bag with ID {bagId} not found.");
     }
+    public async Task<bool?> GetBagItemAsync(int userid)
+    {
+       return await bagRepository.HasUsedXpBoostItemAsync(userid);
+        
+    }
 }
