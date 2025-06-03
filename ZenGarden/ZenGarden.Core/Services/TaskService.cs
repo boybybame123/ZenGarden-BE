@@ -601,14 +601,13 @@ public class TaskService(
                 if (hasEquippedXpBoostTree)
                 {
                     var itemId = await useItemService.UseItemXpBoostTree(userid);
-                    var activeItem = await itemRepository.GetByIdAsync(itemId);
+                    var activeItem = await itemRepository.GetItemByIdAsync(itemId);
                     if (activeItem?.ItemDetail?.Effect != null && 
                         double.TryParse(activeItem.ItemDetail.Effect, out var parsedEffect) && 
                         parsedEffect > 0)
                     {
-                        double effectPercentage = parsedEffect;
                         activeBoostItemName = activeItem.Name;
-                        bonusXp = Math.Round(baseXp * (effectPercentage / 100), 2);
+                        bonusXp = Math.Round(baseXp * (parsedEffect / 100), 2);
                     }
                 }
                 
