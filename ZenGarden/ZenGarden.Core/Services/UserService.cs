@@ -22,8 +22,7 @@ public class UserService(
     IRedisService redisService,
     IServiceScopeFactory scopeFactory) : IUserService
 {
-    private const int CACHE_DURATION_MINUTES = 30;
-    private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+    private const int CacheDurationMinutes = 30;
 
     public async Task<List<UserDto>> GetAllUsersAsync()
     {
@@ -45,7 +44,7 @@ public class UserService(
             ?? throw new KeyNotFoundException($"User with ID {userId} not found.");
 
         var userDto = mapper.Map<UserResponseDto>(user);
-        await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+        await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CacheDurationMinutes));
 
         return user;
     }
@@ -57,7 +56,7 @@ public class UserService(
         var user = await redisService.GetOrSetAsync(
             cacheKey,
             async () => await userRepository.GetByEmailAsync(email),
-            TimeSpan.FromMinutes(CACHE_DURATION_MINUTES)
+            TimeSpan.FromMinutes(CacheDurationMinutes)
         );
 
         return user;
@@ -114,7 +113,7 @@ public class UserService(
         {
             // Cache the user after successful validation
             var userDto = mapper.Map<UserResponseDto>(user);
-            await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+            await redisService.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(CacheDurationMinutes));
             return user;
         }
 
@@ -147,8 +146,14 @@ public class UserService(
         if (string.IsNullOrWhiteSpace(dto.Password))
             throw new ArgumentException("Password cannot be empty.");
 
-        var existingUser = await userRepository.GetByEmailAsync(dto.Email);
-        if (existingUser != null) throw new InvalidOperationException("Email is already in use.");
+        // Check if email or phone already exists
+        var existingUserByEmail = await userRepository.GetByEmailAsync(dto.Email);
+        if (existingUserByEmail != null) 
+            throw new InvalidOperationException("Email is already in use.");
+
+        var existingUserByPhone = await userRepository.GetByPhoneAsync(dto.Phone);
+        if (existingUserByPhone != null)
+            throw new InvalidOperationException("Phone number is already in use.");
 
         var role = await userRepository.GetRoleByIdAsync(dto.RoleId ?? 2)
                    ?? throw new InvalidOperationException("Invalid RoleId.");
@@ -163,59 +168,60 @@ public class UserService(
         newUser.RoleId = role.RoleId;
         newUser.Status = UserStatus.Active;
 
-       
-        try
-        {
-            await userRepository.CreateAsync(newUser);
-            await unitOfWork.CommitAsync();
-
-            var wallet = new Wallet { UserId = newUser.UserId, Balance = 0 };
-            var bag = new Bag { UserId = newUser.UserId };
-
-            var levelOneConfig = await userXpConfigRepository.GetByIdAsync(1)
-                                 ?? throw new Exception("UserLevelConfig is missing Level 1!");
-
-            var userExperience = new UserExperience
-            {
-                UserId = newUser.UserId,
-                TotalXp = 0,
-                XpToNextLevel = levelOneConfig.XpThreshold,
-                LevelId = 1,
-                IsMaxLevel = false,
-                StreakDays = 0,
-                CreatedAt = DateTime.UtcNow
-            };
-            var userConfig = new UserConfig
-            {
-                UserId = newUser.UserId,
-                BackgroundConfig =
-                    "https://hcm.ss.bfcplatform.vn/zengarden/OIP.jpg?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441883&Signature=LNL9h7zMH2%2BeZpQdBdDhnoCVi1k%3D",
-                SoundConfig =
-                    "https://hcm.ss.bfcplatform.vn/zengarden/sound-design-elements-sfx-ps-022-302865.mp3?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441777&Signature=mMR0vRZRqJQvQmeJ4qYTh6xMkp0%3D",
-                ImageUrl =
-                    "https://hcm.ss.bfcplatform.vn/zengarden/male.png?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441822&Signature=DJNiWS8ebIWoyCqDEqfccJocY5I%3D",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // Run independent operations in parallel
-            var createTasks = new[]
-            {
-                walletRepository.CreateAsync(wallet),
-                bagRepository.CreateAsync(bag),
-                userExperienceRepository.CreateAsync(userExperience),
-                userConfigRepository.CreateAsync(userConfig)
-            };
-
-            await Task.WhenAll(createTasks);
-            await unitOfWork.CommitAsync();
+        var executionStrategy = unitOfWork.CreateExecutionStrategy();
         
-            return newUser;
-        }
-        catch
-        {
-            await unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
+        return await executionStrategy.ExecuteAsync<Users, Users?>(
+            newUser,
+            async (_, state, _) =>
+            {
+                // Create user first
+                await userRepository.CreateAsync(state);
+                await unitOfWork.CommitAsync(); // Commit to get UserId
+
+                // Create related entities
+                var wallet = new Wallet { UserId = state.UserId, Balance = 0 };
+                var bag = new Bag { UserId = state.UserId };
+
+                var levelOneConfig = await userXpConfigRepository.GetByIdAsync(1)
+                                     ?? throw new Exception("UserLevelConfig is missing Level 1!");
+
+                var userExperience = new UserExperience
+                {
+                    UserId = state.UserId,
+                    TotalXp = 0,
+                    XpToNextLevel = levelOneConfig.XpThreshold,
+                    LevelId = 1,
+                    IsMaxLevel = false,
+                    StreakDays = 0,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var userConfig = new UserConfig
+                {
+                    UserId = state.UserId,
+                    BackgroundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/OIP.jpg?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441883&Signature=LNL9h7zMH2%2BeZpQdBdDhnoCVi1k%3D",
+                    SoundConfig = "https://hcm.ss.bfcplatform.vn/zengarden/sound-design-elements-sfx-ps-022-302865.mp3?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441777&Signature=mMR0vRZRqJQvQmeJ4qYTh6xMkp0%3D",
+                    ImageUrl = "https://hcm.ss.bfcplatform.vn/zengarden/male.png?AWSAccessKeyId=8QEUOTPT6CM3J3X9CD9T&Expires=1743441822&Signature=DJNiWS8ebIWoyCqDEqfccJocY5I%3D",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Create all entities in parallel
+                var createTasks = new[]
+                {
+                    walletRepository.CreateAsync(wallet),
+                    bagRepository.CreateAsync(bag),
+                    userExperienceRepository.CreateAsync(userExperience),
+                    userConfigRepository.CreateAsync(userConfig)
+                };
+
+                await Task.WhenAll(createTasks);
+                await unitOfWork.CommitAsync();
+                
+                return state;
+            },
+            null,
+            CancellationToken.None
+        );
     }
 
     public async Task<string> GenerateAndSaveOtpAsync(string email)
@@ -262,30 +268,24 @@ public class UserService(
 
     public async Task OnUserLoginAsync(int userId)
     {
-        using (var scope = _scopeFactory.CreateScope())
-        {
-            var userTreeRepository = scope.ServiceProvider.GetRequiredService<IUserTreeRepository>();
-            var userTreeService = scope.ServiceProvider.GetRequiredService<IUserTreeService>();
-            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        using var scope = scopeFactory.CreateScope();
+        var userTreeRepository = scope.ServiceProvider.GetRequiredService<IUserTreeRepository>();
+        var userTreeService = scope.ServiceProvider.GetRequiredService<IUserTreeService>();
 
-            // Get all user trees in one query
-            var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
+        // Get all user trees in one query
+        var userTrees = await userTreeRepository.GetUserTreeByUserIdAsync(userId);
             
-            // Create tasks for parallel processing
-            var tasks = new List<Task>();
+        // Create tasks for parallel processing
+        var tasks = new List<Task>();
             
-            // Add tree health update tasks
-            foreach (var tree in userTrees)
-            {
-                tasks.Add(userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId));
-            }
-            
-            // Add notification task
-            tasks.Add(notificationService.PushNotificationAsync(userId, "Task Daily", "reset daily quest then do it and get xp."));
-            
-            // Execute all tasks in parallel
-            await Task.WhenAll(tasks);
+        // Add tree health update tasks
+        foreach (var tree in userTrees)
+        {
+            tasks.Add(userTreeService.UpdateSpecificTreeHealthAsync(tree.UserTreeId));
         }
+            
+        // Execute all tasks in parallel
+        await Task.WhenAll(tasks);
     }
 
     public async Task MakeItemdefault(int userid)

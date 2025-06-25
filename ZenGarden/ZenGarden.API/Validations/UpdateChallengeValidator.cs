@@ -33,9 +33,7 @@ public class UpdateChallengeValidator : AbstractValidator<UpdateChallengeDto>
 
         RuleFor(x => x.StartDate)
             .Must(BeAValidDate).When(x => x.StartDate.HasValue)
-            .WithMessage("Start date is invalid if provided.")
-            .GreaterThanOrEqualTo(DateTime.UtcNow).When(x => x.StartDate.HasValue)
-            .WithMessage("Start date cannot be in the past if provided.");
+            .WithMessage("Start date is invalid if provided.");
 
         RuleFor(x => x.EndDate)
             .Must((dto, endDate) => !endDate.HasValue || !dto.StartDate.HasValue || endDate > dto.StartDate)

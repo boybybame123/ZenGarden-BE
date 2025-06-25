@@ -21,7 +21,6 @@ public interface ITaskService
     Task<List<TaskDto>> GetClonedTasksByUserChallengeAsync(int userId, int challengeId);
     Task PauseTaskAsync(int taskId);
     Task AutoPauseTasksAsync();
-    Task ResetDailyTasksAsync();
     Task<double> CompleteTaskAsync(int taskId, CompleteTaskDto completeTaskDto);
     Task ReorderTasksAsync(int userTreeId, List<ReorderTaskDto> reorderList);
     Task WeeklyTaskPriorityResetAsync();
@@ -30,4 +29,5 @@ public interface ITaskService
     Task<List<Tasks>> GetTasksToNotifyAsync(DateTime currentTime);
     Task UpdateTaskSimpleAsync(int taskId, UpdateTaskSimpleDto updateTaskDto);
     Task UpdateTaskResultAsync(int taskId, UpdateTaskResultDto updateTaskResultDto);
+    Task<TaskDto?> GetActiveTaskByUserIdAsync(int userId);
 }

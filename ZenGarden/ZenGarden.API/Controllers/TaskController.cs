@@ -158,18 +158,12 @@ public class TaskController(
         return NoContent();
     }
 
+    [Authorize]
     [HttpPost("auto-pause")]
     public async Task<IActionResult> AutoPauseTasks()
     {
         await _taskService.AutoPauseTasksAsync();
         return Ok(new { message = "Auto pause executed successfully." });
-    }
-
-    [HttpPost("reset-daily-status")]
-    public async Task<IActionResult> ResetDailyTaskStatus()
-    {
-        await _taskService.ResetDailyTasksAsync();
-        return Ok(new { message = "Daily task statuses reset successfully." });
     }
 
     [HttpPatch("{taskId:int}/duration")]
@@ -204,5 +198,15 @@ public class TaskController(
     { 
         var xpInfo = await _taskService.GetTaskXpInfoAsync(taskId); 
         return Ok(xpInfo);
+    }
+
+    [HttpGet("active/{userId:int}")]
+    public async Task<ActionResult<TaskDto>> GetActiveTaskByUserId(int userId)
+    {
+        var task = await _taskService.GetActiveTaskByUserIdAsync(userId);
+        if (task == null)
+            return NotFound($"No active task found for user {userId}");
+
+        return Ok(task);
     }
 }

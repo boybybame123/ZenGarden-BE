@@ -111,6 +111,11 @@ public class ExceptionHandlingMiddleware(
                 errorResponse = new ErrorResponse(statusCode, "Invalid request", exception.Message);
                 break;
 
+            case ArgumentException:
+                statusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new ErrorResponse(statusCode, "Invalid argument", exception.Message);
+                break;
+
             case System.ComponentModel.DataAnnotations.ValidationException:
                 statusCode = (int)HttpStatusCode.UnprocessableEntity;
                 errorResponse = new ErrorResponse(statusCode, "Unprocessable entity", exception.Message);

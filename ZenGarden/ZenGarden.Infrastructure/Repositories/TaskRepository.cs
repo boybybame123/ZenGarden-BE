@@ -116,13 +116,6 @@ public class TaskRepository(ZenGardenContext context, IRedisService redisService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<Tasks>> GetDailyTasksAsync()
-    {
-        return await _context.Tasks
-            .Where(t => t.TaskType.TaskTypeName.ToLower() == "daily")
-            .ToListAsync();
-    }
-
     public async Task<int> GetCompletedTasksAsync(int userId, int challengeId)
     {
         return await _context.Tasks
@@ -261,6 +254,11 @@ public class TaskRepository(ZenGardenContext context, IRedisService redisService
 
     }
 
-
-    
+    public async Task<List<Tasks>> GetTasksInProgressAsync()
+    {
+        return await _context.Tasks
+            .Include(t => t.UserTree)
+            .Where(t => t.Status == TasksStatus.InProgress)
+            .ToListAsync();
+    }
 }

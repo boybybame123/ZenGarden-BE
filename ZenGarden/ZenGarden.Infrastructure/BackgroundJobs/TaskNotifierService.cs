@@ -84,6 +84,17 @@ public class TaskNotifierService(
                     notificationTitle = "Urgent Deadline!";
                     notificationContent = $"Your task '{task.TaskName}' needs to be completed in the next 5 minutes!";
                 }
+                else if (task is { TotalDuration: not null, StartedAt: not null })
+                {
+                    var elapsedTime = (currentTime - task.StartedAt.Value).TotalMinutes;
+                    var remainingTime = task.TotalDuration.Value - elapsedTime;
+                    
+                    if (remainingTime is <= 5 and > 0)
+                    {
+                        notificationTitle = "Task Duration Warning!";
+                        notificationContent = $"Your task '{task.TaskName}' will reach its time limit in {Math.Ceiling(remainingTime)} minutes!";
+                    }
+                }
 
                 await notificationService.PushNotificationAsync(
                     userId,

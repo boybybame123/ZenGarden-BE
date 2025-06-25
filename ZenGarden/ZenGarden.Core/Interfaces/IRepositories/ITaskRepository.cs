@@ -14,7 +14,6 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<List<Tasks>> GetAllTasksByChallengeIdAsync(int challengeId);
     Task<List<Tasks>> GetTasksInProgressBeforeAsync(DateTime thresholdTime);
     Task<Tasks?> GetActiveTaskByUserTreeIdAsync(int userTreeId);
-    Task<List<Tasks>> GetDailyTasksAsync();
     Task<int> GetCompletedTasksAsync(int userId, int challengeId);
     Task<int> GetTotalCloneTasksAsync(int userId, int challengeId);
     Task<int> GetNextPriorityForTreeAsync(int userTreeId);
@@ -25,4 +24,5 @@ public interface ITaskRepository : IGenericRepository<Tasks>
     Task<List<Tasks>> GetTasksWithPassedStartDateNotStartedAsync(DateTime currentTime);
     Task<List<Tasks>> GetTasksWithEndDateMatchingAsync(DateTime targetDate, bool onlyMatchDay);
     Task<int?> GetUserTreeIdByTaskIdAsync(int taskId);
+    Task<List<Tasks>> GetTasksInProgressAsync();
 }

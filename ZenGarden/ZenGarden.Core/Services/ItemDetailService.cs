@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using System.Threading.Tasks;
 using ZenGarden.Core.Interfaces.IRepositories;
 using ZenGarden.Core.Interfaces.IServices;
 using ZenGarden.Domain.DTOs;
@@ -126,4 +127,14 @@ public class ItemDetailService(
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
     }
+
+
+    public async Task<int> EffectItem(int itemId)
+    {
+        var itemDetail = await itemDetailRepository.GetItemDetailsByItemId(itemId);
+        int effect =itemDetail.Effect != null && int.TryParse(itemDetail.Effect, out int parsedEffect) ? parsedEffect : 0;
+        return effect;
+    }
+
+
 }
